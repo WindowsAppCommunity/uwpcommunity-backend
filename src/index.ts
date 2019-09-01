@@ -1,4 +1,8 @@
 import { Request, Response, NextFunction } from "express";
+import { sequelize } from './launch/participants/sequalize';
+import { Project } from "./launch/participants/Project";
+import { DataTypes } from "sequelize";
+import { User } from "./launch/participants/User";
 
 /**
  * This file sets up API endpoints based on the current folder tree in Heroku.
@@ -77,12 +81,71 @@ glob(__dirname + '/**/*.js', function (err: Error, result: string[]) {
     }
 });
 
+(async () => {
 
-app.listen(PORT, (err: string) => {
-    if (err) {
-        console.error(`Error while setting up port ${PORT}:`, err);
-        return;
-    }
-    console.log(`Ready, listening on port ${PORT}`);
-});
+    app.listen(PORT, (err: string) => {
+        if (err) {
+            console.error(`Error while setting up port ${PORT}:`, err);
+            return;
+        }
+        console.log(`Ready, listening on port ${PORT}`);
+
+        sequelize
+            .authenticate()
+            .then(async () => {
+                console.log('Connection has been established successfully.');
+
+                Project.init({
+                    id: {
+                        type: DataTypes.INTEGER.UNSIGNED, // you can omit the `new` but this is discouraged
+                        autoIncrement: true,
+                        primaryKey: true,
+                    },
+                    ownerId: {
+                        type: DataTypes.INTEGER.UNSIGNED,
+                        allowNull: false,
+                    },
+                    name: {
+                        type: new DataTypes.STRING(128),
+                        allowNull: false,
+                    }
+                }, {
+                        sequelize,
+                        tableName: 'projects',
+                    });
+
+                User.init({
+                    id: {
+                        type: DataTypes.INTEGER.UNSIGNED,
+                        autoIncrement: true,
+                        primaryKey: true,
+                    },
+                    name: {
+                        type: new DataTypes.STRING(128),
+                        allowNull: false,
+                    },
+                    preferredName: {
+                        type: new DataTypes.STRING(128),
+                        allowNull: true
+                    }
+                }, {
+                        tableName: 'users',
+                        sequelize: sequelize, // this bit is important
+                    });
+
+                // Here we associate which actually populates out pre-declared `association` static and other methods.
+                User.hasMany(Project, {
+                    sourceKey: 'id',
+                    foreignKey: 'ownerId',
+                    as: 'projects' // this determines the name in `associations`!
+                });
+
+                await sequelize.sync();
+            })
+            .catch(err => {
+                console.error('Unable to connect to the database:', err);
+            });
+    });
+
+})();
 
