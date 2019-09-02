@@ -106,10 +106,11 @@ glob(__dirname + '/**/*.js', function (err: Error, result: string[]) {
 async function InitDb() {
     await sequelize.sync();
 
-    let launch = await Launch.findAll();
-    if(launch.length < 1){
-        await Launch.create({year:0});
-        await Launch.create({ year: 2019 });
-        await Launch.create({ year: 2020 });
-    }
+    Launch.count().then(async c => {
+        if (c < 1) {
+            await Launch.create({ year: 0 });
+            await Launch.create({ year: 2019 });
+            await Launch.create({ year: 2020 });
+        }
+    })
 }
