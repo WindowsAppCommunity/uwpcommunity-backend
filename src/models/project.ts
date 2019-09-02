@@ -1,15 +1,41 @@
-import { Model, Association } from 'sequelize';
-import { Launch } from './launch';
+import { Column, CreatedAt, Model, Table, UpdatedAt, ForeignKey, BelongsTo, PrimaryKey, AutoIncrement, DataType } from 'sequelize-typescript';
+import User from './User';
+import Launch from './Launch';
 
-export class Project extends Model {
-    public id!: number;
+@Table
+export default class Project extends Model<Project> {
 
-    public name!: string;
+    @PrimaryKey
+    @AutoIncrement
+    @Column(DataType.INTEGER)
+    id!: number;
 
-    public userId!: number;
-    public launchId!: number;
+    @Column
+    appName!: string;
 
-    // timestamps!
-    public readonly createdAt!: Date;
-    public readonly updatedAt!: Date;
+    @Column
+    description!: string;
+
+    @Column
+    isPrivate!: boolean;
+
+    @ForeignKey(() => User)
+    userId!: number;
+
+    @BelongsTo(() => User, 'userId')
+    user!: User
+
+    @ForeignKey(() => Launch)
+    launchId!: number;
+
+    @BelongsTo(() => Launch, 'launchId')
+    launch!: Launch
+
+    @CreatedAt
+    @Column
+    createdAt!: Date;
+
+    @UpdatedAt
+    @Column
+    updatedAt!: Date;
 }

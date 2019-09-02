@@ -1,9 +1,8 @@
 import { Request, Response, NextFunction } from "express";
-import { sequelize } from './common/sequalize';
-import { Project } from "./models/project";
-import { DataTypes, Sequelize } from "sequelize";
-import { User } from "./models/user";
-import { Launch } from "./models/launch";
+import { sequelize } from './sequalize';
+import Launch from "./models/Launch";
+import User from "./models/User";
+import Project from "./models/Project";
 
 /**
  * This file sets up API endpoints based on the current folder tree in Heroku.
@@ -84,6 +83,16 @@ glob(__dirname + '/**/*.js', function (err: Error, result: string[]) {
 
 (async () => {
 
+    sequelize
+        .authenticate()
+        .then(async () => {
+            console.log('Connection has been established successfully.');
+            await InitDb();
+        })
+        .catch(err => {
+            console.error('Unable to connect to the database:', err);
+        });
+
     app.listen(PORT, (err: string) => {
         if (err) {
             console.error(`Error while setting up port ${PORT}:`, err);
@@ -91,144 +100,24 @@ glob(__dirname + '/**/*.js', function (err: Error, result: string[]) {
         }
         console.log(`Ready, listening on port ${PORT}`);
 
-        sequelize
-            .authenticate()
-            .then(async () => {
-                console.log('Connection has been established successfully.');
-
-                await InitDb();
-            })
-            .catch(err => {
-                console.error('Unable to connect to the database:', err);
-            });
+        SeedDb();
     });
 
 })();
 
 async function InitDb() {
-
-    Launch.init({
-        id: {
-            type: DataTypes.INTEGER.UNSIGNED,
-            autoIncrement: true,
-            primaryKey: true,
-        },
-        year: {
-            type: new DataTypes.STRING(128),
-            allowNull: false,
-        }
-    }, {
-            tableName: 'launches',
-            sequelize: sequelize, // this bit is important
-        });
-
-    Project.init({
-        id: {
-            type: DataTypes.INTEGER.UNSIGNED, // you can omit the `new` but this is discouraged
-            autoIncrement: true,
-            primaryKey: true,
-        },
-        name: {
-            type: new DataTypes.STRING(128),
-            allowNull: false,
-        },
-        userId: {
-            type: DataTypes.INTEGER.UNSIGNED,
-            allowNull: false,
-        },
-        launchId: {
-            type: DataTypes.INTEGER.UNSIGNED,
-            allowNull: false,
-        }
-    }, {
-            sequelize,
-            tableName: 'projects',
-        });
-
-    User.init({
-        id: {
-            type: DataTypes.INTEGER.UNSIGNED,
-            autoIncrement: true,
-            primaryKey: true,
-        },
-        name: {
-            type: new DataTypes.STRING(128),
-            allowNull: false,
-        }
-    }, {
-            tableName: 'users',
-            sequelize: sequelize, // this bit is important
-        });
-
-    // Here we associate which actually populates out pre-declared `association` static and other methods.
-    Launch.hasMany(Project, {
-        sourceKey: 'id',
-        foreignKey: 'launchId',
-        as: 'projects' // this determines the name in `associations`!
-    });
-
-    User.hasMany(Project, {
-        sourceKey: 'id',
-        foreignKey: 'userId',
-        as: 'projects' // this determines the name in `associations`!
-    });
-
     await sequelize.sync();
 
-    // await addStuff();
-
-    await readStuff();
+    // await Launch.create({year:0});
+    // await Launch.create({ year: 2019 });
+    // await Launch.create({ year: 2020 });
 }
 
-async function addStuff() {
-    // Please note that when using async/await you lose the `bluebird` promise context
-    // and you fall back to native
-    // const newUser = await User.create({
-    //     name: 'Johnny',
-    // });
-    // console.log(newUser);
+function SeedDb() {
+    // User.create({name:"aaa", contact:"sss", discord:"ddd" });
 
-    // const newLaunch = await Launch.create({
-    //     year: '2019'
-    // });
-    // const newLaunch2 = await Launch.create({
-    //     year: '2020'
-    // });
-    // console.log(newLaunch);
-
-    // const project = await newUser.createProject({
-    //     name: 'first!',
-    //     launchId: 3
-    // });
-    // const project2 = await newUser.createProject({
-    //     name: 'first!',
-    //     launchId: 4
-    // });
-    // console.log(project);
-
-
-    // newLaunch.addProject(project);
-}
-
-async function readStuff() {
-    // const ourUser = await User.findByPk(1, {
-    //     include: [User.associations.projects],
-    //     rejectOnEmpty: true, // Specifying true here removes `null` from the return type!
-    // });
-    // console.log(ourUser); // Note the `!` null assertion since TS can't know if we included
-    // console.log(ourUser.projects![0].name); // Note the `!` null assertion since TS can't know if we included
-    // the model or not
-
-
-    const myLaunch = await Launch.findAll({
-        where: { year : "2020"},
-        include: [{
-            model: Project,
-            as: 'projects'
-        }]
-    });
-
-    if (myLaunch && myLaunch[0].projects) {
-        console.log(myLaunch[0].projects.length); // Note the `!` null assertion since TS can't know if we included
-    }
+    // Project.create({appName:"aaa", description:"sss", isPrivate:false, userId:1, launchId:1});
+    // Project.create({appName:"ddd", description:"fff", isPrivate:true, userId:1, launchId:2});
+    // Project.create({appName:"ggg", description:"hhh", isPrivate:false, userId:1, launchId:3});
+    // Project.create({appName:"jjj", description:"kkk", isPrivate:false, userId:1, launchId:3});
 }

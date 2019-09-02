@@ -2,22 +2,21 @@ import { Request, Response } from "express";
 import { Buffer } from "buffer";
 import { Dirent } from "fs";
 import { IQueryResult } from "./dbclient";
-import { User } from "../../models/user";
+import User from "../../models/User";
 
 
 module.exports = (req: Request, res: Response) => {
-    stuff();
-    // if (!req.query.year) {
-    //     res.status(422);
-    //     res.json(JSON.stringify({
-    //         error: "Malformed request",
-    //         reason: "Year parameter not specified"
-    //     }));
-    //     return;
-    // }
-    // getLaunchCached(req.query.year, res, (results: string) => {
-    //     res.end(results);
-    // });
+    if (!req.query.year) {
+        res.status(422);
+        res.json(JSON.stringify({
+            error: "Malformed request",
+            reason: "Year parameter not specified"
+        }));
+        return;
+    }
+    getLaunchCached(req.query.year, res, (results: string) => {
+        res.end(results);
+    });
 };
 
 function getLaunchTable(year: number, res: Response, cb: Function) {
@@ -47,26 +46,6 @@ function getLaunchTable(year: number, res: Response, cb: Function) {
     // });
 }
 
-async function stuff() {
-    // Please note that when using async/await you lose the `bluebird` promise context
-    // and you fall back to native
-    const newUser = await User.create({
-        name: 'Johnny',
-        preferredName: 'John',
-    });
-    console.log(newUser.id, newUser.name);
-
-    const project = await newUser.createProject({
-        name: 'first!',
-    });
-
-    const ourUser = await User.findByPk(1, {
-        include: [User.associations.projects],
-        rejectOnEmpty: true, // Specifying true here removes `null` from the return type!
-    });
-    console.log(ourUser.projects![0].name); // Note the `!` null assertion since TS can't know if we included
-    // the model or not
-}
 
 // Get and cache the list of launch participants
 // This API is our only surface for interacting with the database, so the cache should be updated when a new participant is added
