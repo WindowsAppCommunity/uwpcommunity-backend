@@ -3,7 +3,6 @@ import User from "../../models/User";
 import Launch from "../../models/Launch";
 import Project from "../../models/Project";
 
-
 module.exports = (req: Request, res: Response) => {
     if (!req.query.year) {
         res.status(422);
@@ -13,21 +12,25 @@ module.exports = (req: Request, res: Response) => {
         }));
         return;
     }
+
     getLaunchTable(req.query.year, res, (results: string) => {
         res.end(results);
     });
 };
 
 function getLaunchTable(year: number, res: Response, cb: Function) {
-    Launch
+    Project
         .findAll(
             {
-                where: { year: 2020 },
-                include: [Project]
+                include: [
+                    {
+                        model: Launch,
+                        where: { year: year }
+                    },
+                    User]
             }
         )
         .then(launch => {
-            // console.log(launch);
             cb(JSON.stringify(launch));
         });
 }
