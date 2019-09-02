@@ -161,10 +161,10 @@ async function InitDb() {
         });
 
     // Here we associate which actually populates out pre-declared `association` static and other methods.
-    User.hasMany(Project, {
+    Launch.hasMany(Project, {
         sourceKey: 'id',
         foreignKey: 'launchId',
-        as: 'launches' // this determines the name in `associations`!
+        as: 'projects' // this determines the name in `associations`!
     });
 
     User.hasMany(Project, {
@@ -175,30 +175,42 @@ async function InitDb() {
 
     await sequelize.sync();
 
-    await stuff();
+    // await addStuff();
+
+    await readStuff();
 }
 
-async function stuff() {
+async function addStuff() {
     // Please note that when using async/await you lose the `bluebird` promise context
     // and you fall back to native
     // const newUser = await User.create({
     //     name: 'Johnny',
     // });
-    // console.log(newUser.id, newUser.name);
+    // console.log(newUser);
 
     // const newLaunch = await Launch.create({
+    //     year: '2019'
+    // });
+    // const newLaunch2 = await Launch.create({
     //     year: '2020'
     // });
-    // console.log(newLaunch.year);
-
+    // console.log(newLaunch);
 
     // const project = await newUser.createProject({
     //     name: 'first!',
-    //     launchId: 1
+    //     launchId: 3
     // });
+    // const project2 = await newUser.createProject({
+    //     name: 'first!',
+    //     launchId: 4
+    // });
+    // console.log(project);
+
 
     // newLaunch.addProject(project);
+}
 
+async function readStuff() {
     // const ourUser = await User.findByPk(1, {
     //     include: [User.associations.projects],
     //     rejectOnEmpty: true, // Specifying true here removes `null` from the return type!
@@ -207,11 +219,16 @@ async function stuff() {
     // console.log(ourUser.projects![0].name); // Note the `!` null assertion since TS can't know if we included
     // the model or not
 
-    const myProjects = await Project.findAll({
+
+    const myLaunch = await Launch.findAll({
+        where: { year : "2020"},
         include: [{
-           model: Launch,
-        // where: { launchId: Sequelize.col('launch.id') }
+            model: Project,
+            as: 'projects'
         }]
     });
-    console.log(myProjects); // Note the `!` null assertion since TS can't know if we included
+
+    if (myLaunch && myLaunch[0].projects) {
+        console.log(myLaunch[0].projects.length); // Note the `!` null assertion since TS can't know if we included
+    }
 }
