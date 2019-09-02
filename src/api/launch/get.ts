@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import User from "../../models/User";
-import Launch from "../../models/Launch";
-import Project from "../../models/Project";
+import User from "../../models/user";
+import Launch from "../../models/launch";
+import Project from "../../models/project";
 
 module.exports = (req: Request, res: Response) => {
     if (!req.query.year) {

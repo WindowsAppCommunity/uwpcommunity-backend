@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import User from "../../models/User";
-import Launch from "../../models/Launch";
-import Project from "../../models/Project";
+import User from "../../models/user";
+import Launch from "../../models/launch";
+import Project from "../../models/project";
 import { IQueryResult } from "../../launch/participants/dbclient";
 
 const currentLaunchYear = 3; //2020

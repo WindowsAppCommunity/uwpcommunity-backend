@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "target": "es6",
+        "target": "esnext",
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "lib": [
@@ -9,7 +9,7 @@
         "allowJs": true,
         "skipLibCheck": true,
         "strict": true,
-        "forceConsistentCasingInFileNames": true,
+        "forceConsistentCasingInFileNames": false,
         "module": "commonjs",
         "moduleResolution": "node",
         "resolveJsonModule": true,
