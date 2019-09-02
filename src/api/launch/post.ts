@@ -48,8 +48,19 @@ function checkBody(body: IParticipantRequest) {
 
 async function submitParticipant(participantData: IParticipantRequest, cb: Function) {
     try {
-        let user = await User.create({ name: participantData.name, email: participantData.email, discord: participantData.discord });
-        let project = await Project.create({ appName: participantData.appName, description: participantData.description, isPrivate: participantData.isPrivate, userId: user.id, launchId: currentLaunchYear });
+        let project = await Project.create({
+            appName: participantData.appName, 
+            description: participantData.description, 
+            isPrivate: participantData.isPrivate, 
+            user: {
+                name: participantData.name, 
+                email: participantData.email, 
+                discord: participantData.discord
+            }, 
+            launchId: currentLaunchYear
+        }, {
+            include: [User]
+          });
         cb(JSON.stringify(project));
     } catch (ex) {
         console.log(ex)

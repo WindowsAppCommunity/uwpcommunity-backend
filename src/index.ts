@@ -108,9 +108,11 @@ async function InitDb() {
 
     Launch.count().then(async c => {
         if (c < 1) {
-            await Launch.create({ year: 0 });
-            await Launch.create({ year: 2019 });
-            await Launch.create({ year: 2020 });
+            await Launch.bulkCreate([
+                { year: 0 },
+                { year: 2019 },
+                { year: 2020 }
+            ]);
         }
     })
 }
