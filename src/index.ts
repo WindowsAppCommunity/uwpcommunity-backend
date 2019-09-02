@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import { sequelize } from './launch/participants/sequalize';
-import { Project } from "./launch/participants/Project";
-import { DataTypes } from "sequelize";
-import { User } from "./launch/participants/User";
+import { sequelize } from './common/sequalize';
+import { Project } from "./models/project";
+import { DataTypes, Sequelize } from "sequelize";
+import { User } from "./models/user";
+import { Launch } from "./models/launch";
 
 /**
  * This file sets up API endpoints based on the current folder tree in Heroku.
@@ -95,52 +96,7 @@ glob(__dirname + '/**/*.js', function (err: Error, result: string[]) {
             .then(async () => {
                 console.log('Connection has been established successfully.');
 
-                Project.init({
-                    id: {
-                        type: DataTypes.INTEGER.UNSIGNED, // you can omit the `new` but this is discouraged
-                        autoIncrement: true,
-                        primaryKey: true,
-                    },
-                    ownerId: {
-                        type: DataTypes.INTEGER.UNSIGNED,
-                        allowNull: false,
-                    },
-                    name: {
-                        type: new DataTypes.STRING(128),
-                        allowNull: false,
-                    }
-                }, {
-                        sequelize,
-                        tableName: 'projects',
-                    });
-
-                User.init({
-                    id: {
-                        type: DataTypes.INTEGER.UNSIGNED,
-                        autoIncrement: true,
-                        primaryKey: true,
-                    },
-                    name: {
-                        type: new DataTypes.STRING(128),
-                        allowNull: false,
-                    },
-                    preferredName: {
-                        type: new DataTypes.STRING(128),
-                        allowNull: true
-                    }
-                }, {
-                        tableName: 'users',
-                        sequelize: sequelize, // this bit is important
-                    });
-
-                // Here we associate which actually populates out pre-declared `association` static and other methods.
-                User.hasMany(Project, {
-                    sourceKey: 'id',
-                    foreignKey: 'ownerId',
-                    as: 'projects' // this determines the name in `associations`!
-                });
-
-                await sequelize.sync();
+                await InitDb();
             })
             .catch(err => {
                 console.error('Unable to connect to the database:', err);
@@ -149,3 +105,113 @@ glob(__dirname + '/**/*.js', function (err: Error, result: string[]) {
 
 })();
 
+async function InitDb() {
+
+    Launch.init({
+        id: {
+            type: DataTypes.INTEGER.UNSIGNED,
+            autoIncrement: true,
+            primaryKey: true,
+        },
+        year: {
+            type: new DataTypes.STRING(128),
+            allowNull: false,
+        }
+    }, {
+            tableName: 'launches',
+            sequelize: sequelize, // this bit is important
+        });
+
+    Project.init({
+        id: {
+            type: DataTypes.INTEGER.UNSIGNED, // you can omit the `new` but this is discouraged
+            autoIncrement: true,
+            primaryKey: true,
+        },
+        name: {
+            type: new DataTypes.STRING(128),
+            allowNull: false,
+        },
+        userId: {
+            type: DataTypes.INTEGER.UNSIGNED,
+            allowNull: false,
+        },
+        launchId: {
+            type: DataTypes.INTEGER.UNSIGNED,
+            allowNull: false,
+        }
+    }, {
+            sequelize,
+            tableName: 'projects',
+        });
+
+    User.init({
+        id: {
+            type: DataTypes.INTEGER.UNSIGNED,
+            autoIncrement: true,
+            primaryKey: true,
+        },
+        name: {
+            type: new DataTypes.STRING(128),
+            allowNull: false,
+        }
+    }, {
+            tableName: 'users',
+            sequelize: sequelize, // this bit is important
+        });
+
+    // Here we associate which actually populates out pre-declared `association` static and other methods.
+    User.hasMany(Project, {
+        sourceKey: 'id',
+        foreignKey: 'launchId',
+        as: 'launches' // this determines the name in `associations`!
+    });
+
+    User.hasMany(Project, {
+        sourceKey: 'id',
+        foreignKey: 'userId',
+        as: 'projects' // this determines the name in `associations`!
+    });
+
+    await sequelize.sync();
+
+    await stuff();
+}
+
+async function stuff() {
+    // Please note that when using async/await you lose the `bluebird` promise context
+    // and you fall back to native
+    // const newUser = await User.create({
+    //     name: 'Johnny',
+    // });
+    // console.log(newUser.id, newUser.name);
+
+    // const newLaunch = await Launch.create({
+    //     year: '2020'
+    // });
+    // console.log(newLaunch.year);
+
+
+    // const project = await newUser.createProject({
+    //     name: 'first!',
+    //     launchId: 1
+    // });
+
+    // newLaunch.addProject(project);
+
+    // const ourUser = await User.findByPk(1, {
+    //     include: [User.associations.projects],
+    //     rejectOnEmpty: true, // Specifying true here removes `null` from the return type!
+    // });
+    // console.log(ourUser); // Note the `!` null assertion since TS can't know if we included
+    // console.log(ourUser.projects![0].name); // Note the `!` null assertion since TS can't know if we included
+    // the model or not
+
+    const myProjects = await Project.findAll({
+        include: [{
+           model: Launch,
+        // where: { launchId: Sequelize.col('launch.id') }
+        }]
+    });
+    console.log(myProjects); // Note the `!` null assertion since TS can't know if we included
+}

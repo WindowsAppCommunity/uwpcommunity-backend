@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { Buffer } from "buffer";
 import { Dirent } from "fs";
 import { IQueryResult } from "./dbclient";
-import { User } from "./User";
+import { User } from "../../models/user";
 
 
 module.exports = (req: Request, res: Response) => {
@@ -54,7 +54,7 @@ async function stuff() {
         name: 'Johnny',
         preferredName: 'John',
     });
-    console.log(newUser.id, newUser.name, newUser.preferredName);
+    console.log(newUser.id, newUser.name);
 
     const project = await newUser.createProject({
         name: 'first!',
