@@ -13,7 +13,7 @@ export default class User extends Model<User> {
     name!: string;
 
     @Column
-    contact?: string;
+    email?: string;
 
     @Column
     discord?: string;

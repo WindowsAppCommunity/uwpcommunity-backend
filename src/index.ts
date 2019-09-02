@@ -99,8 +99,6 @@ glob(__dirname + '/**/*.js', function (err: Error, result: string[]) {
             return;
         }
         console.log(`Ready, listening on port ${PORT}`);
-
-        SeedDb();
     });
 
 })();
@@ -108,16 +106,10 @@ glob(__dirname + '/**/*.js', function (err: Error, result: string[]) {
 async function InitDb() {
     await sequelize.sync();
 
-    // await Launch.create({year:0});
-    // await Launch.create({ year: 2019 });
-    // await Launch.create({ year: 2020 });
-}
-
-function SeedDb() {
-    // User.create({name:"aaa", contact:"sss", discord:"ddd" });
-
-    // Project.create({appName:"aaa", description:"sss", isPrivate:false, userId:1, launchId:1});
-    // Project.create({appName:"ddd", description:"fff", isPrivate:true, userId:1, launchId:2});
-    // Project.create({appName:"ggg", description:"hhh", isPrivate:false, userId:1, launchId:3});
-    // Project.create({appName:"jjj", description:"kkk", isPrivate:false, userId:1, launchId:3});
+    let launch = await Launch.findAll();
+    if(launch.length < 1){
+        await Launch.create({year:0});
+        await Launch.create({ year: 2019 });
+        await Launch.create({ year: 2020 });
+    }
 }
