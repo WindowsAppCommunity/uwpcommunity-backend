@@ -106,9 +106,9 @@ glob(__dirname + '/**/*.js', function (err: Error, result: string[]) {
 async function InitDb() {
     await sequelize.sync();
 
-    Launch.count().then(async c => {
+    Launch.count().then(c => {
         if (c < 1) {
-            await Launch.bulkCreate([
+            Launch.bulkCreate([
                 { year: 0 },
                 { year: 2019 },
                 { year: 2020 }

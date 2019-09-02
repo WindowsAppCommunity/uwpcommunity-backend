@@ -46,23 +46,22 @@ function checkBody(body: IParticipantRequest) {
     return true;
 }
 
-async function submitParticipant(participantData: IParticipantRequest, cb: Function) {
-    try {
-        let project = await Project.create({
-            appName: participantData.appName, 
-            description: participantData.description, 
-            isPrivate: participantData.isPrivate, 
-            user: {
-                name: participantData.name, 
-                email: participantData.email, 
-                discord: participantData.discord
-            }, 
-            launchId: currentLaunchYear
-        }, {
+function submitParticipant(participantData: IParticipantRequest, cb: Function) {
+    Project.create({
+        appName: participantData.appName,
+        description: participantData.description,
+        isPrivate: participantData.isPrivate,
+        user: {
+            name: participantData.name,
+            email: participantData.email,
+            discord: participantData.discord
+        },
+        launchId: currentLaunchYear
+    }, {
             include: [User]
-          });
-        cb(JSON.stringify(project));
-    } catch (ex) {
-        console.log(ex)
-    }
+        }).then((project) => {
+            cb(JSON.stringify(project));
+        }).catch((ex) => {
+            console.log(ex)
+        });
 }

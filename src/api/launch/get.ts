@@ -32,5 +32,7 @@ function getLaunchTable(year: number, res: Response, cb: Function) {
         )
         .then(launch => {
             cb(JSON.stringify(launch));
+        }).catch((ex) => {
+            console.log(ex)
         });
 }
