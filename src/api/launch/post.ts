@@ -1,8 +1,7 @@
 import { Request, Response } from "express";
-import User from "../../models/user";
-import Launch from "../../models/launch";
-import Project from "../../models/project";
-import { IQueryResult } from "../../launch/participants/dbclient";
+import User from "../../models/User"
+import Project from "../../models/Project";
+import { IQueryResult } from "../../common/iQueryResult";
 
 const currentLaunchYear = 3; //2020
 
@@ -59,8 +58,8 @@ function submitParticipant(participantData: IParticipantRequest, cb: Function) {
         launchId: currentLaunchYear
     }, {
             include: [User]
-        }).then((project) => {
-            cb(JSON.stringify(project));
+        }).then((results) => {
+            cb(JSON.stringify(results));
         }).catch((ex) => {
             console.log(ex)
         });

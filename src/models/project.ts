@@ -1,6 +1,6 @@
 import { Column, CreatedAt, Model, Table, UpdatedAt, ForeignKey, BelongsTo, PrimaryKey, AutoIncrement, DataType } from 'sequelize-typescript';
-import User from './user';
-import Launch from './launch';
+import User from './User';
+import Launch from './Launch';
 
 @Table
 export default class Project extends Model<Project> {

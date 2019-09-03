@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { sequelize } from './sequalize';
 import Launch from "./models/Launch";
-import User from "./models/User";
-import Project from "./models/Project";
 
 /**
  * This file sets up API endpoints based on the current folder tree in Heroku.
@@ -22,7 +20,7 @@ const expressWs = require('express-ws')(app);
 
 const bodyParser = require('body-parser');
 const glob = require('glob');
-const helpers = require('./helpers');
+const helpers = require('./common/helpers');
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
