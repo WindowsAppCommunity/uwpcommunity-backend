@@ -28,11 +28,12 @@ function getLaunchTable(year: number, res: Response, cb: Function) {
                         model: Launch,
                         where: { year: year }
                     },
-                    User]
+                    User
+                ]
             }
         )
         .then(results => {
-            fs.writeFile(launchCachePath, results, () => { }); // Cache the results
+            fs.writeFile(launchCachePath, JSON.stringify(results), () => { }); // Cache the results
             cb(JSON.stringify(results));
         }).catch((ex) => {
             console.log(ex)

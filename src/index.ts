@@ -22,7 +22,10 @@ const bodyParser = require('body-parser');
 const glob = require('glob');
 const helpers = require('./common/helpers');
 
+const PORT = process.env.PORT || 5000;
+const DEBUG = process.argv.filter(val => val == 'dev').length > 0;
 app.use(bodyParser.urlencoded({ extended: true }));
+
 app.use(bodyParser.json());
 app.use((req: Request, res: Response, next: NextFunction) => {
     // Website you wish to allow to connect
@@ -38,70 +41,68 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     next();
 });
 
-const PORT = process.env.PORT || 5000;
-const DEBUG = process.argv.filter(val => val == 'dev').length > 0;
+InitDb();
+initApi();
+
+app.listen(PORT, (err: string) => {
+    if (err) {
+        console.error(`Error while setting up port ${PORT}:`, err);
+        return;
+    }
+    console.log(`Ready, listening on port ${PORT}`);
+});
+
+
+//#region Setup
 
 let RegexMethods = /((?:post|get|put|patch|delete|ws)+)(?:.js)/;
 
-glob(__dirname + '/**/*.js', function (err: Error, result: string[]) {
+function initApi() {
+    glob(__dirname + '/**/*.js', function (err: Error, result: string[]) {
+        for (let filePath of result) {
 
-    for (let filePath of result) {
+            if (!filePath.includes("node_modules") && helpers.match(filePath, RegexMethods)) {
+                let serverPath = filePath.replace(RegexMethods, "").replace("/app", "").replace("/build", "");
 
-        if (!filePath.includes("node_modules") && helpers.match(filePath, RegexMethods)) {
-            let serverPath = filePath.replace(RegexMethods, "").replace("/app", "").replace("/build", "");
+                if (DEBUG) serverPath = serverPath.replace(__dirname.replace(/\\/g, `/`).replace("/build", ""), "");
 
-            if (DEBUG) serverPath = serverPath.replace(__dirname.replace(/\\/g, `/`).replace("/build", ""), "");
+                const method = helpers.match(filePath, RegexMethods);
+                console.log(`Setting up ${filePath} as ${method.toUpperCase()} ${serverPath}`);
 
-            const method = helpers.match(filePath, RegexMethods);
-            console.log(`Setting up ${filePath} as ${method.toUpperCase()} ${serverPath}`);
-
-            switch (method) {
-                case "post":
-                    app.post(serverPath, require(filePath));
-                    break;
-                case "get":
-                    app.get(serverPath, require(filePath));
-                    break;
-                case "put":
-                    app.put(serverPath, require(filePath));
-                    break;
-                case "patch":
-                    app.patch(serverPath, require(filePath));
-                    break;
-                case "delete":
-                    app.delete(serverPath, require(filePath));
-                    break;
-                case "ws":
-                    app.ws(serverPath, require(filePath)(expressWs, serverPath));
-                    break;
+                switch (method) {
+                    case "post":
+                        app.post(serverPath, require(filePath));
+                        break;
+                    case "get":
+                        app.get(serverPath, require(filePath));
+                        break;
+                    case "put":
+                        app.put(serverPath, require(filePath));
+                        break;
+                    case "patch":
+                        app.patch(serverPath, require(filePath));
+                        break;
+                    case "delete":
+                        app.delete(serverPath, require(filePath));
+                        break;
+                    case "ws":
+                        app.ws(serverPath, require(filePath)(expressWs, serverPath));
+                        break;
+                }
             }
         }
-    }
-});
-
-(async () => {
-
-    sequelize
-        .authenticate()
-        .then(async () => {
-            console.log('Connection has been established successfully.');
-            await InitDb();
-        })
-        .catch(err => {
-            console.error('Unable to connect to the database:', err);
-        });
-
-    app.listen(PORT, (err: string) => {
-        if (err) {
-            console.error(`Error while setting up port ${PORT}:`, err);
-            return;
-        }
-        console.log(`Ready, listening on port ${PORT}`);
     });
+}
 
-})();
 
 async function InitDb() {
+    await sequelize
+        .authenticate()
+        .catch(err => {
+            throw new Error('Unable to connect to the database: ' + err); // Throwing prevents the rest of the code below from running
+        });
+    console.log('Database connected');
+
     await sequelize.sync();
 
     Launch.count().then(c => {
@@ -114,3 +115,4 @@ async function InitDb() {
         }
     })
 }
+//#endregion
