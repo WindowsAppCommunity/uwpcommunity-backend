@@ -4,7 +4,8 @@ import Project from "../../../../models/Project";
 import { IQueryResult } from "../../../../common/iQueryResult";
 import { getLaunchTable } from "../get";
 
-const currentLaunchYear = 3; //2020
+const possibleLaunchYears = [2019, 2020]; // Maybe possible to pull these directly from the DB as key value pairs?
+const currentLaunchYearDbId = possibleLaunchYears.indexOf(2020);
 
 interface IParticipantRequest {
     name: string;
@@ -56,7 +57,7 @@ function submitParticipant(participantData: IParticipantRequest, cb: Function) {
             email: participantData.email,
             discord: participantData.discord
         },
-        launchId: currentLaunchYear
+        launchId: currentLaunchYearDbId
     }, {
             include: [User]
         }).then((results) => {
