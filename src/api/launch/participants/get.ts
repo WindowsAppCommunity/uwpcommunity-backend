@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import User from "../../models/User";
-import Launch from "../../models/Launch";
-import Project from "../../models/Project";
+import User from "../../../models/User";
+import Launch from "../../../models/Launch";
+import Project from "../../../models/Project";
 import { Dirent } from "fs";
 
 module.exports = (req: Request, res: Response) => {
@@ -19,7 +19,7 @@ module.exports = (req: Request, res: Response) => {
     });
 };
 
-function getLaunchTable(year: number, res: Response, cb: Function) {
+export function getLaunchTable(year: number, res: Response, cb: Function) {
     Project
         .findAll(
             {
@@ -47,7 +47,7 @@ const fs = require("fs");
 const launchCacheFilename: string = "launchCache.json";
 const launchCachePath = __dirname + "/" + launchCacheFilename;
 
-function getLaunchCached(year: number, res: Response, cb: Function) {
+export function getLaunchCached(year: number, res: Response, cb: Function) {
     fs.readdir(__dirname, (err: Error, fileResults: string[] | Buffer[] | Dirent) => {
 
         // If missing, get data from database and create the cache

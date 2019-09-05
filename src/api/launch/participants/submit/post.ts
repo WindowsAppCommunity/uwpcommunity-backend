@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
-import User from "../../models/User"
-import Project from "../../models/Project";
-import { IQueryResult } from "../../common/iQueryResult";
+import User from "../../../../models/User"
+import Project from "../../../../models/Project";
+import { IQueryResult } from "../../../../common/iQueryResult";
+import { getLaunchTable } from "../get";
 
 const currentLaunchYear = 3; //2020
 
@@ -64,3 +65,4 @@ function submitParticipant(participantData: IParticipantRequest, cb: Function) {
             console.log(ex)
         });
 }
+
