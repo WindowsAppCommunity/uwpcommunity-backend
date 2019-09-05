@@ -19,7 +19,7 @@ interface IParticipantRequest {
 
 module.exports = (req: Request, res: Response) => {
     const body = req.body;
-    const bodyCheck: true | (string | boolean)[] = checkBody(body);
+    const bodyCheck = checkBody(body);
 
     if (!bodyCheck || bodyCheck instanceof Array && bodyCheck[0] === false) {
         res.status(422);
@@ -35,7 +35,7 @@ module.exports = (req: Request, res: Response) => {
     });
 };
 
-function checkBody(body: IParticipantRequest) {
+function checkBody(body: IParticipantRequest): true | (string | boolean)[] {
     if (!body.name) return [false, "name"];
     if (!body.email) return [false, "email"];
     if (!body.discord) return [false, "discord"];
