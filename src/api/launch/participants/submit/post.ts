@@ -3,6 +3,7 @@ import User from "../../../../models/User"
 import Project from "../../../../models/Project";
 import { IQueryResult } from "../../../../common/iQueryResult";
 import { getLaunchTable } from "../get";
+import { resolve } from "bluebird";
 
 const possibleLaunchYears = [2019, 2020]; // Maybe possible to pull these directly from the DB as key value pairs?
 const currentLaunchYearDbId = possibleLaunchYears.indexOf(2020);
@@ -30,9 +31,14 @@ module.exports = (req: Request, res: Response) => {
         return;
     }
 
-    submitParticipant(body, (results: IQueryResult) => {
-        res.end(JSON.stringify(results));
-    });
+    submitParticipant(body)
+        .then(results => res.end(JSON.stringify(results)))
+        .catch(err => {
+            console.error(err);
+            res.status(500);
+            res.end(`Internal server error: ${err}`);
+        });
+
 };
 
 function checkBody(body: IParticipantRequest): true | (string | boolean)[] {
@@ -47,23 +53,25 @@ function checkBody(body: IParticipantRequest): true | (string | boolean)[] {
     return true;
 }
 
-function submitParticipant(participantData: IParticipantRequest, cb: Function) {
-    Project.create({
-        appName: participantData.appName,
-        description: participantData.description,
-        isPrivate: participantData.isPrivate,
-        user: {
-            name: participantData.name,
-            email: participantData.email,
-            discord: participantData.discord
-        },
-        launchId: currentLaunchYearDbId
-    }, {
-            include: [User]
-        }).then((results) => {
-            cb(JSON.stringify(results));
-        }).catch((ex) => {
-            console.log(ex)
-        });
+function submitParticipant(participantData: IParticipantRequest): Promise<Project> {
+    return new Promise<Project>((resolve, reject) => {
+        Project.create(
+            {
+                appName: participantData.appName,
+                description: participantData.description,
+                isPrivate: participantData.isPrivate,
+                user: {
+                    name: participantData.name,
+                    email: participantData.email,
+                    discord: participantData.discord
+                },
+                launchId: currentLaunchYearDbId
+            },
+            {
+                include: [User]
+            })
+            .then(resolve)
+            .catch(reject);
+    });
 }
 
