@@ -6,6 +6,7 @@ if (!db_url) throw new Error(`The environment variable "DATABASE_URL" is missing
 
 export const sequelize = new Sequelize(db_url, {
     dialect: 'postgres',
+    logging: false,
     protocol: 'postgres',
     dialectOptions: {
         ssl: true
