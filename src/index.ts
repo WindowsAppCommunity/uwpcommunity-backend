@@ -101,18 +101,21 @@ async function InitDb() {
         .catch(err => {
             throw new Error('Unable to connect to the database: ' + err); // Throwing prevents the rest of the code below from running
         });
+
     console.log('Database connected');
 
-    await sequelize.sync();
+    await sequelize.sync().catch(console.error);
 
-    Launch.count().then(c => {
-        if (c < 1) {
-            Launch.bulkCreate([
-                { year: 0 },
-                { year: 2019 },
-                { year: 2020 }
-            ]);
-        }
-    })
+
+    Launch.count() // There an error in the log related to this line
+        .then(c => {
+            if (c < 1) {
+                Launch.bulkCreate([
+                    { year: 2019 },
+                    { year: 2020 }
+                ]);
+            }
+        })
+        .catch(console.error);
 }
 //#endregion
