@@ -58,7 +58,7 @@ app.listen(PORT, (err: string) => {
 let RegexMethods = /((?:post|get|put|patch|delete|ws)+)(?:.js)/;
 
 function initApi() {
-    glob(__dirname + '/**/*.js', function (err: Error, result: string[]) {
+    glob(__dirname + '/api/**/*.js', function (err: Error, result: string[]) {
         for (let filePath of result) {
 
             if (!filePath.includes("node_modules") && helpers.match(filePath, RegexMethods)) {
