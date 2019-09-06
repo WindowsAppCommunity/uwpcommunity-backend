@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { sequelize } from './common/sequalize';
-import Launch from "./models/Launch";
+import { InitDb } from './common/sequalize';
 
 /**
  * This file sets up API endpoints based on the current folder tree in Heroku.
@@ -42,7 +41,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 InitDb();
-initApi();
+InitApi();
 
 app.listen(PORT, (err: string) => {
     if (err) {
@@ -57,7 +56,7 @@ app.listen(PORT, (err: string) => {
 
 let RegexMethods = /((?:post|get|put|patch|delete|ws)+)(?:.js)/;
 
-function initApi() {
+function InitApi() {
     glob(__dirname + '/api/**/*.js', function (err: Error, result: string[]) {
         for (let filePath of result) {
 
@@ -92,30 +91,5 @@ function initApi() {
             }
         }
     });
-}
-
-
-async function InitDb() {
-    await sequelize
-        .authenticate()
-        .catch(err => {
-            throw new Error('Unable to connect to the database: ' + err); // Throwing prevents the rest of the code below from running
-        });
-
-    console.log('Database connected');
-
-    await sequelize.sync().catch(console.error);
-
-
-    Launch.count() // There an error in the log related to this line
-        .then(c => {
-            if (c < 1) {
-                Launch.bulkCreate([
-                    { year: 2019 },
-                    { year: 2020 }
-                ]);
-            }
-        })
-        .catch(console.error);
 }
 //#endregion

@@ -1,4 +1,6 @@
 import { Sequelize } from 'sequelize-typescript';
+import Launch from '../models/Launch';
+var path = require("path");
 
 const db_url = process.env.DATABASE_URL;
 
@@ -11,5 +13,28 @@ export const sequelize = new Sequelize(db_url, {
     dialectOptions: {
         ssl: true
     },
-    models: [__dirname + '../models']
+    models: [
+        path.join(__dirname, '..', '/models')
+    ]
 });
+
+export async function InitDb() {
+    await sequelize
+        .authenticate()
+        .catch(err => {
+            throw new Error('Unable to connect to the database: ' + err); // Throwing prevents the rest of the code below from running
+        });
+
+    await sequelize.sync().catch(console.error);
+
+    Launch.count() // There an error in the log related to this line
+        .then(c => {
+            if (c < 1) {
+                Launch.bulkCreate([
+                    { year: 2019 },
+                    { year: 2020 }
+                ]);
+            }
+        })
+        .catch(console.error);
+}
