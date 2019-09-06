@@ -31,9 +31,7 @@ module.exports = (req: Request, res: Response) => {
 
     submitParticipant(body)
         .then(results => {
-            getLaunchTable(possibleLaunchYears[currentLaunchYearDbId], res, ()=>{
-                // cache the new data
-            });
+            getLaunchTable(possibleLaunchYears[currentLaunchYearDbId]);
             res.end(JSON.stringify(results))
         })
         .catch(err => {
