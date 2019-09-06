@@ -1,9 +1,7 @@
 import { Request, Response } from "express";
 import User from "../../../../models/User"
 import Project from "../../../../models/Project";
-import { IQueryResult } from "../../../../common/iQueryResult";
 import { getLaunchTable } from "../get";
-import { resolve } from "bluebird";
 
 const possibleLaunchYears = [2019, 2020]; // Maybe possible to pull these directly from the DB as key value pairs?
 const currentLaunchYearDbId = possibleLaunchYears.indexOf(2020);
@@ -32,7 +30,9 @@ module.exports = (req: Request, res: Response) => {
     }
 
     submitParticipant(body)
-        .then(results => res.end(JSON.stringify(results)))
+        .then(results => {
+            res.end(JSON.stringify(results))
+        })
         .catch(err => {
             console.error(err);
             res.status(500);
