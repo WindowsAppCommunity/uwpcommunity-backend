@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { sequelize } from './sequalize';
+import { sequelize } from './common/sequalize';
 import Launch from "./models/Launch";
 
 /**

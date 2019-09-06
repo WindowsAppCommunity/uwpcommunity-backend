@@ -10,5 +10,5 @@ export const sequelize = new Sequelize(db_url, {
     dialectOptions: {
         ssl: true
     },
-    models: [__dirname + '/models']
+    models: [__dirname + '../models']
 });
