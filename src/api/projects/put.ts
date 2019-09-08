@@ -1,12 +1,8 @@
 import { Request, Response } from "express";
-import User from "../../../models/User"
-import Project from "../../../models/Project";
-import { getLaunchTable } from "./get";
+import User from "../../models/User"
+import Project from "../../models/Project";
 
-const possibleLaunchYears = [2019, 2020]; // Maybe possible to pull these directly from the DB as key value pairs?
-const currentLaunchYearDbId = possibleLaunchYears.indexOf(2020);
-
-interface IParticipantRequest {
+interface IProjectRequest {
     name: string;
     email: string;
     discord: string;
@@ -29,9 +25,8 @@ module.exports = (req: Request, res: Response) => {
         return;
     }
 
-    submitParticipant(body)
+    submitProject(body)
         .then(results => {
-            getLaunchTable(possibleLaunchYears[currentLaunchYearDbId]);
             res.end(JSON.stringify(results))
         })
         .catch(err => {
@@ -42,7 +37,7 @@ module.exports = (req: Request, res: Response) => {
 
 };
 
-function checkBody(body: IParticipantRequest): true | (string | boolean)[] {
+function checkBody(body: IProjectRequest): true | (string | boolean)[] {
     if (!body.name) return [false, "name"];
     if (!body.email) return [false, "email"];
     if (!body.discord) return [false, "discord"];
@@ -54,7 +49,7 @@ function checkBody(body: IParticipantRequest): true | (string | boolean)[] {
     return true;
 }
 
-function submitParticipant(participantData: IParticipantRequest): Promise<Project> {
+function submitProject(participantData: IProjectRequest): Promise<Project> {
     return new Promise<Project>((resolve, reject) => {
         Project.create(
             {
@@ -65,8 +60,7 @@ function submitParticipant(participantData: IParticipantRequest): Promise<Projec
                     name: participantData.name,
                     email: participantData.email,
                     discord: participantData.discord
-                },
-                launchId: currentLaunchYearDbId
+                }
             },
             {
                 include: [User]
