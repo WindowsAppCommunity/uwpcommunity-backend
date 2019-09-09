@@ -66,16 +66,20 @@ function checkBody(data: IProjectUpdateRequest): true | string {
     return true;
 }
 
-function updateProject(projectUpdateData: IProjectUpdateRequest): Promise<[number, Project[]]> {
-    return new Promise<[number, Project[]]>((resolve, reject) => {
+function updateProject(projectUpdateData: IProjectUpdateRequest): Promise<Project> {
+    return new Promise<Project>((resolve, reject) => {
+        Project.findOne({
+            where: { appName: projectUpdateData.oldProjectData.appName },
+            include: [{
+                model: User,
+                where: { discord: projectUpdateData.oldProjectData.user.discordId }
+            }]
+        }).then(project => {
+            if (!project) { reject("Project could not be found"); return; }
 
-        Project.update(
-            { ...projectUpdateData.newProjectData },
-            {
-                where: { ...projectUpdateData.oldProjectData, user: { ...projectUpdateData.oldProjectData.user } }
-            })
-            .then(resolve)
-            .catch(reject);
+            project.update({ ...projectUpdateData.newProjectData })
+                .then(resolve)
+                .catch(reject);
+        }).catch(reject);
     });
 }
-
