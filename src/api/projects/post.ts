@@ -55,10 +55,11 @@ function checkIProject(body: IProject): true | string {
 }
 
 function checkBody(data: IProjectUpdateRequest): true | string {
-    if (!data.newProjectData) return "newProjectData";
-    if (!data.oldProjectData) return "oldProjectData";
-    if (!checkIProject(data.newProjectData)) return checkIProject(data.newProjectData);
-    if (!checkIProject(data.oldProjectData)) return checkIProject(data.oldProjectData);
+    if (data.oldProjectData == undefined) return "oldProjectData";
+    if (checkIProject(data.oldProjectData) !== true) return "oldProjectData." + checkIProject(data.oldProjectData);
+
+    if (data.newProjectData == undefined) return "newProjectData";
+    if (!checkIProject(data.newProjectData) !== true) return "newProjectData." + checkIProject(data.newProjectData);
     
     return true;
 }
