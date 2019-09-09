@@ -22,10 +22,25 @@ export function getProjects(token?: string, shouldCache = true): Promise<Project
                 include: [{
                     model: User,
                     where: { discord: token }
-                }, User]
+                }]
             } : undefined))
             .then(results => {
                 if (shouldCache) fs.writeFile(launchTableCachePath, JSON.stringify(results), () => { }); // Cache the results
+                
+                results = JSON.parse(JSON.stringify(results)); // Serialize and deserialize to convert from class to standard JSON-compatible object
+                results = results.map(project => {
+                    // Remove any data that doesn't match the IProject interface 
+                    delete project.user.email;
+                    delete project.user.updatedAt;
+                    delete project.user.createdAt;
+                    delete project.user.id;
+                    delete project.userId;
+                    delete project.createdAt;
+                    delete project.updatedAt;
+                    delete project.id;
+                    return project;
+                });
+
                 resolve(results);
             })
             .catch(reject);
