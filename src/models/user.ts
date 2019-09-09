@@ -16,7 +16,7 @@ export default class User extends Model<User> {
     email?: string;
 
     @Column
-    discord?: string;
+    discord!: string;
     
     @HasMany(() => Project, 'userId')
     projects?: Project[];
