@@ -61,7 +61,7 @@ function InitApi() {
         for (let filePath of result) {
 
             if (!filePath.includes("node_modules") && helpers.match(filePath, RegexMethods)) {
-                let serverPath = filePath.replace(RegexMethods, "").replace("/app", "").replace("/build", "");
+                let serverPath = filePath.replace(RegexMethods, "").replace("/app", "").replace("/api", "").replace("/build", "");
 
                 if (DEBUG) serverPath = serverPath.replace(__dirname.replace(/\\/g, `/`).replace("/build", ""), "");
 
