@@ -31,7 +31,7 @@ export function getProjects(token?: string, shouldCache = true): Promise<Project
                 results = results.map(project => {
                     // Remove any data that doesn't match the IProject interface 
                     delete project.user.email;
-                    delete project.user.discord; // This one is especially important, as it could be used to modify project details
+                    delete project.user.discordId; // This one is especially important, as it could be used to modify project details
                     delete project.user.updatedAt;
                     delete project.user.createdAt;
                     delete project.user.id;

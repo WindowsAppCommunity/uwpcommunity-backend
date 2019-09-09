@@ -12,7 +12,7 @@ interface IProject {
 
 interface IUser {
     name: string;
-    discord: string;
+    discordId: string;
 }
 
 interface IProjectUpdateRequest {
@@ -47,7 +47,7 @@ module.exports = (req: Request, res: Response) => {
 
 function checkIProject(body: IProject): true | string {
     if (!body.user.name) return "user.name";
-    if (!body.user.discord) return "user.discord";
+    if (!body.user.discordId) return "user.discordId";
 
     if (!body.appName) return "appName";
     if (!body.description) return "description";
