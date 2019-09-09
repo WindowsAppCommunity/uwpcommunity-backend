@@ -22,11 +22,7 @@ module.exports = (req: Request, res: Response) => {
 export function getProjects(year: number, shouldCache = true): Promise<Project[]> {
     return new Promise((resolve, reject) => {
         Project
-            .findAll({
-                include: [{
-                    model: Project
-                }, User]
-            })
+            .findAll()
             .then(results => {
                 if (shouldCache) fs.writeFile(launchTableCachePath, JSON.stringify(results), () => { }); // Cache the results
                 resolve(results);
