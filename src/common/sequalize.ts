@@ -1,6 +1,7 @@
 import { Sequelize } from 'sequelize-typescript';
 import Launch from '../models/Launch';
-var path = require("path");
+import Projects from '../models/Project';
+import User from '../models/User';
 
 const db_url = process.env.DATABASE_URL;
 
@@ -13,9 +14,7 @@ export const sequelize = new Sequelize(db_url, {
     dialectOptions: {
         ssl: true
     },
-    models: [
-        path.join(__dirname, '..', '/models')
-    ]
+    models: [ Launch, Projects, User ]
 });
 
 export async function InitDb() {
