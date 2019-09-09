@@ -61,7 +61,7 @@ function checkBody(data: IProjectUpdateRequest): true | string {
     if (checkIProject(data.oldProjectData) !== true) return "oldProjectData." + checkIProject(data.oldProjectData);
 
     if (data.newProjectData == undefined) return "newProjectData";
-    if (!checkIProject(data.newProjectData) !== true) return "newProjectData." + checkIProject(data.newProjectData);
+    if (checkIProject(data.newProjectData) !== true) return "newProjectData." + checkIProject(data.newProjectData);
 
     return true;
 }
