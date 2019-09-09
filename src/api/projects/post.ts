@@ -4,12 +4,12 @@ import Project from "../../models/Project";
 
 interface IProject {
     name: string;
-    email: string;
     discord: string;
 
     appName: string;
     description: string;
     isPrivate: boolean;
+    launchId: number;
 };
 
 interface IProjectUpdateRequest {
@@ -44,7 +44,6 @@ module.exports = (req: Request, res: Response) => {
 
 function checkIProject(body: IProject): true | string {
     if (!body.name) return "name";
-    if (!body.email) return "email";
     if (!body.discord) return "discord";
 
     if (!body.appName) return "appName";
