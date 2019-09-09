@@ -3,14 +3,17 @@ import User from "../../models/User"
 import Project from "../../models/Project";
 
 interface IProject {
-    name: string;
-    discord: string;
-
     appName: string;
     description: string;
     isPrivate: boolean;
     launchId: number;
+    user: IUser;
 };
+
+interface IUser {
+    name: string;
+    discord: string;
+}
 
 interface IProjectUpdateRequest {
     oldProjectData: IProject;
@@ -43,8 +46,8 @@ module.exports = (req: Request, res: Response) => {
 };
 
 function checkIProject(body: IProject): true | string {
-    if (!body.name) return "name";
-    if (!body.discord) return "discord";
+    if (!body.user.name) return "user.name";
+    if (!body.user.discord) return "user.discord";
 
     if (!body.appName) return "appName";
     if (!body.description) return "description";
@@ -59,7 +62,7 @@ function checkBody(data: IProjectUpdateRequest): true | string {
 
     if (data.newProjectData == undefined) return "newProjectData";
     if (!checkIProject(data.newProjectData) !== true) return "newProjectData." + checkIProject(data.newProjectData);
-    
+
     return true;
 }
 
@@ -69,7 +72,7 @@ function updateProject(projectUpdateData: IProjectUpdateRequest): Promise<[numbe
         Project.update(
             { ...projectUpdateData.newProjectData },
             {
-                where: { ...projectUpdateData.oldProjectData }
+                where: { ...projectUpdateData.oldProjectData, user: { ...projectUpdateData.oldProjectData.user } }
             })
             .then(resolve)
             .catch(reject);
