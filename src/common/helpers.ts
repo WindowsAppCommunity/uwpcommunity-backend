@@ -1,5 +1,5 @@
 import Project from "../models/Project";
-import { IUser } from "../models/types";
+import { IUser, IProject } from "../models/types";
 import User from "../models/User";
 
 /**
@@ -101,6 +101,23 @@ export function getUserByDiscordId(discordId: string): Promise<User> {
     });
 }
 
+export function getUserFromDB(discordId: string): Promise<User | null> {
+    return new Promise(async (resolve, reject) => {
+        User.findOne({
+            where: { discordId: discordId }
+        }).then(resolve).catch(reject);
+    })
+}
+
+export function checkForExistingProject(project: IProject): Promise<boolean> {
+    return new Promise<boolean>((resolve, reject) => {
+        Project.findAll({
+            where: { appName: project.appName }
+        }).then(projects => {
+            resolve(projects.length > 0);
+        }).catch(reject)
+    });
+} 
 module.exports = {
-    match, replaceAll, remove, levenshteinDistance, findSimilarProjectName, getUserByDiscordId
+    match, replaceAll, remove, levenshteinDistance, findSimilarProjectName, getUserByDiscordId, getUserFromDB, checkForExistingProject
 };

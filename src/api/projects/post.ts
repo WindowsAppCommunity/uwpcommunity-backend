@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import User from "../../models/User"
 import Project from "../../models/Project";
 import { IProject } from "../../models/types";
+import { checkForExistingProject, getUserFromDB } from "../../common/helpers";
 
 module.exports = (req: Request, res: Response) => {
     const body = req.body;
@@ -64,21 +65,3 @@ function submitProject(projectData: IProject): Promise<Project> {
             .catch(reject);
     });
 }
-
-function getUserFromDB(discordId: string): Promise<User | null> {
-    return new Promise(async (resolve, reject) => {
-        User.findOne({
-            where: { discordId: discordId }
-        }).then(resolve).catch(reject);
-    })
-}
-
-function checkForExistingProject(project: IProject): Promise<boolean> {
-    return new Promise<boolean>((resolve, reject) => {
-        Project.findAll({
-            where: { appName: project.appName }
-        }).then(projects => {
-            resolve(projects.length > 0);
-        }).catch(reject)
-    });
-} 
