@@ -25,11 +25,10 @@ module.exports = (req: Request, res: Response) => {
             res.status(500);
             res.end(`Internal server error: ${err}`);
         });
-
 };
 
 function checkBody(body: IProject): true | string {
-    if(!body.user) return "user";
+    if (!body.user) return "user";
     if (!body.user.name) return "user.name";
     if (!body.user.discordId) return "user.discordId";
 
@@ -40,10 +39,16 @@ function checkBody(body: IProject): true | string {
     return true;
 }
 
-function submitProject(participantData: IProject): Promise<Project> {
-    return new Promise<Project>((resolve, reject) => {
+function submitProject(projectData: IProject): Promise<Project> {
+    return new Promise<Project>(async (resolve, reject) => {
+
+        if(await checkForExistingProject(projectData).catch(reject)) {
+            reject("A project with that name already exists");
+            return;
+        }
+
         Project.create(
-            { ...participantData },
+            { ...projectData },
             {
                 include: [User]
             })
@@ -52,3 +57,12 @@ function submitProject(participantData: IProject): Promise<Project> {
     });
 }
 
+function checkForExistingProject(project: IProject): Promise<boolean> {
+    return new Promise<boolean>((resolve, reject) => {
+        Project.findAll({
+            where: { appName: project.appName }
+        }).then(projects => {
+            resolve(projects.length > 0);
+        }).catch(reject)
+    });
+} 
