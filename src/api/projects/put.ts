@@ -2,25 +2,29 @@ import { Request, Response } from "express";
 import User from "../../models/User"
 import Project from "../../models/Project";
 
-interface IProjectRequest {
-    name: string;
-    email: string;
-    discordId: string;
-
+interface IProject {
     appName: string;
     description: string;
     isPrivate: boolean;
+    launchId: number;
+    user: IUser;
 };
+
+interface IUser {
+    name: string;
+    discordId: string;
+    email?: string;
+}
 
 module.exports = (req: Request, res: Response) => {
     const body = req.body;
     const bodyCheck = checkBody(body);
 
-    if (!bodyCheck || bodyCheck instanceof Array && bodyCheck[0] === false) {
+    if (bodyCheck !== true) {
         res.status(422);
         res.json(JSON.stringify({
             error: "Malformed request",
-            reason: `Parameter "${bodyCheck[1]}" not provided or malformed`
+            reason: `Parameter "${bodyCheck}" not provided or malformed`
         }));
         return;
     }
@@ -37,31 +41,21 @@ module.exports = (req: Request, res: Response) => {
 
 };
 
-function checkBody(body: IProjectRequest): true | (string | boolean)[] {
-    if (!body.name) return [false, "name"];
-    if (!body.email) return [false, "email"];
-    if (!body.discordId) return [false, "discord"];
+function checkBody(body: IProject): true | string {
+    if (!body.user.name) return "user.name";
+    if (!body.user.discordId) return "user.discordId";
 
-    if (!body.appName) return [false, "appName"];
-    if (!body.description) return [false, "description"];
-    if (body.isPrivate == undefined) return [false, "isPrivate"];
+    if (!body.appName) return "appName";
+    if (!body.description) return "description";
+    if (body.isPrivate == undefined) return "isPrivate";
 
     return true;
 }
 
-function submitProject(participantData: IProjectRequest): Promise<Project> {
+function submitProject(participantData: IProject): Promise<Project> {
     return new Promise<Project>((resolve, reject) => {
         Project.create(
-            {
-                appName: participantData.appName,
-                description: participantData.description,
-                isPrivate: participantData.isPrivate,
-                user: {
-                    name: participantData.name,
-                    email: participantData.email,
-                    discordId: participantData.discordId
-                }
-            },
+            { ...participantData },
             {
                 include: [User]
             })
