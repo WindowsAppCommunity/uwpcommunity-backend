@@ -3,6 +3,15 @@ import User from "../../models/User"
 import { IUser } from "../../models/types";
 
 module.exports = (req: Request, res: Response) => {
+    if(!req.query.token) {
+        res.status(422);
+        res.json(JSON.stringify({
+            error: "Malformed request",
+            reason: `Query "token" not provided or malformed`
+        }));
+        return;
+    }
+
     getUserByToken(req.query.token)
         .then(results => {
             res.end(JSON.stringify(results))
@@ -20,7 +29,7 @@ function getUserByToken(token: string): Promise<IUser> {
             where: { discordId: token }
         }).then(users => {
             if (users.length === 0) {
-                reject(`User with ID ${token} not found`);
+                reject(`User with ID "${token}" not found`);
                 return;
             }
             resolve(users[0]);
