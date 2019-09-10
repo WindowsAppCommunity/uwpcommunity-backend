@@ -1,8 +1,7 @@
 import { Request, Response } from "express";
 import User from "../../models/User"
 import Project from "../../models/Project";
-
-import { findSimilarAppName } from "./post";
+import { findSimilarProjectName } from "../../common/helpers";
 
 interface IProject {
     appName: string;
@@ -67,7 +66,7 @@ function deleteProject(projectData: IProject): Promise<void> {
             // Filter out the correct app name
             const project = projects.filter(project => JSON.parse(JSON.stringify(project)).appName == projectData.appName);
 
-            let similarAppName = findSimilarAppName(projects, projectData.appName);
+            let similarAppName = findSimilarProjectName(projects, projectData.appName);
             if (project.length === 0) { reject(`Project with name "${projectData.appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`); return; }
             if (project.length > 1) { reject("More than one project with that name found. Contact a system administrator to fix the data duplication"); return; }
 
@@ -77,4 +76,3 @@ function deleteProject(projectData: IProject): Promise<void> {
         }).catch(reject);
     });
 }
-

@@ -1,20 +1,7 @@
 import { Request, Response } from "express";
 import User from "../../models/User"
 import Project from "../../models/Project";
-
-interface IProject {
-    appName: string;
-    description: string;
-    isPrivate: boolean;
-    launchId: number;
-    user: IUser;
-};
-
-interface IUser {
-    name: string;
-    discordId: string;
-    email?: string;
-}
+import { IProject } from "../../models/types";
 
 module.exports = (req: Request, res: Response) => {
     const body = req.body;

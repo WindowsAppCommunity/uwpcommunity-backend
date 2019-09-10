@@ -1,3 +1,4 @@
+import Project from "../models/Project";
 
 /**
  * @summary Get the first matching regex group, instead of an array with the full string and all matches
@@ -19,7 +20,7 @@ function remove(text: string, target: string) {
 };
 
 /***
- * @summary Comput the edit distance between two given strings
+ * @summary Compute the edit distance between two given strings
  * @see https://en.wikibooks.org/wiki/Algorithm_Implementation/Strings/Levenshtein_distance#JavaScript
  */
 export function levenshteinDistance(a: string, b: string) {
@@ -50,6 +51,39 @@ export function levenshteinDistance(a: string, b: string) {
 
     return matrix[b.length][a.length];
 };
+
+
+export interface ISimilarProjectMatch {
+    distance: number;
+    appName: string;
+}
+
+/**
+ * @summary Looks through a list of projects to find the closest matching app name
+ * @param projects Array of projects to look through 
+ * @param appName App name to match against
+ * @returns Closest suitable match if found, otherwise undefined
+ */
+export function findSimilarProjectName(projects: Project[], appName: string): string | undefined {
+    let matches: ISimilarProjectMatch[] = [];
+
+    // Calculate and store the distances of each possible match
+    for (let project of projects) {
+        matches.push({ distance: levenshteinDistance(project.appName, appName), appName: project.appName });
+    }
+
+    // Sort by closest match 
+    matches = matches.sort((first, second) => second.distance - first.distance);
+
+    // If the difference is less than X characters, return a possible match.
+    if (matches[0].distance <= 7) return matches[0].appName; // 7 characters is just enough for a " (Beta)" label
+
+    // If the difference is greater than 1/3 of the entire string, don't return as a similar app name
+    if ((appName.length / 3) < matches[0].distance) return;
+
+    return matches[0].appName;
+}
+
 module.exports = {
-    match, replaceAll, remove, levenshteinDistance
+    match, replaceAll, remove, levenshteinDistance, findSimilarProjectName
 };
