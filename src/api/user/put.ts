@@ -28,7 +28,7 @@ module.exports = (req: Request, res: Response) => {
 
     updateUser(body)
         .then(results => {
-            res.end(JSON.stringify(results))
+            res.end("Success");
         })
         .catch(err => {
             console.error(err);
