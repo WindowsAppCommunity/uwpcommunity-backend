@@ -24,23 +24,28 @@ export function getProjects(token?: string, shouldCache = true): Promise<Project
                 }]
             } : undefined))
             .then(results => {
-                if (shouldCache) fs.writeFile(launchTableCachePath, JSON.stringify(results), () => { }); // Cache the results
-                
-                results = JSON.parse(JSON.stringify(results)); // Serialize and deserialize to convert from class to standard JSON-compatible object
-                results = results.map(project => {
-                    // Remove any data that doesn't match the IProject interface 
-                    delete project.user.email;
-                    delete project.user.discordId; // This one is especially important, as it could be used to modify project details
-                    delete project.user.updatedAt;
-                    delete project.user.createdAt;
-                    delete project.user.id;
-                    delete project.userId;
-                    delete project.createdAt;
-                    delete project.updatedAt;
-                    delete project.id;
-                    return project;
-                });
+                if (results) {
 
+                    results = JSON.parse(JSON.stringify(results)); // Serialize and deserialize to convert from class to standard JSON-compatible object
+                    results = results.map(project => {
+                        // Remove any data that doesn't match the IProject interface 
+                        delete project.createdAt;
+                        delete project.updatedAt;
+                        delete project.id;
+                        delete project.userId;
+
+                        if (project.user) {
+                            delete project.user.email;
+                            delete project.user.discordId; // This one is especially important, as it could be used to modify project details
+                            delete project.user.updatedAt;
+                            delete project.user.createdAt;
+                            delete project.user.id;
+                        }
+                        return project;
+                    });
+
+                    if (shouldCache) fs.writeFile(launchTableCachePath, JSON.stringify(results), () => { }); // Cache the results
+                }
                 resolve(results);
             })
             .catch(reject);
@@ -52,7 +57,7 @@ export function getProjects(token?: string, shouldCache = true): Promise<Project
 // This API is our only surface for interacting with the database, so the cache should be updated when a new participant is added
 const fs = require("fs");
 const launchTableCacheFilename: string = "launchTableCache.json";
-const launchTableCachePath = __dirname + "/" + launchTableCacheFilename;
+const launchTableCachePath = __dirname + "\\" + launchTableCacheFilename;
 
 export function getProjectsCached(token?: string): Promise<Project[]> {
     return new Promise((resolve, reject) => {
