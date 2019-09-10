@@ -87,15 +87,11 @@ export function findSimilarProjectName(projects: Project[], appName: string): st
 }
 
 
-export function getUserByDiscordId(discordId: string): Promise<User> {
+export function getUserByDiscordId(discordId: string): Promise<User | null> {
     return new Promise<User>((resolve, reject) => {
         User.findAll({
             where: { discordId: discordId }
         }).then(users => {
-            if (users.length === 0) {
-                reject(`User with ID "${discordId}" not found`);
-                return;
-            }
             resolve(users[0]);
         }).catch(reject);
     });
