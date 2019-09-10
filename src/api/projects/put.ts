@@ -11,8 +11,18 @@ interface IProjectUpdateRequest {
 
 module.exports = (req: Request, res: Response) => {
     const body = req.body;
-    const bodyCheck = checkBody(body);
+    body.oldProjectData.user.discordId = req.query.token;
 
+    if (req.query.token == undefined) {
+        res.status(422);
+        res.json(JSON.stringify({
+            error: "Malformed request",
+            reason: `Query string "token" not provided or malformed`
+        }));
+        return;
+    }
+    
+    const bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
         res.status(422);
         res.json(JSON.stringify({
@@ -36,7 +46,6 @@ module.exports = (req: Request, res: Response) => {
 
 function checkIProject(body: IProject): true | string {
     if (!body.user.name) return "user.name";
-    if (!body.user.discordId) return "user.discordId";
 
     if (!body.appName) return "appName";
     if (!body.description) return "description";
