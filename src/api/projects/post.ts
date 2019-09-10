@@ -110,7 +110,7 @@ function findSimilarAppName(projects: Project[], appName: string): string | unde
     // If the difference is less than X characters, return a possible match.
     if (matches[0].distance <= 7) return matches[0].appName; // 7 characters is just enough for a " (Beta)" label
 
-    // If the difference is less than 1/3 of the entire string, don't return as a similar app name
+    // If the difference is greater than 1/3 of the entire string, don't return as a similar app name
     if ((appName.length / 3) < matches[0].distance) return;
 
     return matches[0].appName;
