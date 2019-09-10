@@ -92,11 +92,11 @@ function updateProject(projectUpdateData: IProjectUpdateRequest): Promise<Projec
     });
 }
 
-interface ISimilarAppMatch {
+export interface ISimilarAppMatch {
     distance: number;
     appName: string;
 }
-function findSimilarAppName(projects: Project[], appName: string): string | undefined {
+export function findSimilarAppName(projects: Project[], appName: string): string | undefined {
     let matches: ISimilarAppMatch[] = [];
 
     // Calculate and store the distances of each possible match
