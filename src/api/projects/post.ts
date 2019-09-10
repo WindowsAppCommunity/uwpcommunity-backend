@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import User from "../../models/User"
 import Project from "../../models/Project";
+import { levenshteinDistance } from '../../common/helpers';
 
 interface IProject {
     appName: string;
@@ -80,7 +81,8 @@ function updateProject(projectUpdateData: IProjectUpdateRequest): Promise<Projec
             // Filter out the correct app name
             const project = projects.filter(project => JSON.parse(JSON.stringify(project)).appName == projectUpdateData.oldProjectData.appName);
 
-            if (project.length === 0) { reject(`Project with name "${projectUpdateData.oldProjectData.appName}" could not be found`); return; }
+            let similarAppName = findSimilarAppName(projects, projectUpdateData.oldProjectData.appName);
+            if (project.length === 0) { reject(`Project with name "${projectUpdateData.oldProjectData.appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`); return; }
             if (project.length > 1) { reject("More than one project with that name found. Contact a system administrator to fix the data duplication"); return; }
 
             project[0].update({ ...projectUpdateData.newProjectData })
@@ -88,4 +90,28 @@ function updateProject(projectUpdateData: IProjectUpdateRequest): Promise<Projec
                 .catch(reject);
         }).catch(reject);
     });
+}
+
+interface ISimilarAppMatch {
+    distance: number;
+    appName: string;
+}
+function findSimilarAppName(projects: Project[], appName: string): string | undefined {
+    let matches: ISimilarAppMatch[] = [];
+
+    // Calculate and store the distances of each possible match
+    for (let project of projects) {
+        matches.push({ distance: levenshteinDistance(project.appName, appName), appName: project.appName });
+    }
+
+    // Sort by closest match 
+    matches = matches.sort((first, second) => second.distance - first.distance);
+    
+    // If the difference is less than X characters, return a possible match.
+    if (matches[0].distance <= 7) return matches[0].appName; // 7 characters is just enough for a " (Beta)" label
+
+    // If the difference is less than 1/3 of the entire string, don't return as a similar app name
+    if ((appName.length / 3) < matches[0].distance) return;
+
+    return matches[0].appName;
 }
