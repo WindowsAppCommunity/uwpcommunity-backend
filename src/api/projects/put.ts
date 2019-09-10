@@ -46,8 +46,6 @@ function checkQuery(query: any): true | string {
     return true;
 }
 function checkIProject(body: IProject): true | string {
-    if (!body.user.name) return "user.name";
-
     if (!body.appName) return "appName";
     if (!body.description) return "description";
     if (body.isPrivate == undefined) return "isPrivate";
