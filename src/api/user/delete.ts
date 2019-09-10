@@ -44,11 +44,10 @@ function checkBody(body: IUser): true | string {
     return true;
 }
 
-function deleteUser(userData: IUser): Promise<void> {
+function deleteUser(userData: IUser): Promise<string> {
     return new Promise(async (resolve, reject) => {
-
         // Find the projects
-        const projects = await getProjectsByUserDiscordId(userData.discordId);
+        const projects = await getProjectsByUserDiscordId(userData.discordId).catch(reject);
 
         if (!projects) return;
 
@@ -58,10 +57,11 @@ function deleteUser(userData: IUser): Promise<void> {
         }
 
         // Find the user
-        const user = await getUserByDiscordId(userData.discordId);
+        const user = await getUserByDiscordId(userData.discordId).catch(reject);
         if (!user) { reject("User not found"); return; }
 
         // Delete the user
-        user.destroy();
+        await user.destroy().catch(reject);
+        resolve("Success");
     });
 }
