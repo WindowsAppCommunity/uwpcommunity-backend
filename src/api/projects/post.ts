@@ -36,7 +36,7 @@ module.exports = (req: Request, res: Response) => {
 
     updateProject(body)
         .then(results => {
-            res.end(JSON.stringify(results))
+            res.end("Success")
         })
         .catch(err => {
             console.error(err);
