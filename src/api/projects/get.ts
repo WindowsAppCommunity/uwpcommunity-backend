@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import User from "../../models/User";
 import Project from "../../models/Project";
 import { Dirent } from "fs";
+import * as path from 'path';
 
 module.exports = (req: Request, res: Response) => {
     getProjectsCached(req.query.token)
@@ -57,7 +58,7 @@ export function getProjects(token?: string, shouldCache = true): Promise<Project
 // This API is our only surface for interacting with the database, so the cache should be updated when a new participant is added
 const fs = require("fs");
 const launchTableCacheFilename: string = "launchTableCache.json";
-const launchTableCachePath = __dirname + "\\" + launchTableCacheFilename;
+const launchTableCachePath = path.join(__dirname, launchTableCacheFilename);
 
 export function getProjectsCached(token?: string): Promise<Project[]> {
     return new Promise((resolve, reject) => {
