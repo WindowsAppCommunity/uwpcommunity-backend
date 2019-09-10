@@ -35,11 +35,7 @@ function checkBody(body: IUser): true | string {
 
 function submitProject(userData: IUser): Promise<User> {
     return new Promise<User>((resolve, reject) => {
-        User.create(
-            { ...userData },
-            {
-                include: [User]
-            })
+        User.create({ ...userData })
             .then(resolve)
             .catch(reject);
     });
