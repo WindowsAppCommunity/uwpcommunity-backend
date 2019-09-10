@@ -36,7 +36,7 @@ module.exports = (req: Request, res: Response) => {
 
     updateProject(body)
         .then(results => {
-            res.end("Success")
+            res.end("Success");
         })
         .catch(err => {
             console.error(err);
@@ -106,7 +106,7 @@ function findSimilarAppName(projects: Project[], appName: string): string | unde
 
     // Sort by closest match 
     matches = matches.sort((first, second) => second.distance - first.distance);
-    
+
     // If the difference is less than X characters, return a possible match.
     if (matches[0].distance <= 7) return matches[0].appName; // 7 characters is just enough for a " (Beta)" label
 
