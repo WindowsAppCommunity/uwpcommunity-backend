@@ -73,17 +73,18 @@ export function findSimilarProjectName(projects: Project[], appName: string): st
     for (let project of projects) {
         matches.push({ distance: levenshteinDistance(project.appName, appName), appName: project.appName });
     }
+    const returnData = matches[0].appName + (matches.length > 1 ? " or " + matches[1].appName : "");
 
     // Sort by closest match 
-    matches = matches.sort((first, second) => second.distance - first.distance);
+    matches = matches.sort((first, second) => first.distance - second.distance);
 
     // If the difference is less than X characters, return a possible match.
-    if (matches[0].distance <= 7) return matches[0].appName; // 7 characters is just enough for a " (Beta)" label
+    if (matches[0].distance <= 7) return returnData; // 7 characters is just enough for a " (Beta)" label
 
     // If the difference is greater than 1/3 of the entire string, don't return as a similar app name
     if ((appName.length / 3) < matches[0].distance) return;
 
-    return matches[0].appName;
+    return returnData;
 }
 
 export function getProjectsByUserDiscordId(discordId: string): Promise<Project[]> {
