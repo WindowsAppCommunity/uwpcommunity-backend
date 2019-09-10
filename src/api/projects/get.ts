@@ -21,7 +21,7 @@ export function getProjects(token?: string, shouldCache = true): Promise<Project
             .findAll((token ? {
                 include: [{
                     model: User,
-                    where: { discord: token }
+                    where: { discordId: token }
                 }]
             } : undefined))
             .then(results => {

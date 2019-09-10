@@ -5,7 +5,7 @@ import Project from "../../models/Project";
 interface IProjectRequest {
     name: string;
     email: string;
-    discord: string;
+    discordId: string;
 
     appName: string;
     description: string;
@@ -40,7 +40,7 @@ module.exports = (req: Request, res: Response) => {
 function checkBody(body: IProjectRequest): true | (string | boolean)[] {
     if (!body.name) return [false, "name"];
     if (!body.email) return [false, "email"];
-    if (!body.discord) return [false, "discord"];
+    if (!body.discordId) return [false, "discord"];
 
     if (!body.appName) return [false, "appName"];
     if (!body.description) return [false, "description"];
@@ -59,7 +59,7 @@ function submitProject(participantData: IProjectRequest): Promise<Project> {
                 user: {
                     name: participantData.name,
                     email: participantData.email,
-                    discord: participantData.discord
+                    discordId: participantData.discordId
                 }
             },
             {

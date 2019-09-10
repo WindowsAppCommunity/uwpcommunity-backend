@@ -68,16 +68,22 @@ function checkBody(data: IProjectUpdateRequest): true | string {
 
 function updateProject(projectUpdateData: IProjectUpdateRequest): Promise<Project> {
     return new Promise<Project>((resolve, reject) => {
-        Project.findOne({
-            where: { appName: projectUpdateData.oldProjectData.appName },
+
+        Project.findAll({
             include: [{
                 model: User,
-                where: { discord: projectUpdateData.oldProjectData.user.discordId }
+                where: { discordId: projectUpdateData.oldProjectData.user.discordId }
             }]
-        }).then(project => {
-            if (!project) { reject("Project could not be found"); return; }
+        }).then(projects => {
+            if (projects.length === 0) { reject(`Projects with ID ${projectUpdateData.oldProjectData.user.discordId} not found`); return; }
 
-            project.update({ ...projectUpdateData.newProjectData })
+            // Filter out the correct app name
+            const project = projects.filter(project => JSON.parse(JSON.stringify(project)).appName == projectUpdateData.oldProjectData.appName);
+
+            if (project.length === 0) { reject(`Project with name "${projectUpdateData.oldProjectData.appName}" could not be found`); return; }
+            if (project.length > 1) { reject("More than one project with that name found. Contact a system administrator to fix the data duplication"); return; }
+
+            project[0].update({ ...projectUpdateData.newProjectData })
                 .then(resolve)
                 .catch(reject);
         }).catch(reject);
