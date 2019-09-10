@@ -6,18 +6,19 @@ import { IProject } from "../../models/types";
 
 module.exports = (req: Request, res: Response) => {
     const body = req.body;
-    const bodyCheck = checkBody(body);
+    body.discordId = req.query.token;
 
-    if (bodyCheck !== true) {
+    const queryCheck = checkQuery(req.query);
+    if (queryCheck !== true) {
         res.status(422);
         res.json(JSON.stringify({
             error: "Malformed request",
-            reason: `Parameter "${bodyCheck}" not provided or malformed`
+            reason: `Query string "${queryCheck}" not provided or malformed`
         }));
         return;
     }
 
-    deleteProject(body)
+    deleteProject(req.query.token, req.query.appName)
         .then(results => {
             res.end("Success");
         })
@@ -29,32 +30,28 @@ module.exports = (req: Request, res: Response) => {
 
 };
 
-function checkBody(body: IProject): true | string {
-    if (!body.user.name) return "user.name";
-    if (!body.user.discordId) return "user.discordId";
-
-    if (!body.appName) return "appName";
-    if (!body.description) return "description";
-    if (body.isPrivate == undefined) return "isPrivate";
+function checkQuery(query: any): true | string {
+    if (!query.token) return "token";
+    if (!query.appName) return "appName";
 
     return true;
 }
 
-function deleteProject(projectData: IProject): Promise<void> {
+function deleteProject(discordId: string, appName: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
         Project.findAll({
             include: [{
                 model: User,
-                where: { discordId: projectData.user.discordId }
+                where: { discordId: discordId }
             }]
         }).then(projects => {
-            if (projects.length === 0) { reject(`Projects with ID ${projectData.user.discordId} not found`); return; }
+            if (projects.length === 0) { reject(`Projects with ID ${discordId} not found`); return; }
 
             // Filter out the correct app name
-            const project = projects.filter(project => JSON.parse(JSON.stringify(project)).appName == projectData.appName);
+            const project = projects.filter(project => JSON.parse(JSON.stringify(project)).appName == appName);
 
-            let similarAppName = findSimilarProjectName(projects, projectData.appName);
-            if (project.length === 0) { reject(`Project with name "${projectData.appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`); return; }
+            let similarAppName = findSimilarProjectName(projects, appName);
+            if (project.length === 0) { reject(`Project with name "${appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`); return; }
             if (project.length > 1) { reject("More than one project with that name found. Contact a system administrator to fix the data duplication"); return; }
 
             project[0].destroy({ force: true })
