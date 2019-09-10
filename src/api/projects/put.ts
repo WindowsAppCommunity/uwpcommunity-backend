@@ -4,25 +4,20 @@ import Project from "../../models/Project";
 import { findSimilarProjectName } from '../../common/helpers';
 import { IProject } from "../../models/types";
 
-interface IProjectUpdateRequest {
-    oldProjectData: IProject;
-    newProjectData: IProject;
-}
-
 module.exports = (req: Request, res: Response) => {
     const body = req.body;
-    body.oldProjectData.user.discordId = req.query.token;
 
-    if (req.query.token == undefined) {
+    const queryCheck = checkQuery(req.query);
+    if (queryCheck !== true) {
         res.status(422);
         res.json(JSON.stringify({
             error: "Malformed request",
-            reason: `Query string "token" not provided or malformed`
+            reason: `Query string "${queryCheck}" not provided or malformed`
         }));
         return;
     }
     
-    const bodyCheck = checkBody(body);
+    const bodyCheck = checkIProject(body);
     if (bodyCheck !== true) {
         res.status(422);
         res.json(JSON.stringify({
@@ -32,7 +27,7 @@ module.exports = (req: Request, res: Response) => {
         return;
     }
 
-    updateProject(body)
+    updateProject(body, req.query.token, req.query.appName)
         .then(results => {
             res.end("Success");
         })
@@ -44,6 +39,12 @@ module.exports = (req: Request, res: Response) => {
 
 };
 
+function checkQuery(query: any): true | string {
+    if(!query.token) return "token";
+    if(!query.appName) return "appName";
+
+    return true;
+}
 function checkIProject(body: IProject): true | string {
     if (!body.user.name) return "user.name";
 
@@ -54,35 +55,25 @@ function checkIProject(body: IProject): true | string {
     return true;
 }
 
-function checkBody(data: IProjectUpdateRequest): true | string {
-    if (data.oldProjectData == undefined) return "oldProjectData";
-    if (checkIProject(data.oldProjectData) !== true) return "oldProjectData." + checkIProject(data.oldProjectData);
-
-    if (data.newProjectData == undefined) return "newProjectData";
-    if (checkIProject(data.newProjectData) !== true) return "newProjectData." + checkIProject(data.newProjectData);
-
-    return true;
-}
-
-function updateProject(projectUpdateData: IProjectUpdateRequest): Promise<Project> {
+function updateProject(projectUpdateData: IProject, discordId: string, appName: string): Promise<Project> {
     return new Promise<Project>((resolve, reject) => {
 
         Project.findAll({
             include: [{
                 model: User,
-                where: { discordId: projectUpdateData.oldProjectData.user.discordId }
+                where: { discordId: discordId }
             }]
         }).then(projects => {
-            if (projects.length === 0) { reject(`Projects with ID ${projectUpdateData.oldProjectData.user.discordId} not found`); return; }
+            if (projects.length === 0) { reject(`Projects with ID ${discordId} not found`); return; }
 
             // Filter out the correct app name
-            const project = projects.filter(project => JSON.parse(JSON.stringify(project)).appName == projectUpdateData.oldProjectData.appName);
+            const project = projects.filter(project => JSON.parse(JSON.stringify(project)).appName == appName);
 
-            let similarAppName = findSimilarProjectName(projects, projectUpdateData.oldProjectData.appName);
-            if (project.length === 0) { reject(`Project with name "${projectUpdateData.oldProjectData.appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`); return; }
+            let similarAppName = findSimilarProjectName(projects, appName);
+            if (project.length === 0) { reject(`Project with name "${appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`); return; }
             if (project.length > 1) { reject("More than one project with that name found. Contact a system administrator to fix the data duplication"); return; }
 
-            project[0].update({ ...projectUpdateData.newProjectData })
+            project[0].update({ ...projectUpdateData })
                 .then(resolve)
                 .catch(reject);
         }).catch(reject);
