@@ -86,12 +86,27 @@ export function findSimilarProjectName(projects: Project[], appName: string): st
     return matches[0].appName;
 }
 
+export function getProjectsByUserDiscordId(discordId: string): Promise<Project[]> {
+    return new Promise((resolve, reject) => {
+        Project.findAll({
+            include: [{
+                model: User,
+                where: { discordId: discordId }
+            }]
+        }).then(projects => {
+            if (!projects) { reject("User not found"); return; }
+            resolve(projects);
+        }).catch(reject);
+    });
+}
 
 export function getUserByDiscordId(discordId: string): Promise<User | null> {
     return new Promise<User>((resolve, reject) => {
         User.findAll({
             where: { discordId: discordId }
         }).then(users => {
+            if (!users) { reject("User not found"); return; }
+            if (users.length > 1) { reject("More than one user with that id found. Contact a system administrator to fix the data duplication"); return; }
             resolve(users[0]);
         }).catch(reject);
     });
@@ -113,7 +128,7 @@ export function checkForExistingProject(project: IProject): Promise<boolean> {
             resolve(projects.length > 0);
         }).catch(reject)
     });
-} 
+}
 module.exports = {
-    match, replaceAll, remove, levenshteinDistance, findSimilarProjectName, getUserByDiscordId, getUserFromDB, checkForExistingProject
+    match, replaceAll, remove, levenshteinDistance, findSimilarProjectName, getUserByDiscordId, getProjectsByUserDiscordId, getUserFromDB, checkForExistingProject
 };
