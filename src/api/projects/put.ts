@@ -42,19 +42,35 @@ function checkBody(body: IProject): true | string {
 function submitProject(projectData: IProject): Promise<Project> {
     return new Promise<Project>(async (resolve, reject) => {
 
-        if(await checkForExistingProject(projectData).catch(reject)) {
+        if (await checkForExistingProject(projectData).catch(reject)) {
             reject("A project with that name already exists");
             return;
         }
 
+        // Get a matching user
+        const user = await getUserFromDB(projectData.user.discordId);
+        if (!user) {
+            reject("User not found");
+            return;
+        }
+
+        // Set the userId to the found user
+        projectData.userId = user.id;
+
+        // Create the project
         Project.create(
-            { ...projectData },
-            {
-                include: [User]
-            })
+            { ...projectData })
             .then(resolve)
             .catch(reject);
     });
+}
+
+function getUserFromDB(discordId: string): Promise<User | null> {
+    return new Promise(async (resolve, reject) => {
+        User.findOne({
+            where: { discordId: discordId }
+        }).then(resolve).catch(reject);
+    })
 }
 
 function checkForExistingProject(project: IProject): Promise<boolean> {
