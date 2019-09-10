@@ -5,8 +5,18 @@ import { getUserByDiscordId } from "../../common/helpers";
 
 module.exports = (req: Request, res: Response) => {
     const body = req.body;
-    const bodyCheck = checkBody(body);
+    body.discordId = req.query.token;
 
+    if (req.query.token == undefined) {
+        res.status(422);
+        res.json(JSON.stringify({
+            error: "Malformed request",
+            reason: `Query string "token" not provided or malformed`
+        }));
+        return;
+    }
+
+    let bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
         res.status(422);
         res.json(JSON.stringify({
@@ -30,7 +40,6 @@ module.exports = (req: Request, res: Response) => {
 
 function checkBody(body: IUser): true | string {
     if (!body.name) return "name";
-    if (!body.discordId) return "discordId";
     return true;
 }
 
