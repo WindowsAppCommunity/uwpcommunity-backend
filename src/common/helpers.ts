@@ -106,7 +106,7 @@ export function getUserByDiscordId(discordId: string): Promise<User | null> {
         User.findAll({
             where: { discordId: discordId }
         }).then(users => {
-            if (!users) { reject("User not found"); return; }
+            if (!users || (users[0] && users[0].discordId !== discordId)) { resolve(); return; }
             if (users.length > 1) { reject("More than one user with that id found. Contact a system administrator to fix the data duplication"); return; }
             resolve(users[0]);
         }).catch(reject);

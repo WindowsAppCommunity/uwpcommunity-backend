@@ -28,8 +28,16 @@ module.exports = (req: Request, res: Response) => {
     }
 
     deleteUser(body)
-        .then(results => {
-            res.end("Success");
+        .then(success => {
+            if (success) {
+                res.end("Success");
+            } else {
+                res.status(404);
+                res.json(JSON.stringify({
+                    error: "Not found",
+                    reason: `User does not exist`
+                }));
+            }
         })
         .catch(err => {
             console.error(err);
@@ -44,10 +52,14 @@ function checkBody(body: IUser): true | string {
     return true;
 }
 
-function deleteUser(userData: IUser): Promise<string> {
+/**
+ * @returns True if successful, false if user not found
+ * @param user User to delete
+ */
+function deleteUser(user: IUser): Promise<boolean> {
     return new Promise(async (resolve, reject) => {
         // Find the projects
-        const projects = await getProjectsByUserDiscordId(userData.discordId).catch(reject);
+        const projects = await getProjectsByUserDiscordId(user.discordId).catch(reject);
 
         if (!projects) return;
 
@@ -57,11 +69,11 @@ function deleteUser(userData: IUser): Promise<string> {
         }
 
         // Find the user
-        const user = await getUserByDiscordId(userData.discordId).catch(reject);
-        if (!user) { reject("User not found"); return; }
+        const userOnDb = await getUserByDiscordId(user.discordId).catch(reject);
+        if (!userOnDb) { resolve(false); return; }
 
         // Delete the user
-        await user.destroy().catch(reject);
-        resolve("Success");
+        await userOnDb.destroy().catch(reject);
+        resolve(true);
     });
 }
