@@ -1,4 +1,6 @@
 import Project from "../models/Project";
+import { IUser } from "../models/types";
+import User from "../models/User";
 
 /**
  * @summary Get the first matching regex group, instead of an array with the full string and all matches
@@ -84,6 +86,21 @@ export function findSimilarProjectName(projects: Project[], appName: string): st
     return matches[0].appName;
 }
 
+
+export function getUserByDiscordId(discordId: string): Promise<User> {
+    return new Promise<User>((resolve, reject) => {
+        User.findAll({
+            where: { discordId: discordId }
+        }).then(users => {
+            if (users.length === 0) {
+                reject(`User with ID "${discordId}" not found`);
+                return;
+            }
+            resolve(users[0]);
+        }).catch(reject);
+    });
+}
+
 module.exports = {
-    match, replaceAll, remove, levenshteinDistance, findSimilarProjectName
+    match, replaceAll, remove, levenshteinDistance, findSimilarProjectName, getUserByDiscordId
 };
