@@ -29,6 +29,7 @@ module.exports = (req: Request, res: Response) => {
 };
 
 function checkBody(body: IProject): true | string {
+    if(!body.user) return "user";
     if (!body.user.name) return "user.name";
     if (!body.user.discordId) return "user.discordId";
 
