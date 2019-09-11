@@ -1,12 +1,11 @@
 import { Request, Response } from "express";
 import User from "../../models/User"
-import { IProject, IUser } from "../../models/types";
+import { IProject, IUser, IDiscordUser } from "../../models/types";
 import Project from "../../models/Project";
-import { getUserByDiscordId, getProjectsByUserDiscordId } from "../../common/helpers";
+import { getUserByDiscordId, getProjectsByUserDiscordId, GetDiscordUser, genericServerError } from "../../common/helpers";
 
 module.exports = (req: Request, res: Response) => {
     const body = req.body;
-    body.discordId = req.query.accessToken;
 
     if (req.query.accessToken == undefined) {
         res.status(422);
@@ -26,25 +25,30 @@ module.exports = (req: Request, res: Response) => {
         }));
         return;
     }
+    (async () => {
+        const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
+        if (!user) {
+            res.status(401);
+            res.end(`Invalid accessToken`);
+            return;
+        }
 
-    deleteUser(body)
-        .then(success => {
-            if (success) {
-                res.end("Success");
-            } else {
-                res.status(404);
-                res.json(JSON.stringify({
-                    error: "Not found",
-                    reason: `User does not exist`
-                }));
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            res.status(500);
-            res.end(`Internal server error: ${err}`);
-        });
+        let discordId = (user as IDiscordUser).id;
 
+        deleteUser(discordId)
+            .then(success => {
+                if (success) {
+                    res.end("Success");
+                } else {
+                    res.status(404);
+                    res.json(JSON.stringify({
+                        error: "Not found",
+                        reason: `User does not exist in database`
+                    }));
+                }
+            })
+            .catch((err) => genericServerError(err, res));
+    })();
 };
 
 function checkBody(body: IUser): true | string {
@@ -56,10 +60,10 @@ function checkBody(body: IUser): true | string {
  * @returns True if successful, false if user not found
  * @param user User to delete
  */
-function deleteUser(user: IUser): Promise<boolean> {
+function deleteUser(discordId: string): Promise<boolean> {
     return new Promise(async (resolve, reject) => {
         // Find the projects
-        const projects = await getProjectsByUserDiscordId(user.discordId).catch(reject);
+        const projects = await getProjectsByUserDiscordId(discordId).catch(reject);
 
         if (!projects) return;
 
@@ -69,7 +73,7 @@ function deleteUser(user: IUser): Promise<boolean> {
         }
 
         // Find the user
-        const userOnDb = await getUserByDiscordId(user.discordId).catch(reject);
+        const userOnDb = await getUserByDiscordId(discordId).catch(reject);
         if (!userOnDb) { resolve(false); return; }
 
         // Delete the user

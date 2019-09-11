@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import User from "../../models/User"
 import Project from "../../models/Project";
-import { findSimilarProjectName } from '../../common/helpers';
-import { IProject } from "../../models/types";
+import { findSimilarProjectName, GetDiscordUser, genericServerError } from '../../common/helpers';
+import { IProject, IDiscordUser } from "../../models/types";
 
 module.exports = (req: Request, res: Response) => {
     const body = req.body;
@@ -16,7 +16,7 @@ module.exports = (req: Request, res: Response) => {
         }));
         return;
     }
-    
+
     const bodyCheck = checkIProject(body);
     if (bodyCheck !== true) {
         res.status(422);
@@ -26,22 +26,27 @@ module.exports = (req: Request, res: Response) => {
         }));
         return;
     }
+    (async () => {
+        const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
+        if (!user) {
+            res.status(401);
+            res.end(`Invalid accessToken`);
+            return;
+        }
 
-    updateProject(body, req.query.token, req.query.appName)
-        .then(results => {
-            res.end("Success");
-        })
-        .catch(err => {
-            console.error(err);
-            res.status(500);
-            res.end(`Internal server error: ${err}`);
-        });
+        let discordId = (user as IDiscordUser).id;
 
+        updateProject(body, discordId, req.query.appName)
+            .then(results => {
+                res.end("Success");
+            })
+            .catch((err) => genericServerError(err, res));
+    })();
 };
 
 function checkQuery(query: any): true | string {
-    if(!query.accessToken) return "accessToken";
-    if(!query.appName) return "appName";
+    if (!query.accessToken) return "accessToken";
+    if (!query.appName) return "appName";
 
     return true;
 }

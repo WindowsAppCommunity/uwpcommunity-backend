@@ -1,12 +1,11 @@
 import { Request, Response } from "express";
 import User from "../../models/User"
 import Project from "../../models/Project";
-import { IProject } from "../../models/types";
-import { checkForExistingProject, getUserFromDB } from "../../common/helpers";
+import { IProject, IDiscordUser } from "../../models/types";
+import { checkForExistingProject, getUserFromDB, GetDiscordUser, genericServerError } from "../../common/helpers";
 
 module.exports = (req: Request, res: Response) => {
     const body = req.body;
-    body.user = { discordId: req.query.accessToken };
 
     if (req.query.accessToken == undefined) {
         res.status(422);
@@ -27,15 +26,23 @@ module.exports = (req: Request, res: Response) => {
         return;
     }
 
-    submitProject(body)
-        .then(results => {
-            res.end("Success");
-        })
-        .catch(err => {
-            console.error(err);
-            res.status(500);
-            res.end(`Internal server error: ${err}`);
-        });
+
+    (async () => {
+        const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
+        if (!user) {
+            res.status(401);
+            res.end(`Invalid accessToken`);
+            return;
+        }
+        
+        let discordId = (user as IDiscordUser).id;
+
+        submitProject(body, discordId)
+            .then(results => {
+                res.end("Success");
+            })
+            .catch((err) => genericServerError(err, res));
+    })();
 };
 
 function checkBody(body: IProject): true | string {
@@ -46,7 +53,7 @@ function checkBody(body: IProject): true | string {
     return true;
 }
 
-function submitProject(projectData: IProject): Promise<Project> {
+function submitProject(projectData: IProject, discordId: string): Promise<Project> {
     return new Promise<Project>(async (resolve, reject) => {
 
         if (await checkForExistingProject(projectData).catch(reject)) {
@@ -55,7 +62,7 @@ function submitProject(projectData: IProject): Promise<Project> {
         }
 
         // Get a matching user
-        const user = await getUserFromDB(projectData.user.discordId).catch(reject);
+        const user = await getUserFromDB(discordId).catch(reject);
         if (!user) {
             reject("User not found");
             return;

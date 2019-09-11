@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import User from "../../models/User"
-import { IUser } from "../../models/types";
+import { IUser, IDiscordUser } from "../../models/types";
+import { GetDiscordUser, genericServerError } from "../../common/helpers";
 
 module.exports = (req: Request, res: Response) => {
     const body = req.body;
@@ -24,17 +25,23 @@ module.exports = (req: Request, res: Response) => {
         }));
         return;
     }
+    (async () => {
+        const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
+        if (!user) {
+            res.status(401);
+            res.end(`Invalid accessToken`);
+            return;
+        }
 
-    submitProject(body)
-        .then(results => {
-            res.end("Success");
-        })
-        .catch(err => {
-            console.error(err);
-            res.status(500);
-            res.end(`Internal server error: ${err}`);
-        });
+        let discordId = (user as IDiscordUser).id;
+        body.discordId = discordId;
 
+        submitUser(body)
+            .then(results => {
+                res.end("Success");
+            })
+            .catch((err) => genericServerError(err, res));
+    })();
 };
 
 function checkBody(body: IUser): true | string {
@@ -42,7 +49,7 @@ function checkBody(body: IUser): true | string {
     return true;
 }
 
-function submitProject(userData: IUser): Promise<User> {
+function submitUser(userData: IUser): Promise<User> {
     return new Promise<User>((resolve, reject) => {
         User.create({ ...userData })
             .then(resolve)

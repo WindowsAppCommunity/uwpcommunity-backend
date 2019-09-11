@@ -1,13 +1,10 @@
 import { Request, Response } from "express";
 import User from "../../models/User"
 import Project from "../../models/Project";
-import { findSimilarProjectName } from "../../common/helpers";
-import { IProject } from "../../models/types";
+import { findSimilarProjectName, GetDiscordUser, genericServerError } from "../../common/helpers";
+import { IDiscordUser } from "../../models/types";
 
 module.exports = (req: Request, res: Response) => {
-    const body = req.body;
-    body.discordId = req.query.accessToken;
-
     const queryCheck = checkQuery(req.query);
     if (queryCheck !== true) {
         res.status(422);
@@ -18,16 +15,22 @@ module.exports = (req: Request, res: Response) => {
         return;
     }
 
-    deleteProject(req.query.token, req.query.appName)
-        .then(results => {
-            res.end("Success");
-        })
-        .catch(err => {
-            console.error(err);
-            res.status(500);
-            res.end(`Internal server error: ${err}`);
-        });
+    (async () => {
+        const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
+        if (!user) {
+            res.status(401);
+            res.end(`Invalid accessToken`);
+            return;
+        }
 
+        let discordId = (user as IDiscordUser).id;
+
+        deleteProject(discordId, req.query.appName)
+            .then(results => {
+                res.end("Success");
+            })
+            .catch(err => genericServerError(err, res));
+    })();
 };
 
 function checkQuery(query: any): true | string {

@@ -5,7 +5,7 @@ import { Dirent } from "fs";
 import * as path from 'path';
 
 module.exports = (req: Request, res: Response) => {
-    getProjectsCached(req.query.accessToken)
+    getProjectsCached(req.query.token)
         .then(result => {
             res.end(JSON.stringify(result));
         })

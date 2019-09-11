@@ -2,6 +2,7 @@ import Project from "../models/Project";
 import { IUser, IProject, IDiscordUser } from "../models/types";
 import User from "../models/User";
 import fetch from 'node-fetch';
+import { Response } from "express";
 
 
 /**
@@ -133,6 +134,11 @@ export function checkForExistingProject(project: IProject): Promise<boolean> {
     });
 }
 
+export function genericServerError(err: any, res: Response) {
+    console.error(err);
+    res.status(500);
+    res.end(`Internal server error: ${err}`);
+}
 
 export async function GetDiscordUser(accessToken: string): Promise<IDiscordUser | undefined> {
     const Req = await fetch("https://discordapp.com/api/v6/users/@me", {
@@ -145,5 +151,5 @@ export async function GetDiscordUser(accessToken: string): Promise<IDiscordUser 
 }
 
 module.exports = {
-    match, replaceAll, remove, levenshteinDistance, findSimilarProjectName, getUserByDiscordId, getProjectsByUserDiscordId, getUserFromDB, checkForExistingProject
+    match, replaceAll, remove, levenshteinDistance, findSimilarProjectName, getUserByDiscordId, getProjectsByUserDiscordId, getUserFromDB, checkForExistingProject, genericServerError, GetDiscordUser
 };
