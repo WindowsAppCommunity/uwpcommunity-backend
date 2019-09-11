@@ -6,13 +6,13 @@ import { checkForExistingProject, getUserFromDB } from "../../common/helpers";
 
 module.exports = (req: Request, res: Response) => {
     const body = req.body;
-    body.user = { discordId: req.query.token };
+    body.user = { discordId: req.query.accessToken };
 
-    if (req.query.token == undefined) {
+    if (req.query.accessToken == undefined) {
         res.status(422);
         res.json(JSON.stringify({
             error: "Malformed request",
-            reason: `Query string "token" not provided or malformed`
+            reason: `Query string "accessToken" not provided or malformed`
         }));
         return;
     }

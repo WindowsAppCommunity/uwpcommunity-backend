@@ -6,7 +6,7 @@ import { IProject } from "../../models/types";
 
 module.exports = (req: Request, res: Response) => {
     const body = req.body;
-    body.discordId = req.query.token;
+    body.discordId = req.query.accessToken;
 
     const queryCheck = checkQuery(req.query);
     if (queryCheck !== true) {
@@ -31,7 +31,7 @@ module.exports = (req: Request, res: Response) => {
 };
 
 function checkQuery(query: any): true | string {
-    if (!query.token) return "token";
+    if (!query.accessToken) return "accessToken";
     if (!query.appName) return "appName";
 
     return true;

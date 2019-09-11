@@ -40,7 +40,7 @@ module.exports = (req: Request, res: Response) => {
 };
 
 function checkQuery(query: any): true | string {
-    if(!query.token) return "token";
+    if(!query.accessToken) return "accessToken";
     if(!query.appName) return "appName";
 
     return true;
