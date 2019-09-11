@@ -1,6 +1,8 @@
 import Project from "../models/Project";
-import { IUser, IProject } from "../models/types";
+import { IUser, IProject, IDiscordUser } from "../models/types";
 import User from "../models/User";
+import fetch from 'node-fetch';
+
 
 /**
  * @summary Get the first matching regex group, instead of an array with the full string and all matches
@@ -130,6 +132,18 @@ export function checkForExistingProject(project: IProject): Promise<boolean> {
         }).catch(reject)
     });
 }
+
+
+export async function GetDiscordUser(accessToken: string): Promise<IDiscordUser | undefined> {
+    const Req = await fetch("https://discordapp.com/api/v6/users/@me", {
+        headers: {
+            "Authorization": "Bearer " + accessToken
+        }
+    });
+    if (!Req || Req.status != 200) return;
+    return await Req.json();
+}
+
 module.exports = {
     match, replaceAll, remove, levenshteinDistance, findSimilarProjectName, getUserByDiscordId, getProjectsByUserDiscordId, getUserFromDB, checkForExistingProject
 };
