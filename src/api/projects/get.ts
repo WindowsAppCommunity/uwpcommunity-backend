@@ -33,6 +33,8 @@ export function getProjects(token?: string, shouldCache = true): Promise<Project
                         delete project.createdAt;
                         delete project.updatedAt;
                         delete project.id;
+
+                        //TODO: check me
                         // delete project.userId;
 
                         // if (project.user) {

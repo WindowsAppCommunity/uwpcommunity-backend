@@ -3,6 +3,7 @@ import User from "../../models/User"
 import Project from "../../models/Project";
 import { IProject, IDiscordUser } from "../../models/types";
 import { checkForExistingProject, getUserFromDB, GetDiscordUser, genericServerError } from "../../common/helpers";
+import UserProject from "../../models/UserProject";
 
 module.exports = (req: Request, res: Response) => {
     const body = req.body;
@@ -34,7 +35,7 @@ module.exports = (req: Request, res: Response) => {
             res.end(`Invalid accessToken`);
             return;
         }
-        
+
         let discordId = (user as IDiscordUser).id;
 
         submitProject(body, discordId)
@@ -68,13 +69,18 @@ function submitProject(projectData: IProject, discordId: string): Promise<Projec
             return;
         }
 
-        // Set the userId to the found user
-        projectData.userId = user.id;
-
         // Create the project
         Project.create(
             { ...projectData })
-            .then(resolve)
+            .then((project) => {
+
+                // Create the userproject
+                UserProject.create(
+                    { userId: user.id, projectId: project.id });
+
+                // TODO: check me
+                resolve;
+            })
             .catch(reject);
     });
 }

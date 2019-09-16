@@ -3,8 +3,7 @@ export interface IProject {
     description: string;
     isPrivate: boolean;
     launchId: number;
-    user: IUser;
-    userId?: number;
+    users?: IUser[];
     id?: number;
 };
 
@@ -13,6 +12,7 @@ export interface IUser {
     discordId: string;
     email?: string; // This is a contact email supplied by the user, and is safe to be public 
     id?: number;
+    projects?: IProject[];
 }
 
 /**
