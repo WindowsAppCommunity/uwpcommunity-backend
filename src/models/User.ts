@@ -1,6 +1,7 @@
-import { Column, CreatedAt, Model, Table, UpdatedAt, HasMany, PrimaryKey, AutoIncrement, DataType } from 'sequelize-typescript';
+import { Column, CreatedAt, Model, Table, UpdatedAt, PrimaryKey, AutoIncrement, DataType, BelongsToMany } from 'sequelize-typescript';
 import Project  from './Project';
-
+import UserProject from "./UserProject";
+  
 @Table
 export default class User extends Model<User> {
 
@@ -18,7 +19,7 @@ export default class User extends Model<User> {
     @Column
     discordId!: string;
     
-    @HasMany(() => Project, 'userId')
+    @BelongsToMany(() => Project, () => UserProject)
     projects?: Project[];
     
     @CreatedAt

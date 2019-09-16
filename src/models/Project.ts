@@ -1,6 +1,7 @@
-import { Column, CreatedAt, Model, Table, UpdatedAt, ForeignKey, BelongsTo, PrimaryKey, AutoIncrement, DataType } from 'sequelize-typescript';
+import { Column, CreatedAt, Model, Table, UpdatedAt, ForeignKey, BelongsTo, PrimaryKey, AutoIncrement, DataType, BelongsToMany } from 'sequelize-typescript';
 import User from './User';
 import Launch from './Launch';
+import UserProject from './UserProject';
 
 @Table
 export default class Project extends Model<Project> {
@@ -19,11 +20,8 @@ export default class Project extends Model<Project> {
     @Column
     isPrivate!: boolean;
 
-    @ForeignKey(() => User)
-    userId!: number;
-
-    @BelongsTo(() => User, 'userId')
-    user!: User
+    @BelongsToMany(() => User, () => UserProject)
+    users?: User[];
 
     @ForeignKey(() => Launch)
     launchId!: number;
@@ -39,3 +37,4 @@ export default class Project extends Model<Project> {
     @Column
     updatedAt!: Date;
 }
+
