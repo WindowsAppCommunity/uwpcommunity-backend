@@ -6,6 +6,9 @@ export interface IProject {
     user: IUser;
     userId?: number;
     id?: number;
+    downloadLink?: string;
+    githubLink?: string;
+    externalLink?: string;
 };
 
 export interface IUser {
