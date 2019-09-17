@@ -1,9 +1,8 @@
 import { Request, Response } from "express";
-var WebSocketClient = require('websocket').client;
 const request = require("request");
 
-function log(log: string) {
-    log = "GET /signin/: " + log;
+function log(...args: any[]) {
+    console.log(`GET /signin/: \x1b[33m${Array.from(arguments)}\x1b[0m`);
 }
 
 module.exports = (req: Request, res: Response) => {
