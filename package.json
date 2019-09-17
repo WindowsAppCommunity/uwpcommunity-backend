@@ -13,6 +13,7 @@
     "@types/node": "^12.7.3",
     "@types/pg": "^7.11.0",
     "@types/request": "^2.48.2",
+    "@types/swagger-jsdoc": "^3.0.2",
     "@types/validator": "^10.11.3",
     "@types/websocket": "0.0.40",
     "body-parser": "^1.19.0",
@@ -26,6 +27,9 @@
     "request": "^2.88.0",
     "sequelize": "^5.18.0",
     "sequelize-typescript": "^1.0.0",
+    "sqlite3": "^4.1.0",
+    "swagger-jsdoc": "^3.4.0",
+    "swagger-ui-express": "^4.1.1",
     "websocket": "^1.0.29"
   },
   "devDependencies": {

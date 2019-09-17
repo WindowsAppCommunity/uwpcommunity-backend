@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { InitDb } from './common/sequalize';
+import * as swaggerJSDoc from 'swagger-jsdoc';
 
 /**
  * This file sets up API endpoints based on the current folder tree in Heroku.
@@ -20,6 +21,7 @@ const expressWs = require('express-ws')(app);
 const bodyParser = require('body-parser');
 const glob = require('glob');
 const helpers = require('./common/helpers');
+const swaggerUi = require('swagger-ui-express');
 
 const PORT = process.env.PORT || 5000;
 const DEBUG = process.argv.filter(val => val == 'dev').length > 0;
@@ -91,5 +93,23 @@ function InitApi() {
             }
         }
     });
+
+    const swaggerDefinition = {
+        info: {
+            title: 'UWP Community API',
+            version: '1.0.0',
+            description: 'API for the UWP community discord API',
+        },
+        basePath: '/'
+    };
+
+    const options = {
+        swaggerDefinition,
+        apis: ['./build/api/**/*.js'], // <-- not in the definition, but in the options
+    };
+
+    const swaggerSpec = swaggerJSDoc(options);
+
+    app.use('/__docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 }
 //#endregion

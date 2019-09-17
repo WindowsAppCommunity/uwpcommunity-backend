@@ -4,6 +4,27 @@ import Launch from "../../../models/Launch";
 import Project from "../../../models/Project";
 import { Dirent } from "fs";
 
+  /**
+   * @swagger
+   * /api/launch/participants:
+   *   get:
+   *     produces:
+   *       - application/json
+   *     description: Returns the participant projects for a launch years
+   *     parameters:
+   *       - name: year
+   *         description: Year to get projects for.
+   *         in: query
+   *         required: true
+   *         type: integer   
+   *     responses:
+   *       200:
+   *         description: List of Projects
+   *         content:
+   *          application/json:
+   *           schema:
+   *             type: array
+   */
 module.exports = (req: Request, res: Response) => {
     if (!req.query.year) {
         res.status(422);
