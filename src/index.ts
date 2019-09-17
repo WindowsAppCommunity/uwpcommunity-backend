@@ -21,6 +21,8 @@ const bodyParser = require('body-parser');
 const glob = require('glob');
 const helpers = require('./common/helpers');
 
+var jwt = require('jsonwebtoken');
+
 const PORT = process.env.PORT || 5000;
 const DEBUG = process.argv.filter(val => val == 'dev').length > 0;
 app.use(bodyParser.urlencoded({ extended: true }));

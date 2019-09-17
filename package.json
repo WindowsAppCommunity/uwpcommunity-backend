@@ -20,6 +20,7 @@
     "express": "^4.17.1",
     "express-ws": "^4.0.0",
     "glob": "^7.1.4",
+    "jsonwebtoken": "^8.5.1",
     "node-fetch": "^2.6.0",
     "pg": "^7.12.1",
     "reflect-metadata": "^0.1.13",
