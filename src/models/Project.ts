@@ -38,4 +38,13 @@ export default class Project extends Model<Project> {
     @UpdatedAt
     @Column
     updatedAt!: Date;
+
+    @Column
+    downloadLink!: string;
+
+    @Column
+    githubLink!: string;
+
+    @Column
+    externalLink!: string;
 }

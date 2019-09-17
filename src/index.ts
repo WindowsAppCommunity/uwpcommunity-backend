@@ -52,7 +52,7 @@ app.listen(PORT, (err: string) => {
 });
 
 
-//#region Setup
+//#region Setup 
 
 let RegexMethods = /((?:post|get|put|patch|delete|ws)+)(?:.js)/;
 
