@@ -9,24 +9,24 @@ module.exports = (req: Request, res: Response) => {
 
     if (req.query.accessToken == undefined) {
         res.status(422);
-        res.json(JSON.stringify({
+        res.json({
             error: "Malformed request",
             reason: `Query string "accessToken" not provided or malformed`
-        }));
+        });
         return;
     }
 
     const bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
         res.status(422);
-        res.json(JSON.stringify({
+        res.json({
             error: "Malformed request",
             reason: `Parameter "${bodyCheck}" not provided or malformed`
-        }));
+        });
         return;
     }
     (async () => {
-        const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
+        const user = await GetDiscordUser(req.query.accessToken).catch((err) => genericServerError(err, res));
         if (!user) {
             res.status(401);
             res.end(`Invalid accessToken`);
@@ -41,10 +41,10 @@ module.exports = (req: Request, res: Response) => {
                     res.end("Success");
                 } else {
                     res.status(404);
-                    res.json(JSON.stringify({
+                    res.json({
                         error: "Not found",
                         reason: `User does not exist in database`
-                    }));
+                    });
                 }
             })
             .catch((err) => genericServerError(err, res));

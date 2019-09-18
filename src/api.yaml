@@ -11,6 +11,13 @@ servers:
     description: Local server
 
 paths:
+  /:
+    get:
+      description: Root path, redirects to homepage on github pages
+      responses:
+        302:
+          description: Redirect
+
   /launch/participants:
     get:
       description: Returns the participant projects for a launch years
@@ -36,30 +43,6 @@ paths:
                   $ref: '#/components/schemas/Project' 
                   
   /projects/:
-    delete:
-      description: Removes a project by title
-      parameters:
-        - name: accessToken
-          description: Access token to authenticate with the Discord api
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: appName
-          description: The app name to remove from the database
-          in: query
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          $ref: '#/components/responses/Success'
-        422:
-          $ref: '#/components/responses/MalformedRequest'
-        401:
-          $ref: '#/components/responses/InvalidToken'
-        500:
-          $ref: '#/components/responses/ServerError'
     get:
       description: Gets a list of projects, either for a user or across all users
       parameters: 
@@ -79,6 +62,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/IProject'
+
     post:
       description: Creates a new project
       parameters: 
@@ -102,6 +86,7 @@ paths:
           $ref: '#/components/responses/InvalidToken'
         500:
           $ref: '#/components/responses/ServerError'
+
     put:
       description: Edits an existing project
       parameters: 
@@ -126,6 +111,168 @@ paths:
         500:
           $ref: '#/components/responses/ServerError'
     
+    delete:
+      description: Removes a project by title
+      parameters:
+        - name: accessToken
+          description: Access token to authenticate with the Discord api
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: appName
+          description: The app name to remove from the database
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          $ref: '#/components/responses/Success'
+        422:
+          $ref: '#/components/responses/MalformedRequest'
+        401:
+          $ref: '#/components/responses/InvalidToken'
+        500:
+          $ref: '#/components/responses/ServerError'
+
+  /signin/redirect/:
+    get:
+      description: Redirects the user to the community homepage on successful request
+      parameters:
+        - name: code
+          description: Discord authorization code.
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        422:
+          $ref: '#/components/responses/MalformedRequest'
+
+        302:
+          description: Redirects to homepage
+    
+  /signin/refresh/:
+    get:
+      description: Refreshes the discord authorization given a refresh token from the last authorization
+      parameters:
+        - name: refreshToken
+          description: Discord refresh token.
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        422:
+          $ref: '#/components/responses/MalformedRequest'
+        200:
+          description: Discord API response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscordResponse'
+
+  /user/:
+    get:
+      description: Gets the currently logged in user
+      parameters: 
+        - name: accessToken
+          description: Access token to authenticate with Discord
+          in: query
+          schema:
+            type: string
+      responses:
+        404:
+          $ref: '#/components/responses/UserNotFound'
+        422:
+          $ref: '#/components/responses/MalformedRequest'
+        500:
+          $ref: '#/components/responses/ServerError'
+        200:
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+    post:
+      description: Creates a new user
+      parameters: 
+        - name: accessToken
+          description: Access token to authenticate with Discord
+          in: query
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        200:
+          $ref: '#/components/responses/Success'
+        422:
+          $ref: '#/components/responses/MalformedRequest'
+        401:
+          $ref: '#/components/responses/InvalidToken'
+        500:
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      description: Edits an existing user
+      parameters: 
+        - name: accessToken
+          description: Access token to authenticate with Discord
+          in: query
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IProject'
+      responses:
+        200:
+          $ref: '#/components/responses/Success'
+        401:
+          $ref: '#/components/responses/InvalidToken'
+        404:
+          $ref: '#/components/responses/UserNotFound'
+        422:
+          $ref: '#/components/responses/MalformedRequest'
+        500:
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      description: Removes a user given their access token
+      parameters:
+        - name: accessToken
+          description: Access token to authenticate with the Discord api
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        200:
+          $ref: '#/components/responses/Success'
+        401:
+          $ref: '#/components/responses/InvalidToken'
+        404:
+          $ref: '#/components/responses/UserNotFound'
+        422:
+          $ref: '#/components/responses/MalformedRequest'
+        500:
+          $ref: '#/components/responses/ServerError'
+
 components:
   responses:
     MalformedRequest:
@@ -158,7 +305,14 @@ components:
           schema:
             type: string
             example: "Internal server error: error message"
-
+    
+    UserNotFound:
+      description: 404 Error as the user didn't exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
   schemas:
     Error:
       required: 
@@ -269,3 +423,33 @@ components:
           type: "string"
         launchId: 
           type: "number"
+
+    DiscordResponse:
+      properties:
+        access_token:
+          type: "string"
+        token_type:
+          type: "string"
+        expires_in:
+          type: "number"
+        refresh_token:
+          type: "string"
+        scope:
+          type: "string"
+
+    User:
+      required: 
+        - "name"
+      properties: 
+        id: 
+          type: "number"
+        name: 
+          type: "string"
+        email: 
+          type: "string"
+        discordId: 
+          type: "string"
+        createdAt: 
+          type: "string"
+        updatedAt: 
+          type: "string"
