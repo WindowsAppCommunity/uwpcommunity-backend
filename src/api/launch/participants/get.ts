@@ -4,40 +4,19 @@ import Launch from "../../../models/Launch";
 import Project from "../../../models/Project";
 import { Dirent } from "fs";
 
-  /**
-   * @swagger
-   * /api/launch/participants:
-   *   get:
-   *     produces:
-   *       - application/json
-   *     description: Returns the participant projects for a launch years
-   *     parameters:
-   *       - name: year
-   *         description: Year to get projects for.
-   *         in: query
-   *         required: true
-   *         type: integer   
-   *     responses:
-   *       200:
-   *         description: List of Projects
-   *         content:
-   *          application/json:
-   *           schema:
-   *             type: array
-   */
 module.exports = (req: Request, res: Response) => {
     if (!req.query.year) {
         res.status(422);
-        res.json(JSON.stringify({
+        res.json({
             error: "Malformed request",
             reason: "Year parameter not specified"
-        }));
+        });
         return;
     }
 
     getProjectsByLaunchYearCached(req.query.year)
         .then(result => {
-            res.end(JSON.stringify(result));
+            res.json(result);
         })
         .catch(err => {
             res.status(500);

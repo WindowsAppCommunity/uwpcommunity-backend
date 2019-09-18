@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { InitDb } from './common/sequalize';
+import { InitDb, CreateMocks } from './common/sequalize';
 import * as swaggerJSDoc from 'swagger-jsdoc';
 
 /**
@@ -25,6 +25,8 @@ const swaggerUi = require('swagger-ui-express');
 
 const PORT = process.env.PORT || 5000;
 const DEBUG = process.argv.filter(val => val == 'dev').length > 0;
+const MOCK = process.argv.filter(val => val == 'mock').length > 0;
+
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(bodyParser.json());
@@ -42,8 +44,12 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     next();
 });
 
-InitDb();
+InitDb().then(() => {
+    if (MOCK) CreateMocks()
+});
+
 InitApi();
+
 
 app.listen(PORT, (err: string) => {
     if (err) {
@@ -94,22 +100,16 @@ function InitApi() {
         }
     });
 
-    const swaggerDefinition = {
-        info: {
-            title: 'UWP Community API',
-            version: '1.0.0',
-            description: 'API for the UWP community discord API',
-        },
-        basePath: '/'
-    };
+    const yaml = require('js-yaml');
+    const fs = require('fs');
 
-    const options = {
-        swaggerDefinition,
-        apis: ['./build/api/**/*.js'], // <-- not in the definition, but in the options
-    };
-
-    const swaggerSpec = swaggerJSDoc(options);
-
-    app.use('/__docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+    // Get document, or throw exception on error
+    try {
+        const doc = yaml.safeLoad(fs.readFileSync('./src/api.yaml', 'utf8'));
+        app.use('/__docs', swaggerUi.serve, swaggerUi.setup(doc));
+        app.get('/swagger.json', (req: Request, res: Response) => res.json(doc));
+    } catch (e) {
+        console.log(e);
+    }
 }
 //#endregion
