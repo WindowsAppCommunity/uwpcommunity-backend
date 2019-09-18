@@ -247,20 +247,14 @@ paths:
           $ref: '#/components/responses/ServerError'
 
     delete:
-      description: Removes a user given their access token
+      description: Removes a user given their access token. This also removes *ALL* of their projects
       parameters:
         - name: accessToken
-          description: Access token to authenticate with the Discord api
+          description: Access token of the user to delete
           in: query
           required: true
           schema:
             type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/User'
       responses:
         200:
           $ref: '#/components/responses/Success'
