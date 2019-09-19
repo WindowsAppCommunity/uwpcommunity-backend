@@ -23,8 +23,8 @@ const helpers = require('./common/helpers');
 
 const PORT = process.env.PORT || 5000;
 const DEBUG = process.argv.filter(val => val == 'dev').length > 0;
-app.use(bodyParser.urlencoded({ extended: true }));
 
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use((req: Request, res: Response, next: NextFunction) => {
     // Website you wish to allow to connect
@@ -38,6 +38,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
     // Pass to next layer of middleware
     next();
+
+    helpers.isLocalhost = req.hostname.includes("localhost");
 });
 
 InitDb();

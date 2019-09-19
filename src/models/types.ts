@@ -1,13 +1,18 @@
 export interface IProject {
+    id?: number;
+
     appName: string;
     description: string;
     isPrivate: boolean;
+
     launchId: number;
+    userId: number;
+
     users?: IUser[];
-    id?: number;
-    downloadLink?: string;
-    githubLink?: string;
-    externalLink?: string;
+
+    // downloadLink?: string;
+    // githubLink?: string;
+    // externalLink?: string;
 };
 
 export interface IUser {

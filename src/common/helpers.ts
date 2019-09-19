@@ -150,6 +150,9 @@ export async function GetDiscordUser(accessToken: string): Promise<IDiscordUser 
     return await Req.json();
 }
 
+export let isLocalhost: boolean = false;
+
 module.exports = {
-    match, replaceAll, remove, levenshteinDistance, findSimilarProjectName, getUserByDiscordId, getProjectsByUserDiscordId, getUserFromDB, checkForExistingProject, genericServerError, GetDiscordUser
+    match, replaceAll, remove, levenshteinDistance, findSimilarProjectName, getUserByDiscordId, getProjectsByUserDiscordId, getUserFromDB, 
+    checkForExistingProject, genericServerError, GetDiscordUser, isLocalhost
 };

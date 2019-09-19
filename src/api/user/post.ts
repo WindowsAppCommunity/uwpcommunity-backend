@@ -1,11 +1,9 @@
 import { Request, Response } from "express";
 import User from "../../models/User"
 import { IUser, IDiscordUser } from "../../models/types";
-import { GetDiscordUser, genericServerError } from "../../common/helpers";
+import { GetDiscordUser, genericServerError, isLocalhost } from "../../common/helpers";
 
 module.exports = (req: Request, res: Response) => {
-    const isLocalhost = req.hostname.includes("localhost");
-
     const body = req.body;
 
     if (req.query.accessToken == undefined) {
@@ -26,6 +24,7 @@ module.exports = (req: Request, res: Response) => {
         }));
         return;
     }
+    
     (async () => {
         if (isLocalhost == false && req.body.accessToken != "admin") {
             const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));

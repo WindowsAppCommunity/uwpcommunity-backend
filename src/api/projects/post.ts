@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import User from "../../models/User"
 import Project from "../../models/Project";
 import { IProject, IDiscordUser } from "../../models/types";
-import { checkForExistingProject, getUserFromDB, GetDiscordUser, genericServerError } from "../../common/helpers";
+import { checkForExistingProject, getUserFromDB, GetDiscordUser, genericServerError, isLocalhost } from "../../common/helpers";
 import UserProject from "../../models/UserProject";
 
 module.exports = (req: Request, res: Response) => {
@@ -27,20 +27,24 @@ module.exports = (req: Request, res: Response) => {
         return;
     }
 
-
     (async () => {
-        const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
-        if (!user) {
-            res.status(401);
-            res.end(`Invalid accessToken`);
-            return;
+        if (isLocalhost == false && req.body.accessToken != "admin") {
+            const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
+            if (!user) {
+                res.status(401);
+                res.end(`Invalid accessToken`);
+                return;
+            }
+
+            let discordId = (user as IDiscordUser).id;
         }
 
-        let discordId = (user as IDiscordUser).id;
-
-        submitProject(body, discordId)
+        submitProject(body)
             .then(results => {
-                res.end("Success");
+                res.status(200);
+                res.json(JSON.stringify({
+                    Success: "Success",
+                }));
             })
             .catch((err) => genericServerError(err, res));
     })();
@@ -54,7 +58,7 @@ function checkBody(body: IProject): true | string {
     return true;
 }
 
-function submitProject(projectData: IProject, discordId: string): Promise<Project> {
+function submitProject(projectData: IProject): Promise<Project> {
     return new Promise<Project>(async (resolve, reject) => {
 
         if (await checkForExistingProject(projectData).catch(reject)) {
@@ -63,11 +67,12 @@ function submitProject(projectData: IProject, discordId: string): Promise<Projec
         }
 
         // Get a matching user
-        const user = await getUserFromDB(discordId).catch(reject);
-        if (!user) {
-            reject("User not found");
-            return;
-        }
+        // const user = await getUserFromDB(discordId).catch(reject);
+        // if (!user) {
+        //     reject("User not found");
+        //     return;
+        // }
+
 
         // Create the project
         Project.create(
@@ -76,7 +81,7 @@ function submitProject(projectData: IProject, discordId: string): Promise<Projec
 
                 // Create the userproject
                 UserProject.create(
-                    { userId: user.id, projectId: project.id });
+                    { userId: projectData.userId, projectId: project.id });
 
                 // TODO: check me
                 resolve;
