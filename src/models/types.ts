@@ -5,6 +5,9 @@ export interface IProject {
     launchId: number;
     users?: IUser[];
     id?: number;
+    downloadLink?: string;
+    githubLink?: string;
+    externalLink?: string;
 };
 
 export interface IUser {
@@ -27,4 +30,12 @@ export interface IDiscordUser {
     "avatar": string;
     "discriminator": string;
     "id": string;
+}
+
+export interface IDiscordAuthResponse {
+    "access_token": string;
+    "token_type": "Bearer"
+    "expires_in": number,
+    "refresh_token": string,
+    "scope": string;
 }
