@@ -4,15 +4,15 @@ export interface IProject {
     appName: string;
     description: string;
     isPrivate: boolean;
-
-    launchId: number;
-    userId: number;
+    downloadLink?: string;
+    githubLink?: string;
+    externalLink?: string;
 
     users?: IUser[];
 
-    // downloadLink?: string;
-    // githubLink?: string;
-    // externalLink?: string;
+    launchId: number;
+
+    discordId: number;
 };
 
 export interface IUser {

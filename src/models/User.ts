@@ -10,6 +10,7 @@ export default class User extends Model<User> {
     @Column(DataType.INTEGER)
     id!: number;
 
+
     @Column
     name!: string;
 
@@ -18,9 +19,11 @@ export default class User extends Model<User> {
 
     @Column
     discordId!: string;
+
     
     @BelongsToMany(() => Project, () => UserProject)
     projects?: Project[];
+    
     
     @CreatedAt
     @Column

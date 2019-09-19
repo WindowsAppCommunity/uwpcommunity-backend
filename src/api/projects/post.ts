@@ -28,6 +28,7 @@ module.exports = (req: Request, res: Response) => {
     }
 
     (async () => {
+        let discordId;
         if (isLocalhost == false && req.body.accessToken != "admin") {
             const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
             if (!user) {
@@ -36,10 +37,12 @@ module.exports = (req: Request, res: Response) => {
                 return;
             }
 
-            let discordId = (user as IDiscordUser).id;
+            discordId = (user as IDiscordUser).id;
+        } else {
+            discordId = req.body.discordId;
         }
 
-        submitProject(body)
+        submitProject(body, discordId)
             .then(results => {
                 res.status(200);
                 res.json(JSON.stringify({
@@ -58,7 +61,7 @@ function checkBody(body: IProject): true | string {
     return true;
 }
 
-function submitProject(projectData: IProject): Promise<Project> {
+function submitProject(projectData: IProject, discordId: any): Promise<Project> {
     return new Promise<Project>(async (resolve, reject) => {
 
         if (await checkForExistingProject(projectData).catch(reject)) {
@@ -67,12 +70,11 @@ function submitProject(projectData: IProject): Promise<Project> {
         }
 
         // Get a matching user
-        // const user = await getUserFromDB(discordId).catch(reject);
-        // if (!user) {
-        //     reject("User not found");
-        //     return;
-        // }
-
+        const user = await getUserFromDB(discordId).catch(reject);
+        if (!user) {
+            reject("User not found");
+            return;
+        }
 
         // Create the project
         Project.create(
@@ -81,7 +83,7 @@ function submitProject(projectData: IProject): Promise<Project> {
 
                 // Create the userproject
                 UserProject.create(
-                    { userId: projectData.userId, projectId: project.id });
+                    { userId: user.id, projectId: project.id });
 
                 // TODO: check me
                 resolve;

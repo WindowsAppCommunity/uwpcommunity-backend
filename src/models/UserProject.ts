@@ -9,6 +9,7 @@ export default class UserProject extends Model<UserProject> {
     @Column(DataType.INTEGER)
     id!: number;
     
+    
     @ForeignKey(() => User)
     @Column
     userId!: number;
