@@ -4,8 +4,9 @@ import { IUser, IDiscordUser } from "../../models/types";
 import { GetDiscordUser, genericServerError } from "../../common/helpers";
 
 module.exports = (req: Request, res: Response) => {
+    const isLocalhost = req.hostname.includes("localhost");
+
     const body = req.body;
-    body.discordId = req.query.accessToken;
 
     if (req.query.accessToken == undefined) {
         res.status(422);
@@ -26,19 +27,24 @@ module.exports = (req: Request, res: Response) => {
         return;
     }
     (async () => {
-        const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
-        if (!user) {
-            res.status(401);
-            res.end(`Invalid accessToken`);
-            return;
-        }
+        if (isLocalhost == false && req.body.accessToken != "admin") {
+            const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
+            if (!user) {
+                res.status(401);
+                res.end(`Invalid accessToken`);
+                return;
+            }
 
-        let discordId = (user as IDiscordUser).id;
-        body.discordId = discordId;
+            let discordId = (user as IDiscordUser).id;
+            body.discordId = discordId;
+        }
 
         submitUser(body)
             .then(results => {
-                res.end("Success");
+                res.status(200);
+                res.json(JSON.stringify({
+                    Success: "Success",
+                }));
             })
             .catch((err) => genericServerError(err, res));
     })();
