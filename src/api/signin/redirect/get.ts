@@ -18,10 +18,10 @@ module.exports = (req: Request, res: Response) => {
 
     if (!code) {
         res.status(422);
-        res.json(JSON.stringify({
+        res.json({
             error: "Malformed request",
             reason: "Missing code query"
-        }));
+        });
         return;
     }
 
