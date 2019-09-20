@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import User from "../../models/User"
-import { IUser, IDiscordUser } from "../../models/types";
-import { GetDiscordUser, genericServerError, DEVENV } from "../../common/helpers";
+import { IUser } from "../../models/types";
+import { genericServerError, GetDiscordToken } from "../../common/helpers";
 
 module.exports = (req: Request, res: Response) => {
     const body = req.body;
@@ -24,22 +24,12 @@ module.exports = (req: Request, res: Response) => {
         });
         return;
     }
-    
-    (async () => {
-        if (DEVENV == false && req.body.accessToken != "admin") {
-            const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
-            if (!user) {
-                res.status(401);
-                res.end(`Invalid accessToken`);
-                return;
-            }
 
-            let discordId = (user as IDiscordUser).id;
-            body.discordId = discordId;
-        }
+    (async () => {
+        body.discordId = await GetDiscordToken(req, res);
 
         submitUser(body)
-            .then(results => {
+            .then(() => {
                 res.status(200);
                 res.json(JSON.stringify({
                     Success: "Success",

@@ -1,8 +1,7 @@
 import { Request, Response } from "express";
-import User from "../../models/User"
 import Project from "../../models/Project";
-import { IProject, IDiscordUser } from "../../models/types";
-import { checkForExistingProject, getUserFromDB, GetDiscordUser, genericServerError, DEVENV } from "../../common/helpers";
+import { IProject } from "../../models/types";
+import { checkForExistingProject, getUserFromDB, genericServerError, GetDiscordToken } from "../../common/helpers";
 import UserProject from "../../models/UserProject";
 
 module.exports = (req: Request, res: Response) => {
@@ -28,22 +27,10 @@ module.exports = (req: Request, res: Response) => {
     }
 
     (async () => {
-        let discordId;
-        if (DEVENV == false && req.body.accessToken != "admin") {
-            const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
-            if (!user) {
-                res.status(401);
-                res.end(`Invalid accessToken`);
-                return;
-            }
-
-            discordId = (user as IDiscordUser).id;
-        } else {
-            discordId = req.body.discordId;
-        }
+        let discordId = await GetDiscordToken(req,res);        
 
         submitProject(body, discordId)
-            .then(results => {
+            .then(() => {
                 res.status(200);
                 res.json(JSON.stringify({
                     Success: "Success",
@@ -84,7 +71,7 @@ function submitProject(projectData: IProject, discordId: any): Promise<Project> 
                 // Create the userproject
                 UserProject.create(
                     { userId: user.id, projectId: project.id })
-                    .then((userProject) => {        
+                    .then(() => {        
                         resolve(project)
                     })
                     .catch(reject);
