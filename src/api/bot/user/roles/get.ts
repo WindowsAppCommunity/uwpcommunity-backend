@@ -14,7 +14,7 @@ module.exports = async (req: Request, res: Response) => {
         }));
         return;
     }
-    
+
     const guildMember = await GetGuildUser(discordId);
     if (!guildMember) {
         genericServerError("Unable to get guild details", res);
