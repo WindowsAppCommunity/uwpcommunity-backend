@@ -22,7 +22,6 @@ const glob = require('glob');
 const helpers = require('./common/helpers');
 
 const PORT = process.env.PORT || 5000;
-const DEBUG = process.argv.filter(val => val == 'dev').length > 0;
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -38,8 +37,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
     // Pass to next layer of middleware
     next();
-
-    helpers.isLocalhost = req.hostname.includes("localhost");
 });
 
 InitDb();
@@ -65,7 +62,7 @@ function InitApi() {
             if (!filePath.includes("node_modules") && helpers.match(filePath, RegexMethods)) {
                 let serverPath = filePath.replace(RegexMethods, "").replace("/app", "").replace("/api", "").replace("/build", "");
 
-                if (DEBUG) serverPath = serverPath.replace(__dirname.replace(/\\/g, `/`).replace("/build", ""), "");
+                if (helpers.DEVENV) serverPath = serverPath.replace(__dirname.replace(/\\/g, `/`).replace("/build", ""), "");
 
                 const method = helpers.match(filePath, RegexMethods);
                 console.log(`Setting up ${filePath} as ${method.toUpperCase()} ${serverPath}`);

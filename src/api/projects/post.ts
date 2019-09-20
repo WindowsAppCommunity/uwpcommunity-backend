@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import User from "../../models/User"
 import Project from "../../models/Project";
 import { IProject, IDiscordUser } from "../../models/types";
-import { checkForExistingProject, getUserFromDB, GetDiscordUser, genericServerError, isLocalhost } from "../../common/helpers";
+import { checkForExistingProject, getUserFromDB, GetDiscordUser, genericServerError, DEVENV } from "../../common/helpers";
 import UserProject from "../../models/UserProject";
 
 module.exports = (req: Request, res: Response) => {
@@ -29,7 +29,7 @@ module.exports = (req: Request, res: Response) => {
 
     (async () => {
         let discordId;
-        if (isLocalhost == false && req.body.accessToken != "admin") {
+        if (DEVENV == false && req.body.accessToken != "admin") {
             const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
             if (!user) {
                 res.status(401);

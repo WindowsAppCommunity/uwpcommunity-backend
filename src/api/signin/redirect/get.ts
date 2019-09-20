@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { isLocalhost } from "../../../common/helpers"
+import { DEVENV } from "../../../common/helpers"
 
 const request = require("request");
 
@@ -34,13 +34,13 @@ module.exports = (req: Request, res: Response) => {
             client_secret: process.env.discord_secret,
             grant_type: "authorization_code",
             code: code,
-            redirect_uri: isLocalhost ? "http://localhost:5000/signin/redirect" : "http://uwpcommunity-site-backend.herokuapp.com/signin/redirect",
+            redirect_uri: DEVENV ? "http://localhost:5000/signin/redirect" : "http://uwpcommunity-site-backend.herokuapp.com/signin/redirect",
             scope: "identify guilds"
         }
     }, (err: Error, httpResponse: any, body: string) => {
         // This is an IDiscordAuthResponse, convert it to base64 to use in a URL
         let authResponse: string = Buffer.from(body).toString('base64');
 
-        res.redirect(`http://${isLocalhost ? "localhost:3000" : "uwpcommunity.github.io"}/signin?authResponse=${authResponse}`);
+        res.redirect(`http://${DEVENV ? "localhost:3000" : "uwpcommunity.github.io"}/signin?authResponse=${authResponse}`);
     });
 };
