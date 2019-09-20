@@ -80,13 +80,15 @@ function submitProject(projectData: IProject, discordId: any): Promise<Project> 
         Project.create(
             { ...projectData })
             .then((project) => {
-
+                
                 // Create the userproject
                 UserProject.create(
-                    { userId: user.id, projectId: project.id });
+                    { userId: user.id, projectId: project.id })
+                    .then((userProject) => {        
+                        resolve(project)
+                    })
+                    .catch(reject);
 
-                // TODO: check me
-                resolve;
             })
             .catch(reject);
     });
