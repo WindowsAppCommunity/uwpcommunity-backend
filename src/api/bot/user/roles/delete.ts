@@ -29,20 +29,23 @@ module.exports = async (req: Request, res: Response) => {
     }
 
     // Must have a role in the body (JSON)
-    if (req.body.role) {
-        // Check that the user has the role
-        let roles: Role[] = guildMember.roles.array().filter(role => role.name == req.body.role);
-        if (roles.length == 0) InvalidRole(res);
+    if (!req.body.name) {
+        res.status(401);
+        res.end(`Missing role name`);
+        return;
+    }
 
+    // Check that the user has the role
+    let roles: Role[] = guildMember.roles.array().filter(role => role.name == req.body.role);
+    if (roles.length == 0) InvalidRole(res);
 
-        switch (req.body.role) {
-            case "Developer":
-                guildMember.removeRole(roles[0]);
-                res.send("Success");
-                break;
-            default:
-                InvalidRole(res);
-        }
+    switch (req.body.name) {
+        case "Developer":
+            guildMember.removeRole(roles[0]);
+            res.send("Success");
+            break;
+        default:
+            InvalidRole(res);
     }
 };
 
