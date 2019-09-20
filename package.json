@@ -18,6 +18,7 @@
     "@types/validator": "^10.11.3",
     "@types/websocket": "0.0.40",
     "body-parser": "^1.19.0",
+    "discord.js": "^11.5.1",
     "ejs": "^2.7.1",
     "express": "^4.17.1",
     "express-ws": "^4.0.0",

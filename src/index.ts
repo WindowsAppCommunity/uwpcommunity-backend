@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { InitBot } from "./common/discord";
 import { InitDb, CreateMocks } from './common/sequalize';
 import * as swaggerJSDoc from 'swagger-jsdoc';
 
@@ -48,6 +49,7 @@ InitDb().then(() => {
     if (MOCK) CreateMocks()
 });
 
+InitBot();
 InitApi();
 
 
