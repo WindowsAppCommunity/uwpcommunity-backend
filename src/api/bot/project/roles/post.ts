@@ -13,7 +13,7 @@ module.exports = async (req: Request, res: Response) => {
         return;
     }
 
-    let accessToken = req.headers.authorization.replace("Bearer", "");
+    let accessToken = req.headers.authorization.replace("Bearer ", "");
 
     const user = await GetDiscordUser(accessToken).catch((err) => genericServerError(err, res));
     if (!user) {
