@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { InitDb } from './common/sequalize';
+import { InitBot } from "./common/discord";
 
 /**
  * This file sets up API endpoints based on the current folder tree in Heroku.
@@ -41,6 +42,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 InitDb();
+InitBot();
 InitApi();
 
 app.listen(PORT, (err: string) => {
