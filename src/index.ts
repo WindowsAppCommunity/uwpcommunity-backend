@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import { InitDb } from './common/sequalize';
+import { InitBot } from "./common/discord";
+import { InitDb, CreateMocks } from './common/sequalize';
+import * as swaggerJSDoc from 'swagger-jsdoc';
 
 /**
  * This file sets up API endpoints based on the current folder tree in Heroku.
@@ -20,8 +22,12 @@ const expressWs = require('express-ws')(app);
 const bodyParser = require('body-parser');
 const glob = require('glob');
 const helpers = require('./common/helpers');
+const swaggerUi = require('swagger-ui-express');
 
 const PORT = process.env.PORT || 5000;
+const MOCK = process.argv.filter(val => val == 'mock').length > 0;
+
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -39,8 +45,13 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     next();
 });
 
-InitDb();
+InitDb().then(() => {
+    if (MOCK) CreateMocks()
+});
+
+InitBot();
 InitApi();
+
 
 app.listen(PORT, (err: string) => {
     if (err) {
@@ -90,5 +101,17 @@ function InitApi() {
             }
         }
     });
+
+    const yaml = require('js-yaml');
+    const fs = require('fs');
+
+    // Get document, or throw exception on error
+    try {
+        const doc = yaml.safeLoad(fs.readFileSync('./src/api.yaml', 'utf8'));
+        app.use('/__docs', swaggerUi.serve, swaggerUi.setup(doc));
+        app.get('/swagger.json', (req: Request, res: Response) => res.json(doc));
+    } catch (e) {
+        console.log(e);
+    }
 }
 //#endregion

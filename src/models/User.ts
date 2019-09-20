@@ -1,5 +1,7 @@
 import { Column, CreatedAt, Model, Table, UpdatedAt, PrimaryKey, AutoIncrement, DataType, BelongsToMany } from 'sequelize-typescript';
 import Project  from './Project';
+import * as faker from 'faker'
+
 import UserProject from "./UserProject";
   
 @Table
@@ -32,4 +34,12 @@ export default class User extends Model<User> {
     @UpdatedAt
     @Column
     updatedAt!: Date;
+}
+
+export function GenerateMockUser(): User {
+    return new User({
+        name: faker.internet.userName(),
+        email: faker.internet.email(),
+        discordId: faker.random.alphaNumeric()
+    })
 }

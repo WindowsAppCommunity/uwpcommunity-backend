@@ -4,10 +4,10 @@ import { getUserByDiscordId } from "../../common/helpers";
 module.exports = (req: Request, res: Response) => {
     if (!req.query.token) {
         res.status(422);
-        res.json(JSON.stringify({
+        res.json({
             error: "Malformed request",
             reason: `Query "token" not provided or malformed`
-        }));
+        });
         return;
     }
 
@@ -15,13 +15,13 @@ module.exports = (req: Request, res: Response) => {
         .then(results => {
             if (!results) {
                 res.status(404);
-                res.json(JSON.stringify({
+                res.json({
                     error: "Not found",
                     reason: `User does not exist`
-                }));
+                });
                 return;
             }
-            res.end(JSON.stringify(results))
+            res.json(results)
         })
         .catch(err => {
             console.error(err);

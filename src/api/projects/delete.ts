@@ -8,10 +8,10 @@ module.exports = (req: Request, res: Response) => {
     const queryCheck = checkQuery(req.query);
     if (queryCheck !== true) {
         res.status(422);
-        res.json(JSON.stringify({
+        res.json({
             error: "Malformed request",
             reason: `Query string "${queryCheck}" not provided or malformed`
-        }));
+        });
         return;
     }
 
