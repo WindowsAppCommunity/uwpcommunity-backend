@@ -31,9 +31,7 @@ module.exports = (req: Request, res: Response) => {
         submitUser(body)
             .then(() => {
                 res.status(200);
-                res.json(JSON.stringify({
-                    Success: "Success",
-                }));
+                res.json({ Success: "Success" });
             })
             .catch((err) => genericServerError(err, res));
     })();

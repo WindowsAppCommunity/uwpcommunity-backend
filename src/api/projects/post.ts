@@ -27,14 +27,12 @@ module.exports = (req: Request, res: Response) => {
     }
 
     (async () => {
-        let discordId = await GetDiscordToken(req,res);        
+        let discordId = await GetDiscordToken(req, res);
 
         submitProject(body, discordId)
             .then(() => {
                 res.status(200);
-                res.json(JSON.stringify({
-                    Success: "Success",
-                }));
+                res.json({ Success: "Success" });
             })
             .catch((err) => genericServerError(err, res));
     })();
@@ -67,11 +65,11 @@ function submitProject(projectData: IProject, discordId: any): Promise<Project> 
         Project.create(
             { ...projectData })
             .then((project) => {
-                
+
                 // Create the userproject
                 UserProject.create(
                     { userId: user.id, projectId: project.id })
-                    .then(() => {        
+                    .then(() => {
                         resolve(project)
                     })
                     .catch(reject);
