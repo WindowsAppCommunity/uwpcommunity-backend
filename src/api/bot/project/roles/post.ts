@@ -40,8 +40,6 @@ module.exports = async (req: Request, res: Response) => {
         return;
     }
 
-    let roles: Role[] = guildMember.roles.array().map(role => { delete role.guild; return role });
-
     // If trying to create a role for a project, make sure the project exists
     let Projects = await getProjectsByUserDiscordId(user.id);
     if (Projects.filter(project => req.body.appName == project.appName).length == 0) {
@@ -68,7 +66,7 @@ module.exports = async (req: Request, res: Response) => {
     }
 
     server.createRole({
-        name: req.body.appName + " " + capitalizeFirstLetter(req.body.subRole),
+        name: roleName,
         mentionable: true,
         color: req.body.color
     });
