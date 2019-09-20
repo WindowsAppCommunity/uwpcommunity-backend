@@ -29,3 +29,10 @@ export async function GetGuildUser(discordId: string): Promise<Discord.GuildMemb
 
     return (await server.members.filter(member => member.id == discordId)).first();
 }
+
+export async function GetGuildRoles() {
+    const server = GetGuild();
+    if (!server) return;
+
+    return server.roles.array();
+}
