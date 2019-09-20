@@ -1,3 +1,5 @@
+import { Request } from "express";
+
 export interface IProject {
     appName: string;
     description: string;
@@ -38,4 +40,16 @@ export interface IDiscordAuthResponse {
     "expires_in": number,
     "refresh_token": string,
     "scope": string;
+}
+
+export interface AuthRequest extends Request {
+    user: IDiscordUser | undefined
+}
+
+export interface RequestHandlerConfig {
+    hasAuth: boolean
+}
+
+export interface RequestHandler extends Function {
+    config: RequestHandlerConfig
 }

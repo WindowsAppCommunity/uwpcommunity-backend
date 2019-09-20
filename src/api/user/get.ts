@@ -1,7 +1,10 @@
 import { Request, Response } from "express";
 import { getUserByDiscordId } from "../../common/helpers";
+import User from "../../models/User";
 
 module.exports = (req: Request, res: Response) => {
+    User.findAll({}).then(console.log)
+
     if (!req.query.token) {
         res.status(422);
         res.json(JSON.stringify({

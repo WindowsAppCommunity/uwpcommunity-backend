@@ -5,7 +5,7 @@ function log(...args: any[]) {
     console.log(`GET /signin/redirect: \x1b[33m${Array.from(arguments)}\x1b[0m`);
 }
 
-if (!process.env.discord_client || !process.env.discord_secret || true) {
+if (!process.env.discord_client || !process.env.discord_secret) {
     log(`Missing discord_client or discord_secret env variables. Requests will most likely fail`);
 }
 

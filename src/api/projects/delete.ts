@@ -2,9 +2,9 @@ import { Request, Response } from "express";
 import User from "../../models/User"
 import Project from "../../models/Project";
 import { findSimilarProjectName, GetDiscordUser, genericServerError } from "../../common/helpers";
-import { IDiscordUser } from "../../models/types";
+import { IDiscordUser, AuthRequest } from "../../models/types";
 
-module.exports = (req: Request, res: Response) => {
+const request = function (req: AuthRequest, res: Response) {
     const queryCheck = checkQuery(req.query);
     if (queryCheck !== true) {
         res.status(422);
@@ -15,26 +15,22 @@ module.exports = (req: Request, res: Response) => {
         return;
     }
 
-    (async () => {
-        const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
-        if (!user) {
-            res.status(401);
-            res.end(`Invalid accessToken`);
-            return;
-        }
+    let discordId = (req.user as IDiscordUser).id;
 
-        let discordId = (user as IDiscordUser).id;
+    deleteProject(discordId, req.query.appName)
+        .then(results => {
+            res.end("Success");
+        })
+        .catch(err => genericServerError(err, res));
+}
 
-        deleteProject(discordId, req.query.appName)
-            .then(results => {
-                res.end("Success");
-            })
-            .catch(err => genericServerError(err, res));
-    })();
-};
+request.config = {
+    hasAuth: true
+}
+
+module.exports = request
 
 function checkQuery(query: any): true | string {
-    if (!query.accessToken) return "accessToken";
     if (!query.appName) return "appName";
 
     return true;

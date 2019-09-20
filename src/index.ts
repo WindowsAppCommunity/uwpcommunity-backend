@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { InitDb } from './common/sequalize';
+import getUser from "./middleware/user-middleware";
+import { RequestHandler } from "./models/types";
 
 /**
  * This file sets up API endpoints based on the current folder tree in Heroku.
@@ -40,17 +42,17 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     next();
 });
 
-InitDb();
-InitApi();
+InitDb().then(() => {
+    InitApi();
 
-app.listen(PORT, (err: string) => {
-    if (err) {
-        console.error(`Error while setting up port ${PORT}:`, err);
-        return;
-    }
-    console.log(`Ready, listening on port ${PORT}`);
+    app.listen(PORT, (err: string) => {
+        if (err) {
+            console.error(`Error while setting up port ${PORT}:`, err);
+            return;
+        }
+        console.log(`Ready, listening on port ${PORT}`);
+    });    
 });
-
 
 //#region Setup 
 
@@ -68,21 +70,28 @@ function InitApi() {
                 const method = helpers.match(filePath, RegexMethods);
                 console.log(`Setting up ${filePath} as ${method.toUpperCase()} ${serverPath}`);
 
+                const handler: RequestHandler = require(filePath)
+                const middleware = []
+
+                if (handler.config && handler.config.hasAuth) {
+                    middleware.push(getUser)
+                }
+
                 switch (method) {
                     case "post":
-                        app.post(serverPath, require(filePath));
+                        app.post(serverPath, middleware, handler);
                         break;
                     case "get":
-                        app.get(serverPath, require(filePath));
+                        app.get(serverPath, middleware, handler);
                         break;
                     case "put":
-                        app.put(serverPath, require(filePath));
+                        app.put(serverPath, middleware, handler);
                         break;
                     case "patch":
-                        app.patch(serverPath, require(filePath));
+                        app.patch(serverPath, middleware, handler);
                         break;
                     case "delete":
-                        app.delete(serverPath, require(filePath));
+                        app.delete(serverPath, middleware, handler);
                         break;
                     case "ws":
                         app.ws(serverPath, require(filePath)(expressWs, serverPath));
