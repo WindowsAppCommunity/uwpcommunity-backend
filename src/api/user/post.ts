@@ -3,17 +3,21 @@ import User from "../../models/User"
 import { IUser } from "../../models/types";
 import { genericServerError, GetDiscordIdFromToken } from "../../common/helpers";
 
-module.exports = (req: Request, res: Response) => {
+module.exports = async (req: Request, res: Response) => {
     const body = req.body;
 
-    if (req.query.accessToken == undefined) {
+    if (!req.headers.authorization) {
         res.status(422);
         res.json({
             error: "Malformed request",
-            reason: `Query string "accessToken" not provided or malformed`
+            reason: "Missing authorization header"
         });
         return;
     }
+
+    let accessToken = req.headers.authorization.replace("Bearer ", "");
+    let discordId = await GetDiscordIdFromToken(accessToken, res);
+    if (!discordId) return;
 
     const bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
@@ -25,16 +29,12 @@ module.exports = (req: Request, res: Response) => {
         return;
     }
 
-    (async () => {
-        body.discordId = await GetDiscordIdFromToken(req, res);
-
-        submitUser(body)
-            .then(() => {
-                res.status(200);
-                res.json({ Success: "Success" });
-            })
-            .catch((err) => genericServerError(err, res));
-    })();
+    submitUser({ ...body, discordId: discordId })
+        .then(() => {
+            res.status(200);
+            res.json({ Success: "Success" });
+        })
+        .catch((err) => genericServerError(err, res));
 };
 
 function checkBody(body: IUser): true | string {

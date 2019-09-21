@@ -1,11 +1,24 @@
 import { Request, Response } from "express";
 import User from "../../models/User"
 import Project from "../../models/Project";
-import { findSimilarProjectName, GetDiscordUser, genericServerError } from '../../common/helpers';
+import { findSimilarProjectName, GetDiscordUser, genericServerError, GetDiscordIdFromToken } from '../../common/helpers';
 import { IProject, IDiscordUser } from "../../models/types";
 
-module.exports = (req: Request, res: Response) => {
+module.exports = async (req: Request, res: Response) => {
     const body = req.body;
+
+    if (!req.headers.authorization) {
+        res.status(422);
+        res.json({
+            error: "Malformed request",
+            reason: "Missing authorization header"
+        });
+        return;
+    }
+
+    let accessToken = req.headers.authorization.replace("Bearer ", "");
+    let discordId = await GetDiscordIdFromToken(accessToken, res);
+    if (!discordId) return;
 
     const queryCheck = checkQuery(req.query);
     if (queryCheck !== true) {
@@ -26,22 +39,12 @@ module.exports = (req: Request, res: Response) => {
         });
         return;
     }
-    (async () => {
-        const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
-        if (!user) {
-            res.status(401);
-            res.end(`Invalid accessToken`);
-            return;
-        }
 
-        let discordId = (user as IDiscordUser).id;
-
-        updateProject(body, discordId, req.query.appName)
-            .then(results => {
-                res.end("Success");
-            })
-            .catch((err) => genericServerError(err, res));
-    })();
+    updateProject(body, discordId, req.query.appName)
+        .then(results => {
+            res.end("Success");
+        })
+        .catch((err) => genericServerError(err, res));
 };
 
 function checkQuery(query: any): true | string {

@@ -1,20 +1,23 @@
 import { Request, Response } from "express";
 import User from "../../models/User"
-import { IUser, IDiscordUser } from "../../models/types";
-import { getUserByDiscordId, GetDiscordUser, genericServerError } from "../../common/helpers";
+import { IUser } from "../../models/types";
+import { getUserByDiscordId, genericServerError, GetDiscordIdFromToken } from "../../common/helpers";
 
-module.exports = (req: Request, res: Response) => {
+module.exports = async (req: Request, res: Response) => {
     const body = req.body;
-    body.discordId = req.query.accessToken;
 
-    if (req.query.accessToken == undefined) {
+    if (!req.headers.authorization) {
         res.status(422);
         res.json({
             error: "Malformed request",
-            reason: `Query string "accessToken" not provided or malformed`
+            reason: "Missing authorization header"
         });
         return;
     }
+
+    let accessToken = req.headers.authorization.replace("Bearer ", "");
+    let discordId = await GetDiscordIdFromToken(accessToken, res);
+    if (!discordId) return;
 
     let bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
@@ -25,22 +28,12 @@ module.exports = (req: Request, res: Response) => {
         });
         return;
     }
-    (async () => {
-        const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
-        if (!user) {
-            res.status(401);
-            res.end(`Invalid accessToken`);
-            return;
-        }
 
-        let discordId = (user as IDiscordUser).id;
-
-        updateUser(body, discordId)
-            .then(results => {
-                res.end("Success");
-            })
-            .catch((err) => genericServerError(err, res));
-    })();
+    updateUser(body, discordId)
+        .then(() => {
+            res.end("Success");
+        })
+        .catch((err) => genericServerError(err, res));
 };
 
 function checkBody(body: IUser): true | string {
@@ -50,7 +43,6 @@ function checkBody(body: IUser): true | string {
 
 function updateUser(userData: IUser, discordId: string): Promise<User> {
     return new Promise<User>(async (resolve, reject) => {
-
         let user = await getUserByDiscordId(discordId);
 
         if (!user) {

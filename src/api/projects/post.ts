@@ -9,14 +9,16 @@ module.exports = async (req: Request, res: Response) => {
 
     if (!req.headers.authorization) {
         res.status(422);
-        res.json(JSON.stringify({
+        res.json({
             error: "Malformed request",
             reason: "Missing authorization header"
-        }));
+        });
         return;
     }
 
     let accessToken = req.headers.authorization.replace("Bearer ", "");
+    let discordId = await GetDiscordIdFromToken(accessToken, res);
+    if (!discordId) return;
 
     const bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
@@ -27,8 +29,6 @@ module.exports = async (req: Request, res: Response) => {
         });
         return;
     }
-
-    let discordId = await GetDiscordIdFromToken(accessToken, res);
 
     submitProject(body, discordId)
         .then(() => {
