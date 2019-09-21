@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import User from "../../models/User"
-import { IUser } from "../../models/types";
-import { genericServerError, GetDiscordIdFromToken } from "../../common/helpers";
+import { IUser, ReponseErrorReasons } from "../../models/types";
+import { genericServerError, GetDiscordIdFromToken, getUserByDiscordId } from "../../common/helpers";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;
@@ -10,7 +10,7 @@ module.exports = async (req: Request, res: Response) => {
         res.status(422);
         res.json({
             error: "Malformed request",
-            reason: "Missing authorization header"
+            reason: ReponseErrorReasons.MissingAuth
         });
         return;
     }
@@ -29,10 +29,18 @@ module.exports = async (req: Request, res: Response) => {
         return;
     }
 
+    if (await getUserByDiscordId(discordId) !== null) {
+        res.status(400);
+        res.json({
+            error: "Bad request",
+            reason: `User already exists`
+        });
+    }
+
     submitUser({ ...body, discordId: discordId })
         .then(() => {
             res.status(200);
-            res.json({ Success: "Success" });
+            res.send("Success");
         })
         .catch((err) => genericServerError(err, res));
 };

@@ -23,6 +23,15 @@ export interface IUser {
     projects?: IProject[];
 }
 
+export const ReponseErrorReasons = {
+    MissingAuth: "Missing authorization header",
+    UserExists: "User already exists",
+    UserNotExists: "User does not exist",
+    ProjectExists: "Project already exists",
+    ProjectNotExist: "Project does not exist",
+    GenericError: "Internal server error"
+}
+
 /**
  * @summary Discord API user object
  */
