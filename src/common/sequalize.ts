@@ -2,6 +2,7 @@ import { Sequelize } from 'sequelize-typescript';
 import Launch from '../models/Launch';
 import Projects, { GenerateMockProject } from '../models/Project';
 import User, { GenerateMockUser } from '../models/User';
+import UserProject from '../models/UserProject';
 
 const db_url = process.env.DATABASE_URL;
 
@@ -16,7 +17,7 @@ export const sequelize = new Sequelize(db_url, {
     dialectOptions: {
         ssl: true
     },
-    models: [Launch, Projects, User]
+    models: [ Launch, Projects, User, UserProject ]
 });
 
 export async function InitDb() {

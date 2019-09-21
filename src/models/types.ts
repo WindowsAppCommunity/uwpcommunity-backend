@@ -1,14 +1,18 @@
 export interface IProject {
+    id?: number;
+
     appName: string;
     description: string;
     isPrivate: boolean;
-    launchId: number;
-    user: IUser;
-    userId?: number;
-    id?: number;
     downloadLink?: string;
     githubLink?: string;
     externalLink?: string;
+
+    users?: IUser[];
+
+    launchId: number;
+
+    discordId: number;
 };
 
 export interface IUser {
@@ -16,6 +20,7 @@ export interface IUser {
     discordId: string;
     email?: string; // This is a contact email supplied by the user, and is safe to be public 
     id?: number;
+    projects?: IProject[];
 }
 
 /**
