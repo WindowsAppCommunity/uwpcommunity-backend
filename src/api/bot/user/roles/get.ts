@@ -6,10 +6,10 @@ import { genericServerError, GetDiscordUser } from "../../../../common/helpers";
 module.exports = async (req: Request, res: Response) => {
     if (!req.headers.authorization) {
         res.status(422);
-        res.json(JSON.stringify({
+        res.json({
             error: "Malformed request",
             reason: "Missing authorization header"
-        }));
+        });
         return;
     }
 

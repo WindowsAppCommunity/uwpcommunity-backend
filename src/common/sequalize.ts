@@ -17,7 +17,7 @@ export const sequelize = new Sequelize(db_url, {
     dialectOptions: {
         ssl: true
     },
-    models: [ Launch, Projects, User, UserProject ]
+    models: [Launch, Projects, User, UserProject]
 });
 
 export async function InitDb() {
