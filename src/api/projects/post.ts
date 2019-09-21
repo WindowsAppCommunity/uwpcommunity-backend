@@ -4,17 +4,19 @@ import { IProject } from "../../models/types";
 import { checkForExistingProject, getUserFromDB, genericServerError, GetDiscordIdFromToken } from "../../common/helpers";
 import UserProject from "../../models/UserProject";
 
-module.exports = (req: Request, res: Response) => {
+module.exports = async (req: Request, res: Response) => {
     const body = req.body;
 
-    if (req.query.accessToken == undefined) {
+    if (!req.headers.authorization) {
         res.status(422);
-        res.json({
+        res.json(JSON.stringify({
             error: "Malformed request",
-            reason: `Query string "accessToken" not provided or malformed`
-        });
+            reason: "Missing authorization header"
+        }));
         return;
     }
+
+    let accessToken = req.headers.authorization.replace("Bearer ", "");
 
     const bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
@@ -26,16 +28,14 @@ module.exports = (req: Request, res: Response) => {
         return;
     }
 
-    (async () => {
-        let discordId = await GetDiscordIdFromToken(req, res);
+    let discordId = await GetDiscordIdFromToken(accessToken, res);
 
-        submitProject(body, discordId)
-            .then(() => {
-                res.status(200);
-                res.json({ Success: "Success" });
-            })
-            .catch((err) => genericServerError(err, res));
-    })();
+    submitProject(body, discordId)
+        .then(() => {
+            res.status(200);
+            res.json({ Success: "Success" });
+        })
+        .catch((err) => genericServerError(err, res));
 };
 
 function checkBody(body: IProject): true | string {

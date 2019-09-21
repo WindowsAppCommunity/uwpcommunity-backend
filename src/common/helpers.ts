@@ -150,19 +150,14 @@ export async function GetDiscordUser(accessToken: string): Promise<IDiscordUser 
     return await Req.json();
 }
 
-export async function GetDiscordIdFromToken(req: Request, res: Response): Promise<string> {
-    if (DEVENV == false && req.body.accessToken != "admin") {
-        const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
-        if (!user) {
-            res.status(401);
-            res.end(`Invalid accessToken`);
-            return "";
-        }
-
-        return (user as IDiscordUser).id;
-    } else {
-        return req.body.discordId;
+export async function GetDiscordIdFromToken(accessToken: string, res: Response): Promise<string | undefined> {
+    const user = await GetDiscordUser(accessToken).catch((err) => genericServerError(err, res));
+    if (!user) {
+        res.status(401);
+        res.end(`Invalid accessToken`);
+        return;
     }
+    return (user as IDiscordUser).id;
 }
 
 export const DEVENV: boolean = process.argv.filter(val => val == 'dev').length > 0;
