@@ -1,45 +1,38 @@
 import { Request, Response } from "express";
-import User from "../../models/User"
 import Project from "../../models/Project";
-import { IProject, IDiscordUser } from "../../models/types";
-import { checkForExistingProject, getUserFromDB, GetDiscordUser, genericServerError } from "../../common/helpers";
+import { IProject } from "../../models/types";
+import { checkForExistingProject, getUserFromDB, genericServerError, GetDiscordIdFromToken } from "../../common/helpers";
+import UserProject from "../../models/UserProject";
 
 module.exports = (req: Request, res: Response) => {
     const body = req.body;
 
     if (req.query.accessToken == undefined) {
         res.status(422);
-        res.json(JSON.stringify({
+        res.json({
             error: "Malformed request",
             reason: `Query string "accessToken" not provided or malformed`
-        }));
+        });
         return;
     }
 
     const bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
         res.status(422);
-        res.json(JSON.stringify({
+        res.json({
             error: "Malformed request",
             reason: `Parameter "${bodyCheck}" not provided or malformed`
-        }));
+        });
         return;
     }
 
-
     (async () => {
-        const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
-        if (!user) {
-            res.status(401);
-            res.end(`Invalid accessToken`);
-            return;
-        }
-        
-        let discordId = (user as IDiscordUser).id;
+        let discordId = await GetDiscordIdFromToken(req, res);
 
         submitProject(body, discordId)
-            .then(results => {
-                res.end("Success");
+            .then(() => {
+                res.status(200);
+                res.json({ Success: "Success" });
             })
             .catch((err) => genericServerError(err, res));
     })();
@@ -53,7 +46,7 @@ function checkBody(body: IProject): true | string {
     return true;
 }
 
-function submitProject(projectData: IProject, discordId: string): Promise<Project> {
+function submitProject(projectData: IProject, discordId: any): Promise<Project> {
     return new Promise<Project>(async (resolve, reject) => {
 
         if (await checkForExistingProject(projectData).catch(reject)) {
@@ -68,13 +61,20 @@ function submitProject(projectData: IProject, discordId: string): Promise<Projec
             return;
         }
 
-        // Set the userId to the found user
-        projectData.userId = user.id;
-
         // Create the project
         Project.create(
             { ...projectData })
-            .then(resolve)
+            .then((project) => {
+
+                // Create the userproject
+                UserProject.create(
+                    { userId: user.id, projectId: project.id })
+                    .then(() => {
+                        resolve(project)
+                    })
+                    .catch(reject);
+
+            })
             .catch(reject);
     });
 }

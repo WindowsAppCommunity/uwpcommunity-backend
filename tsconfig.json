@@ -17,7 +17,8 @@
         "rootDir": "./src",
         "sourceMap": true,
         "sourceRoot": "./src",
-        "mapRoot": "./src"
+        "mapRoot": "./src",
+        "removeComments": false
     },
     "include": [
         "./src/**/*"

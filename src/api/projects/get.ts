@@ -7,7 +7,7 @@ import * as path from 'path';
 module.exports = (req: Request, res: Response) => {
     getProjectsCached(req.query.token)
         .then(result => {
-            res.end(JSON.stringify(result));
+            res.json(result);
         })
         .catch(err => {
             res.status(500);
@@ -25,23 +25,24 @@ export function getProjects(token?: string, shouldCache = true): Promise<Project
                 }]
             } : undefined))
             .then(results => {
+                
                 if (results) {
-
-                    results = JSON.parse(JSON.stringify(results)); // Serialize and deserialize to convert from class to standard JSON-compatible object
-                    results = results.map(project => {
+                    results = results.map(project => project.toJSON() as Project).map(project => {
                         // Remove any data that doesn't match the IProject interface 
                         delete project.createdAt;
                         delete project.updatedAt;
                         delete project.id;
-                        delete project.userId;
 
-                        if (project.user) {
-                            delete project.user.email;
-                            delete project.user.discordId; // This one is especially important, as it could be used to modify project details
-                            delete project.user.updatedAt;
-                            delete project.user.createdAt;
-                            delete project.user.id;
-                        }
+                        //TODO: check me
+                        // delete project.userId;
+
+                        // if (project.user) {
+                        //     delete project.user.email;
+                        //     delete project.user.discordId; // This one is especially important, as it could be used to modify project details
+                        //     delete project.user.updatedAt;
+                        //     delete project.user.createdAt;
+                        //     delete project.user.id;
+                        // }
                         return project;
                     });
 

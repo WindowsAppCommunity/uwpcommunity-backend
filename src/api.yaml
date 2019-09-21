@@ -1,0 +1,449 @@
+openapi: 3.0.0
+info:
+  title: UWP Community API
+  description: API for the UWP community discord API.
+  version: 1.0.0
+
+servers:
+  - url: https://uwpcommunity-site-backend.herokuapp.com
+    description: Main (production) server
+  - url: http://localhost:5000
+    description: Local server
+
+paths:
+  /:
+    get:
+      description: Root path, redirects to homepage on github pages
+      responses:
+        302:
+          description: Redirect
+
+  /launch/participants:
+    get:
+      description: Returns the participant projects for a launch years
+      parameters:
+        - name: year
+          description: Year to get projects for.
+          in: query
+          required: true
+          schema:
+            type : integer
+            format: int64
+      responses:
+        422:
+          $ref: '#/components/responses/MalformedRequest'
+
+        200:
+          description: List of Projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project' 
+                  
+  /projects/:
+    get:
+      description: Gets a list of projects, either for a user or across all users
+      parameters: 
+        - name: accessToken
+          description: Access token to authenticate with Discord
+          in: query
+          schema:
+            type: string
+      responses:
+        500:
+          $ref: '#/components/responses/ServerError'
+        200:
+          description: List of Projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IProject'
+
+    post:
+      description: Creates a new project
+      parameters: 
+        - name: accessToken
+          description: Access token to authenticate with Discord
+          in: query
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IProject'
+      responses:
+        200:
+          $ref: '#/components/responses/Success'
+        422:
+          $ref: '#/components/responses/MalformedRequest'
+        401:
+          $ref: '#/components/responses/InvalidToken'
+        500:
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      description: Edits an existing project
+      parameters: 
+        - name: accessToken
+          description: Access token to authenticate with Discord
+          in: query
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IProject'
+      responses:
+        200:
+          $ref: '#/components/responses/Success'
+        422:
+          $ref: '#/components/responses/MalformedRequest'
+        401:
+          $ref: '#/components/responses/InvalidToken'
+        500:
+          $ref: '#/components/responses/ServerError'
+    
+    delete:
+      description: Removes a project by title
+      parameters:
+        - name: accessToken
+          description: Access token to authenticate with the Discord api
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: appName
+          description: The app name to remove from the database
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          $ref: '#/components/responses/Success'
+        422:
+          $ref: '#/components/responses/MalformedRequest'
+        401:
+          $ref: '#/components/responses/InvalidToken'
+        500:
+          $ref: '#/components/responses/ServerError'
+
+  /signin/redirect/:
+    get:
+      description: Redirects the user to the community homepage on successful request
+      parameters:
+        - name: code
+          description: Discord authorization code.
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        422:
+          $ref: '#/components/responses/MalformedRequest'
+
+        302:
+          description: Redirects to homepage
+    
+  /signin/refresh/:
+    get:
+      description: Refreshes the discord authorization given a refresh token from the last authorization
+      parameters:
+        - name: refreshToken
+          description: Discord refresh token.
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        422:
+          $ref: '#/components/responses/MalformedRequest'
+        200:
+          description: Discord API response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiscordResponse'
+
+  /user/:
+    get:
+      description: Gets the currently logged in user
+      parameters: 
+        - name: accessToken
+          description: Access token to authenticate with Discord
+          in: query
+          schema:
+            type: string
+      responses:
+        404:
+          $ref: '#/components/responses/UserNotFound'
+        422:
+          $ref: '#/components/responses/MalformedRequest'
+        500:
+          $ref: '#/components/responses/ServerError'
+        200:
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+    post:
+      description: Creates a new user
+      parameters: 
+        - name: accessToken
+          description: Access token to authenticate with Discord
+          in: query
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        200:
+          $ref: '#/components/responses/Success'
+        422:
+          $ref: '#/components/responses/MalformedRequest'
+        401:
+          $ref: '#/components/responses/InvalidToken'
+        500:
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      description: Edits an existing user
+      parameters: 
+        - name: accessToken
+          description: Access token to authenticate with Discord
+          in: query
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IProject'
+      responses:
+        200:
+          $ref: '#/components/responses/Success'
+        401:
+          $ref: '#/components/responses/InvalidToken'
+        404:
+          $ref: '#/components/responses/UserNotFound'
+        422:
+          $ref: '#/components/responses/MalformedRequest'
+        500:
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      description: Removes a user given their access token. This also removes *ALL* of their projects
+      parameters:
+        - name: accessToken
+          description: Access token of the user to delete
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          $ref: '#/components/responses/Success'
+        401:
+          $ref: '#/components/responses/InvalidToken'
+        404:
+          $ref: '#/components/responses/UserNotFound'
+        422:
+          $ref: '#/components/responses/MalformedRequest'
+        500:
+          $ref: '#/components/responses/ServerError'
+
+components:
+  responses:
+    MalformedRequest:
+      description: Malformed request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+    InvalidToken:
+      description: Invalid Discord Token
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: Invalid accessToken
+            
+    Success:
+      description: Success Message
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: Success    
+            
+    ServerError:
+      description: Internal server error
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: "Internal server error: error message"
+    
+    UserNotFound:
+      description: 404 Error as the user didn't exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    
+  schemas:
+    Error:
+      required: 
+        - "error"
+        - "reason"
+      properties: 
+        error: 
+          type: "string"
+          example: "Malformed request"
+        reason: 
+          type: "string"
+          example: "Query string not provided or malformed"
+
+    Project:
+      required: 
+        - "id"
+        - "appName"
+        - "description"
+        - "isPrivate"
+        - "createdAt"
+        - "updatedAt"
+        - "downloadLink"
+        - "githubLink"
+        - "externalLink"
+        - "launchId"
+        - "userId"
+        - "launch"
+        - "user"
+      properties: 
+        id: 
+          type: "number"
+        appName: 
+          type: "string"
+        description: 
+          type: "string"
+        isPrivate: 
+          type: "boolean"
+        createdAt: 
+          type: "string"
+        updatedAt: 
+          type: "string"
+        downloadLink: 
+          type: "string"
+        githubLink: 
+          type: "string"
+        externalLink: 
+          type: "string"
+        launchId: 
+          type: "number"
+        userId: 
+          type: "number"
+        launch: 
+          required: 
+            - "id"
+            - "year"
+            - "createdAt"
+            - "updatedAt"
+          properties: 
+            id: 
+              type: "number"
+            year: 
+              type: "number"
+            createdAt: 
+              type: "string"
+            updatedAt: 
+              type: "string"
+          type: "object"
+        user: 
+          required: 
+            - "id"
+            - "name"
+            - "email"
+            - "discordId"
+            - "createdAt"
+            - "updatedAt"
+          properties: 
+            id: 
+              type: "number"
+            name: 
+              type: "string"
+            email: 
+              type: "string"
+            discordId: 
+              type: "string"
+            createdAt: 
+              type: "string"
+            updatedAt: 
+              type: "string"
+          type: "object"
+
+    IProject:
+      required: 
+        - "appName"
+        - "description"
+        - "isPrivate"
+      properties:
+        appName: 
+          type: "string"
+        description: 
+          type: "string"
+        isPrivate: 
+          type: "boolean"
+        downloadLink: 
+          type: "string"
+        githubLink: 
+          type: "string"
+        externalLink: 
+          type: "string"
+        launchId: 
+          type: "number"
+
+    DiscordResponse:
+      properties:
+        access_token:
+          type: "string"
+        token_type:
+          type: "string"
+        expires_in:
+          type: "number"
+        refresh_token:
+          type: "string"
+        scope:
+          type: "string"
+
+    User:
+      required: 
+        - "name"
+      properties: 
+        id: 
+          type: "number"
+        name: 
+          type: "string"
+        email: 
+          type: "string"
+        discordId: 
+          type: "string"
+        createdAt: 
+          type: "string"
+        updatedAt: 
+          type: "string"

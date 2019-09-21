@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import { InitDb } from './common/sequalize';
 import getUser from "./middleware/user-middleware";
 import { RequestHandler } from "./models/types";
+import { InitBot } from "./common/discord";
+import { InitDb, CreateMocks } from './common/sequalize';
+import * as swaggerJSDoc from 'swagger-jsdoc';
 
 /**
  * This file sets up API endpoints based on the current folder tree in Heroku.
@@ -22,11 +24,12 @@ const expressWs = require('express-ws')(app);
 const bodyParser = require('body-parser');
 const glob = require('glob');
 const helpers = require('./common/helpers');
+const swaggerUi = require('swagger-ui-express');
 
 const PORT = process.env.PORT || 5000;
-const DEBUG = process.argv.filter(val => val == 'dev').length > 0;
-app.use(bodyParser.urlencoded({ extended: true }));
+const MOCK = process.argv.filter(val => val == 'mock').length > 0;
 
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use((req: Request, res: Response, next: NextFunction) => {
     // Website you wish to allow to connect
@@ -43,6 +46,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 InitDb().then(() => {
+    InitBot();
     InitApi();
 
     app.listen(PORT, (err: string) => {
@@ -52,6 +56,15 @@ InitDb().then(() => {
         }
         console.log(`Ready, listening on port ${PORT}`);
     });    
+    if (MOCK) CreateMocks()
+});
+
+app.listen(PORT, (err: string) => {
+    if (err) {
+        console.error(`Error while setting up port ${PORT}:`, err);
+        return;
+    }
+    console.log(`Ready, listening on port ${PORT}`);
 });
 
 //#region Setup 
@@ -65,7 +78,7 @@ function InitApi() {
             if (!filePath.includes("node_modules") && helpers.match(filePath, RegexMethods)) {
                 let serverPath = filePath.replace(RegexMethods, "").replace("/app", "").replace("/api", "").replace("/build", "");
 
-                if (DEBUG) serverPath = serverPath.replace(__dirname.replace(/\\/g, `/`).replace("/build", ""), "");
+                if (helpers.DEVENV) serverPath = serverPath.replace(__dirname.replace(/\\/g, `/`).replace("/build", ""), "");
 
                 const method = helpers.match(filePath, RegexMethods);
                 console.log(`Setting up ${filePath} as ${method.toUpperCase()} ${serverPath}`);
@@ -100,5 +113,17 @@ function InitApi() {
             }
         }
     });
+
+    const yaml = require('js-yaml');
+    const fs = require('fs');
+
+    // Get document, or throw exception on error
+    try {
+        const doc = yaml.safeLoad(fs.readFileSync('./src/api.yaml', 'utf8'));
+        app.use('/__docs', swaggerUi.serve, swaggerUi.setup(doc));
+        app.get('/swagger.json', (req: Request, res: Response) => res.json(doc));
+    } catch (e) {
+        console.log(e);
+    }
 }
 //#endregion

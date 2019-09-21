@@ -1,6 +1,9 @@
-import { Column, CreatedAt, Model, Table, UpdatedAt, HasMany, PrimaryKey, AutoIncrement, DataType } from 'sequelize-typescript';
+import { Column, CreatedAt, Model, Table, UpdatedAt, PrimaryKey, AutoIncrement, DataType, BelongsToMany } from 'sequelize-typescript';
 import Project  from './Project';
+import * as faker from 'faker'
 
+import UserProject from "./UserProject";
+  
 @Table
 export default class User extends Model<User> {
 
@@ -8,6 +11,7 @@ export default class User extends Model<User> {
     @AutoIncrement
     @Column(DataType.INTEGER)
     id!: number;
+
 
     @Column
     name!: string;
@@ -17,9 +21,11 @@ export default class User extends Model<User> {
 
     @Column
     discordId!: string;
+
     
-    @HasMany(() => Project, 'userId')
+    @BelongsToMany(() => Project, () => UserProject)
     projects?: Project[];
+    
     
     @CreatedAt
     @Column
@@ -28,4 +34,12 @@ export default class User extends Model<User> {
     @UpdatedAt
     @Column
     updatedAt!: Date;
+}
+
+export function GenerateMockUser(): User {
+    return new User({
+        name: faker.internet.userName(),
+        email: faker.internet.email(),
+        discordId: faker.random.alphaNumeric()
+    })
 }

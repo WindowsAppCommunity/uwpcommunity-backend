@@ -2,7 +2,7 @@ import Project from "../models/Project";
 import { IUser, IProject, IDiscordUser } from "../models/types";
 import User from "../models/User";
 import fetch from 'node-fetch';
-import { Response } from "express";
+import { Response, Request } from "express";
 
 
 /**
@@ -150,6 +150,24 @@ export async function GetDiscordUser(accessToken: string): Promise<IDiscordUser 
     return await Req.json();
 }
 
+export async function GetDiscordIdFromToken(req: Request, res: Response): Promise<string> {
+    if (DEVENV == false && req.body.accessToken != "admin") {
+        const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
+        if (!user) {
+            res.status(401);
+            res.end(`Invalid accessToken`);
+            return "";
+        }
+
+        return (user as IDiscordUser).id;
+    } else {
+        return req.body.discordId;
+    }
+}
+
+export const DEVENV: boolean = process.argv.filter(val => val == 'dev').length > 0;
+
 module.exports = {
-    match, replaceAll, remove, levenshteinDistance, findSimilarProjectName, getUserByDiscordId, getProjectsByUserDiscordId, getUserFromDB, checkForExistingProject, genericServerError, GetDiscordUser
+    match, replaceAll, remove, levenshteinDistance, findSimilarProjectName, getUserByDiscordId, getProjectsByUserDiscordId, getUserFromDB,
+    checkForExistingProject, genericServerError, GetDiscordUser, DEVENV, GetDiscordIdFromToken
 };
