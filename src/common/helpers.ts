@@ -150,7 +150,7 @@ export async function GetDiscordUser(accessToken: string): Promise<IDiscordUser 
     return await Req.json();
 }
 
-export async function GetDiscordToken(req: Request, res: Response): Promise<string> {
+export async function GetDiscordIdFromToken(req: Request, res: Response): Promise<string> {
     if (DEVENV == false && req.body.accessToken != "admin") {
         const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
         if (!user) {
@@ -169,5 +169,5 @@ export const DEVENV: boolean = process.argv.filter(val => val == 'dev').length >
 
 module.exports = {
     match, replaceAll, remove, levenshteinDistance, findSimilarProjectName, getUserByDiscordId, getProjectsByUserDiscordId, getUserFromDB,
-    checkForExistingProject, genericServerError, GetDiscordUser, DEVENV, GetDiscordToken
+    checkForExistingProject, genericServerError, GetDiscordUser, DEVENV, GetDiscordIdFromToken
 };

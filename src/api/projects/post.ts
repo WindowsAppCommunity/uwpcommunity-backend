@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import Project from "../../models/Project";
 import { IProject } from "../../models/types";
-import { checkForExistingProject, getUserFromDB, genericServerError, GetDiscordToken } from "../../common/helpers";
+import { checkForExistingProject, getUserFromDB, genericServerError, GetDiscordIdFromToken } from "../../common/helpers";
 import UserProject from "../../models/UserProject";
 
 module.exports = (req: Request, res: Response) => {
@@ -27,7 +27,7 @@ module.exports = (req: Request, res: Response) => {
     }
 
     (async () => {
-        let discordId = await GetDiscordToken(req, res);
+        let discordId = await GetDiscordIdFromToken(req, res);
 
         submitProject(body, discordId)
             .then(() => {

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import User from "../../models/User"
 import { IUser } from "../../models/types";
-import { genericServerError, GetDiscordToken } from "../../common/helpers";
+import { genericServerError, GetDiscordIdFromToken } from "../../common/helpers";
 
 module.exports = (req: Request, res: Response) => {
     const body = req.body;
@@ -26,7 +26,7 @@ module.exports = (req: Request, res: Response) => {
     }
 
     (async () => {
-        body.discordId = await GetDiscordToken(req, res);
+        body.discordId = await GetDiscordIdFromToken(req, res);
 
         submitUser(body)
             .then(() => {
