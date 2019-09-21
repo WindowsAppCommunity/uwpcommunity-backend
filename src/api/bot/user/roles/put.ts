@@ -29,24 +29,31 @@ module.exports = async (req: Request, res: Response) => {
     }
 
     // Must have a role in the body (JSON)
-    if (req.body.role) {
-        let guildRoles = await GetGuildRoles();
-        if (!guildRoles) {
-            genericServerError("Unable to get guild roles", res); return;
-        }
+    if (!req.body.role) {
+        res.status(422);
+        res.json(JSON.stringify({
+            error: "Malformed request",
+            reason: "Missing role in body"
+        }));
+        return;
+    }
 
-        let roles: Role[] = guildRoles.filter(role => role.name == req.body.role);
-        if (roles.length == 0) InvalidRole(res);
+    let guildRoles = await GetGuildRoles();
+    if (!guildRoles) {
+        genericServerError("Unable to get guild roles", res); return;
+    }
+
+    let roles: Role[] = guildRoles.filter(role => role.name == req.body.role);
+    if (roles.length == 0) InvalidRole(res);
 
 
-        switch (req.body.role) {
-            case "Developer":
-                guildMember.addRole(roles[0]);
-                res.send("Success");
-                break;
-            default:
-                InvalidRole(res);
-        }
+    switch (req.body.role) {
+        case "Developer":
+            guildMember.addRole(roles[0]);
+            res.send("Success");
+            break;
+        default:
+            InvalidRole(res);
     }
 };
 
