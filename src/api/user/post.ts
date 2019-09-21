@@ -35,6 +35,7 @@ module.exports = async (req: Request, res: Response) => {
             error: "Bad request",
             reason: `User already exists`
         });
+        return;
     }
 
     submitUser({ ...body, discordId: discordId })
