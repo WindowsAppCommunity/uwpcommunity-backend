@@ -29,7 +29,9 @@ module.exports = async (req: Request, res: Response) => {
         return;
     }
 
-    if (await getUserByDiscordId(discordId) !== null) {
+    const user = await getUserByDiscordId(discordId).catch((err) => genericServerError(err, res));
+
+    if (user) {
         res.status(400);
         res.json({
             error: "Bad request",
