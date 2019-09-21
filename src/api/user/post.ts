@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import User from "../../models/User"
-import { IUser, ReponseErrorReasons } from "../../models/types";
+import { IUser, ResponseErrorReasons } from "../../models/types";
 import { genericServerError, GetDiscordIdFromToken, getUserByDiscordId } from "../../common/helpers";
 
 module.exports = async (req: Request, res: Response) => {
@@ -10,7 +10,7 @@ module.exports = async (req: Request, res: Response) => {
         res.status(422);
         res.json({
             error: "Malformed request",
-            reason: ReponseErrorReasons.MissingAuth
+            reason: ResponseErrorReasons.MissingAuth
         });
         return;
     }
@@ -35,7 +35,7 @@ module.exports = async (req: Request, res: Response) => {
         res.status(400);
         res.json({
             error: "Bad request",
-            reason: `User already exists`
+            reason: ResponseErrorReasons.UserExists
         });
         return;
     }

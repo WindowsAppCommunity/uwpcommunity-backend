@@ -23,7 +23,7 @@ export interface IUser {
     projects?: IProject[];
 }
 
-export const ReponseErrorReasons = {
+export const ResponseErrorReasons = {
     MissingAuth: "Missing authorization header",
     UserExists: "User already exists",
     UserNotExists: "User does not exist",
