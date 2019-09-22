@@ -11,8 +11,10 @@ export interface IProject {
     users?: IUser[];
 
     launchId: number;
+    categoryId: number;
 
     discordId: number;
+    roleId: number;
 };
 
 export interface IUser {
