@@ -13,7 +13,7 @@ import * as swaggerJSDoc from 'swagger-jsdoc';
  * Example: 
  * The file `./myapp/bugreport/post.js` is set up at `POST https://example.com/myapp/bugreport/`
  * 
- * For local development, run `npm start dev`
+ * For local development, run `npm run start dev`
  */
 
 const express = require('express'), app = express();
