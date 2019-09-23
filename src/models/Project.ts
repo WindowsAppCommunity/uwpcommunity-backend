@@ -3,6 +3,7 @@ import User from './User';
 import Launch from './Launch';
 import * as faker from 'faker'
 import UserProject from './UserProject';
+import Category from './Category';
 
 @Table
 export default class Project extends Model<Project> {
@@ -40,7 +41,14 @@ export default class Project extends Model<Project> {
     launchId!: number;
 
     @BelongsTo(() => Launch, 'launchId')
-    launch!: Launch
+    launch!: Launch    
+    
+    
+    @ForeignKey(() => Category)
+    categoryId!: number;
+
+    @BelongsTo(() => Category, 'categoryId')
+    category!: Category
 
 
     @CreatedAt
