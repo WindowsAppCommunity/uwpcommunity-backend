@@ -1,25 +1,20 @@
 import { Request, Response } from "express";
 import { IDiscordUser } from "../../models/types";
-import { getUserByDiscordId, getProjectsByUserDiscordId, GetDiscordUser, genericServerError } from "../../common/helpers";
+import { getUserByDiscordId, getProjectsByUserDiscordId, GetDiscordUser, genericServerError, GetDiscordIdFromToken } from "../../common/helpers";
 
 module.exports = async (req: Request, res: Response) => {
-    if (req.query.accessToken == undefined) {
+    if (!req.headers.authorization) {
         res.status(422);
         res.json({
             error: "Malformed request",
-            reason: `Query string "accessToken" not provided or malformed`
+            reason: "Missing authorization header"
         });
         return;
     }
 
-    const user = await GetDiscordUser(req.query.accessToken).catch((err) => genericServerError(err, res));
-    if (!user) {
-        res.status(401);
-        res.end(`Invalid accessToken`);
-        return;
-    }
-
-    let discordId = (user as IDiscordUser).id;
+    let accessToken = req.headers.authorization.replace("Bearer ", "");
+    let discordId = await GetDiscordIdFromToken(accessToken, res);
+    if (!discordId) return;
 
     deleteUser(discordId)
         .then(success => {

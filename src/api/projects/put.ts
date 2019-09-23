@@ -48,7 +48,6 @@ module.exports = async (req: Request, res: Response) => {
 };
 
 function checkQuery(query: any): true | string {
-    if (!query.accessToken) return "accessToken";
     if (!query.appName) return "appName";
 
     return true;
