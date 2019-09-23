@@ -15,13 +15,16 @@ export interface IProject {
 
     discordId: number;
     roleId: number;
+    isOwner: boolean;
 };
 
 export interface IUser {
+    id?: number;
+
     name: string;
     discordId: string;
     email?: string; // This is a contact email supplied by the user, and is safe to be public 
-    id?: number;
+
     projects?: IProject[];
 }
 

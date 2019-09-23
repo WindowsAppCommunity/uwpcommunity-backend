@@ -48,7 +48,7 @@ function checkBody(body: IProject): true | string {
 
 function submitProject(projectData: IProject, discordId: any): Promise<Project> {
     return new Promise<Project>(async (resolve, reject) => {
-    
+
         if (await checkForExistingProject(projectData).catch(reject)) {
             reject("A project with that name already exists");
             return;
@@ -71,7 +71,7 @@ function submitProject(projectData: IProject, discordId: any): Promise<Project> 
                     {
                         userId: user.id,
                         projectId: project.id,
-                        isOwner: true,
+                        isOwner: projectData.isOwner,
                         roleId: projectData.roleId
                     })
                     .then(() => {

@@ -49,7 +49,8 @@ export async function InitDb() {
                     { name: "Developer" },
                     { name: "Designer" },
                     { name: "Tester" },
-                    { name: "Translator" }
+                    { name: "Translator" },
+                    { name: "Other" }
                 ]);
             }
         })
