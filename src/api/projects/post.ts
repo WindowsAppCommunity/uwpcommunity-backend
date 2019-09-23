@@ -33,7 +33,7 @@ module.exports = async (req: Request, res: Response) => {
     submitProject(body, discordId)
         .then(() => {
             res.status(200);
-            res.json({ Success: "Success" });
+            res.send("Success");
         })
         .catch((err) => genericServerError(err, res));
 };
@@ -68,7 +68,12 @@ function submitProject(projectData: IProject, discordId: any): Promise<Project> 
 
                 // Create the userproject
                 UserProject.create(
-                    { userId: user.id, projectId: project.id })
+                    {
+                        userId: user.id,
+                        projectId: project.id,
+                        isOwner: projectData.isOwner,
+                        roleId: projectData.roleId
+                    })
                     .then(() => {
                         resolve(project)
                     })
