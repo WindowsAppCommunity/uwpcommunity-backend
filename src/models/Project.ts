@@ -4,6 +4,7 @@ import Launch from './Launch';
 import * as faker from 'faker'
 import UserProject from './UserProject';
 import Category from './Category';
+import { IProject } from './types';
 
 @Table
 export default class Project extends Model<Project> {
@@ -12,7 +13,7 @@ export default class Project extends Model<Project> {
     @AutoIncrement
     @Column(DataType.INTEGER)
     id!: number;
-    
+
 
     @Column
     appName!: string;
@@ -41,9 +42,9 @@ export default class Project extends Model<Project> {
     launchId!: number;
 
     @BelongsTo(() => Launch, 'launchId')
-    launch!: Launch    
-    
-    
+    launch!: Launch
+
+
     @ForeignKey(() => Category)
     categoryId!: number;
 
@@ -61,14 +62,16 @@ export default class Project extends Model<Project> {
 }
 
 export function GenerateMockProject(launch: Launch, user: User): Project {
-    return new Project({
+    const mockProject: IProject = {
+        discordId: faker.random.number(),
+        categoryId: 0, // TODO: Update this when we get more than one category
         appName: faker.commerce.product(),
         description: faker.lorem.paragraph(),
         isPrivate: false,
-        userId: user.id,
         launchId: launch.id,
         downloadLink: faker.internet.url(),
         githubLink: faker.internet.url(),
         externalLink: faker.internet.url()
-    })
+    };
+    return new Project(mockProject);
 }

@@ -25,7 +25,7 @@ export function getProjects(token?: string, shouldCache = true): Promise<Project
                 }]
             } : undefined))
             .then(results => {
-                
+
                 if (results) {
                     results = results.map(project => project.toJSON() as Project).map(project => {
                         // Remove any data that doesn't match the IProject interface 
@@ -34,15 +34,14 @@ export function getProjects(token?: string, shouldCache = true): Promise<Project
                         delete project.id;
 
                         //TODO: check me
-                        // delete project.userId;
 
-                        // if (project.user) {
-                        //     delete project.user.email;
-                        //     delete project.user.discordId; // This one is especially important, as it could be used to modify project details
-                        //     delete project.user.updatedAt;
-                        //     delete project.user.createdAt;
-                        //     delete project.user.id;
-                        // }
+                        if (project.users) {
+                            for (let user of project.users) {
+                                delete user.email;
+                                delete user.updatedAt;
+                                delete user.createdAt;
+                            }
+                        }
                         return project;
                     });
 

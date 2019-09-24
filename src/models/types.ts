@@ -14,8 +14,6 @@ export interface IProject {
     categoryId: number;
 
     discordId: number;
-    roleId: number;
-    isOwner: boolean;
 };
 
 export interface IUser {

@@ -3,6 +3,7 @@ import Project from "../../models/Project";
 import { IProject } from "../../models/types";
 import { checkForExistingProject, getUserFromDB, genericServerError, GetDiscordIdFromToken } from "../../common/helpers";
 import UserProject from "../../models/UserProject";
+import Role from "../../models/Role";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;
@@ -38,7 +39,7 @@ module.exports = async (req: Request, res: Response) => {
         .catch((err) => genericServerError(err, res));
 };
 
-function checkBody(body: IProject): true | string {
+function checkBody(body: IProjectRequest): true | string {
     if (!body.appName) return "appName";
     if (!body.description) return "description";
     if (body.isPrivate == undefined) return "isPrivate";
@@ -46,7 +47,11 @@ function checkBody(body: IProject): true | string {
     return true;
 }
 
-function submitProject(projectData: IProject, discordId: any): Promise<Project> {
+interface IProjectRequest extends IProject {
+    role: string;
+}
+
+function submitProject(projectData: IProjectRequest, discordId: any): Promise<Project> {
     return new Promise<Project>(async (resolve, reject) => {
 
         if (await checkForExistingProject(projectData).catch(reject)) {
@@ -61,6 +66,12 @@ function submitProject(projectData: IProject, discordId: any): Promise<Project> 
             return;
         }
 
+        const role: Role | void | null = (await Role.findOne({ where: { name: projectData.role } }).catch(reject));
+        if (!role) {
+            reject("Invalid role");
+            return;
+        }
+
         // Create the project
         Project.create(
             { ...projectData })
@@ -71,8 +82,8 @@ function submitProject(projectData: IProject, discordId: any): Promise<Project> 
                     {
                         userId: user.id,
                         projectId: project.id,
-                        isOwner: projectData.isOwner,
-                        roleId: projectData.roleId
+                        isOwner: true, // Only the project owner can create the project
+                        roleId: role.id
                     })
                     .then(() => {
                         resolve(project)
