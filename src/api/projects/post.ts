@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import Project from "../../models/Project";
-import { IProject } from "../../models/types";
+import { IProjectRequest } from "./types";
 import { checkForExistingProject, getUserFromDB, genericServerError, GetDiscordIdFromToken } from "../../common/helpers";
 import UserProject from "../../models/UserProject";
 import Role from "../../models/Role";
@@ -47,9 +47,6 @@ function checkBody(body: IProjectRequest): true | string {
     return true;
 }
 
-interface IProjectRequest extends IProject {
-    role: string;
-}
 
 function submitProject(projectData: IProjectRequest, discordId: any): Promise<Project> {
     return new Promise<Project>(async (resolve, reject) => {
