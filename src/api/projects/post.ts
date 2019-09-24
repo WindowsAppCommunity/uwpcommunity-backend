@@ -42,8 +42,8 @@ module.exports = async (req: Request, res: Response) => {
 function checkBody(body: IProjectRequest): true | string {
     if (!body.appName) return "appName";
     if (!body.description) return "description";
+    if (!body.role) return "role";
     if (body.isPrivate == undefined) return "isPrivate";
-
     return true;
 }
 
