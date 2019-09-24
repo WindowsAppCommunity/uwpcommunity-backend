@@ -16,7 +16,7 @@ export default class Launch extends Model<Launch> {
 
     @HasMany(() => Project, 'launchId')
     projects?: Project[];
-    
+
 
     @CreatedAt
     @Column
@@ -26,3 +26,16 @@ export default class Launch extends Model<Launch> {
     @Column
     updatedAt!: Date;
 }
+
+export async function GetLaunchIdFromYear(year: number): Promise<number | undefined> {
+    const catDb = await Launch.findOne({ where: { year: year } });
+    if (!catDb) return;
+    return catDb.id;
+}
+
+export async function GetLaunchYearFromId(id: number): Promise<number | undefined> {
+    const catDb = await Launch.findOne({ where: { id: id } });
+    if (!catDb) return;
+    return catDb.year;
+}
+

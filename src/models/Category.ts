@@ -8,7 +8,7 @@ export default class Category extends Model<Category> {
     @AutoIncrement
     @Column(DataType.INTEGER)
     id!: number;
-    
+
 
     @Column
     name!: string;
@@ -25,4 +25,16 @@ export default class Category extends Model<Category> {
     @UpdatedAt
     @Column
     updatedAt!: Date;
+}
+
+export async function GetCategoryIdFromName(name: string): Promise<number | undefined> {
+    const catDb = await Category.findOne({ where: { name: name } });
+    if (!catDb) return;
+    return catDb.id;
+}
+
+export async function GetCategoryNameFromId(id: number): Promise<string | undefined> {
+    const catDb = await Category.findOne({ where: { id: id } });
+    if (!catDb) return;
+    return catDb.name;
 }

@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
-import Project from "../../models/Project";
-import { IProjectRequest } from "./types";
+import Project, { StdToDbModal_Project } from "../../models/Project";
 import { checkForExistingProject, getUserFromDB, genericServerError, GetDiscordIdFromToken } from "../../common/helpers";
 import UserProject from "../../models/UserProject";
 import Role from "../../models/Role";
+import { IUser } from "../../models/types";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;
@@ -39,7 +39,7 @@ module.exports = async (req: Request, res: Response) => {
         .catch((err) => genericServerError(err, res));
 };
 
-function checkBody(body: IProjectRequest): true | string {
+function checkBody(body: IPostProjectsRequest): true | string {
     if (!body.appName) return "appName";
     if (!body.description) return "description";
     if (!body.role) return "role";
@@ -48,10 +48,10 @@ function checkBody(body: IProjectRequest): true | string {
 }
 
 
-function submitProject(projectData: IProjectRequest, discordId: any): Promise<Project> {
+function submitProject(projectRequestData: IPostProjectsRequest, discordId: any): Promise<Project> {
     return new Promise<Project>(async (resolve, reject) => {
 
-        if (await checkForExistingProject(projectData).catch(reject)) {
+        if (await checkForExistingProject(projectRequestData.appName).catch(reject)) {
             reject("A project with that name already exists");
             return;
         }
@@ -63,15 +63,14 @@ function submitProject(projectData: IProjectRequest, discordId: any): Promise<Pr
             return;
         }
 
-        const role: Role | void | null = (await Role.findOne({ where: { name: projectData.role } }).catch(reject));
+        const role: Role | void | null = (await Role.findOne({ where: { name: projectRequestData.role } }).catch(reject));
         if (!role) {
             reject("Invalid role");
             return;
         }
 
         // Create the project
-        Project.create(
-            { ...projectData })
+        Project.create(await StdToDbModal_Project({ ...projectRequestData }))
             .then((project) => {
 
                 // Create the userproject
@@ -90,4 +89,17 @@ function submitProject(projectData: IProjectRequest, discordId: any): Promise<Pr
             })
             .catch(reject);
     });
+}
+
+interface IPostProjectsRequest {
+    role: "Developer" | "Translator" | "Beta Tester" | "Other";
+    appName: string;
+    category: string;
+    description: string;
+    isPrivate: boolean;
+    downloadLink?: string;
+    githubLink?: string;
+    externalLink?: string;
+    collaborators: IUser[];
+    launchYear: number;
 }

@@ -9,14 +9,11 @@ export default class Role extends Model<Role> {
     @Column(DataType.INTEGER)
     id!: number;
 
-
     @Column
-    name!: string;
-
+    name!: "Developer" | "Translator" | "Beta Tester" | "Other";
 
     @HasMany(() => UserProject, 'roleId')
     userProject?: UserProject[];
-    
 
     @CreatedAt
     @Column

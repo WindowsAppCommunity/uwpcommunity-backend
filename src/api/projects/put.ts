@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import User from "../../models/User"
 import Project from "../../models/Project";
-import { findSimilarProjectName, GetDiscordUser, genericServerError, GetDiscordIdFromToken } from '../../common/helpers';
-import { IProject, IDiscordUser } from "../../models/types";
+import { findSimilarProjectName, genericServerError, GetDiscordIdFromToken } from '../../common/helpers';
+import { IProject } from "../../models/types";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;

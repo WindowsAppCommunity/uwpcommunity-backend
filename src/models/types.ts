@@ -8,12 +8,10 @@ export interface IProject {
     githubLink?: string;
     externalLink?: string;
 
-    users?: IUser[];
+    collaborators: IUser[];
 
-    launchId: number;
-    categoryId: number;
-
-    discordId: number;
+    launchYear: number;
+    category: string;
 };
 
 export interface IUser {

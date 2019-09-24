@@ -124,10 +124,10 @@ export function getUserFromDB(discordId: string): Promise<User | null> {
     })
 }
 
-export function checkForExistingProject(project: IProject): Promise<boolean> {
+export function checkForExistingProject(appName: string): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
         Project.findAll({
-            where: { appName: project.appName }
+            where: { appName: appName }
         }).then(projects => {
             resolve(projects.length > 0);
         }).catch(reject)
@@ -159,6 +159,8 @@ export async function GetDiscordIdFromToken(accessToken: string, res: Response):
     }
     return (user as IDiscordUser).id;
 }
+
+
 
 export const DEVENV: boolean = process.argv.filter(val => val == 'dev').length > 0;
 
