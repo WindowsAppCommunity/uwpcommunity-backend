@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import User, { getUserByDiscordId } from "../../models/User"
-import { IUser, ResponseErrorReasons } from "../../models/types";
+import { ResponseErrorReasons } from "../../models/types";
 import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 
@@ -23,6 +23,7 @@ module.exports = async (req: Request, res: Response) => {
         return;
     }
 
+    // Check if the user already exists
     const user = await getUserByDiscordId(discordId).catch((err) => genericServerError(err, res));
 
     if (user) {
@@ -42,12 +43,12 @@ module.exports = async (req: Request, res: Response) => {
         .catch((err) => genericServerError(err, res));
 };
 
-function checkBody(body: IUser): true | string {
+function checkBody(body: IPostUserRequest): true | string {
     if (!body.name) return "name";
     return true;
 }
 
-function submitUser(userData: IUser): Promise<User> {
+function submitUser(userData: IPostUserRequest): Promise<User> {
     return new Promise<User>((resolve, reject) => {
         User.create({ ...userData })
             .then(resolve)
@@ -55,3 +56,7 @@ function submitUser(userData: IUser): Promise<User> {
     });
 }
 
+interface IPostUserRequest {
+    name: string;
+    email?: string;
+}

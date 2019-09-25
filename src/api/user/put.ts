@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import User, { getUserByDiscordId } from "../../models/User"
-import { IUser } from "../../models/types";
 import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 
@@ -30,12 +29,12 @@ module.exports = async (req: Request, res: Response) => {
         .catch((err) => genericServerError(err, res));
 };
 
-function checkBody(body: IUser): true | string {
+function checkBody(body: IPutUserRequest): true | string {
     if (!body.name) return "name";
     return true;
 }
 
-function updateUser(userData: IUser, discordId: string): Promise<User> {
+function updateUser(userData: IPutUserRequest, discordId: string): Promise<User> {
     return new Promise<User>(async (resolve, reject) => {
         let user = await getUserByDiscordId(discordId);
 
@@ -44,10 +43,13 @@ function updateUser(userData: IUser, discordId: string): Promise<User> {
             return;
         }
 
-        // Update only the display name and public contact email
-        user.update({ name: userData.name, email: userData.email })
+        user.update(userData)
             .then(resolve)
             .catch(reject);
     });
 }
 
+interface IPutUserRequest {
+    name?: string;
+    email?: string;
+}
