@@ -121,54 +121,41 @@ export function findSimilarProjectName(projects: Project[], appName: string): st
 //#region Converters
 /** @summary This converts the data model ONLY, and does not represent the actual data in the database */
 export async function StdToDbModal_Project(project: IProject): Promise<Project> {
-    return new Promise(async (resolve, reject) => {
-        const categoryId = await GetCategoryIdFromName(project.category).catch(() => reject(`Invalid category: ${project.category}`));
-        if (!categoryId) return;
-
-        const launchId = await GetLaunchIdFromYear(project.launchYear).catch(() => reject(`Invalid launchYear: ${project.launchYear}`));
-        if (!launchId) return;
-
-        const dbProject: any = {
-            categoryId: categoryId,
-            appName: project.appName,
-            description: project.description,
-            isPrivate: project.isPrivate,
-            launchId: launchId,
-            downloadLink: project.downloadLink,
-            githubLink: project.githubLink,
-            externalLink: project.externalLink
-        };
-        resolve(dbProject);
-    });
+    const dbProject: any = {
+        categoryId: project.category ? await GetCategoryIdFromName(project.category) : 0,
+        appName: project.appName,
+        description: project.description,
+        isPrivate: project.isPrivate,
+        launchId: project.launchYear ? await GetLaunchIdFromYear(project.launchYear) : 0,
+        downloadLink: project.downloadLink,
+        githubLink: project.githubLink,
+        externalLink: project.externalLink
+    };
+    return (dbProject);
 }
 
 export async function DbToStdModal_Project(project: Project): Promise<IProject> {
-    return new Promise(async (resolve, reject) => {
-        const categoryName = await GetCategoryNameFromId(project.categoryId).catch(() => reject(`Invalid categoryId: ${project.categoryId}`));
-        if (!categoryName) return;
+    const categoryName = await GetCategoryNameFromId(project.categoryId);
 
-        const launchYear = await GetLaunchYearFromId(project.launchId).catch(() => reject(`Invalid launchId: ${project.launchId}`));
-        if (!launchYear) return;
+    const launchYear = await GetLaunchYearFromId(project.launchId);
 
-        const stdProject: IProject = {
-            id: project.id,
-            appName: project.appName,
-            description: project.description,
-            isPrivate: project.isPrivate,
-            downloadLink: project.downloadLink,
-            githubLink: project.githubLink,
-            externalLink: project.externalLink,
-            collaborators: [], // TODO: Create DbToStdModal helpers to get collaborators,
-            launchYear: launchYear,
-            category: categoryName
-        };
-        resolve(stdProject);
-    });
+    const stdProject: IProject = {
+        id: project.id,
+        appName: project.appName,
+        description: project.description,
+        isPrivate: project.isPrivate,
+        downloadLink: project.downloadLink,
+        githubLink: project.githubLink,
+        externalLink: project.externalLink,
+        collaborators: [], // TODO: Create DbToStdModal helpers to get collaborators,
+        launchYear: launchYear,
+        category: categoryName
+    };
+    return (stdProject);
 }
 //#endregion
 
 export async function GenerateMockProject(launch: Launch, user: User): Promise<Project> {
-
     let LaunchId = await GetLaunchYearFromId(launch.id);
     if (!LaunchId) LaunchId = 0;
 

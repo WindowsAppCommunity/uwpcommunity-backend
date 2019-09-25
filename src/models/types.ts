@@ -10,8 +10,8 @@ export interface IProject {
 
     collaborators: IUser[];
 
-    launchYear: number;
-    category: string;
+    launchYear?: number;
+    category?: string;
 };
 
 export interface IUser {

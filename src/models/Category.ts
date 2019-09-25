@@ -27,18 +27,14 @@ export default class Category extends Model<Category> {
     updatedAt!: Date;
 }
 
-export async function GetCategoryIdFromName(name: string): Promise<number> {
-    return new Promise(async (resolve, reject) => {
-        const catDb = await Category.findOne({ where: { name: name } }).catch(reject);
-        if (!catDb) return;
-        resolve(catDb.id);
-    });
+export async function GetCategoryIdFromName(name: string): Promise<number | undefined> {
+    const catDb = await Category.findOne({ where: { name: name } }).catch(() => { });
+    if (!catDb) return;
+    return (catDb.id);
 }
 
-export async function GetCategoryNameFromId(id: number): Promise<string> {
-    return new Promise(async (resolve, reject) => {
-        const catDb = await Category.findOne({ where: { id: id } }).catch(reject);
-        if (!catDb) return;
-        resolve(catDb.name);
-    });
+export async function GetCategoryNameFromId(id: number): Promise<string | undefined> {
+    const catDb = await Category.findOne({ where: { id: id } }).catch(() => { });
+    if (!catDb) return;
+    return (catDb.name);
 }
