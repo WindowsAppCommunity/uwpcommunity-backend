@@ -13,7 +13,7 @@ import * as helpers from './common/helpers/generic';
  * Example: 
  * The file `./myapp/bugreport/post.js` is set up at `POST https://example.com/myapp/bugreport/`
  * 
- * For local development, run `npm run start dev`
+ * For local development, run `npm run dev`
  */
 
 const express = require('express'), app = express();
@@ -74,7 +74,7 @@ function InitApi() {
 
                 const method = helpers.match(filePath, RegexMethods);
                 if (!method) continue;
-                
+
                 console.log(`Setting up ${filePath} as ${method.toUpperCase()} ${serverPath}`);
 
                 switch (method) {
