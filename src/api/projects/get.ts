@@ -1,26 +1,24 @@
 import { Request, Response } from "express";
 import User from "../../models/User";
 import Project, { DbToStdModal_Project } from "../../models/Project";
-import { Dirent } from "fs";
-import * as path from 'path';
 import { IProject } from "../../models/types";
 import { genericServerError } from "../../common/helpers/generic";
 
 module.exports = (req: Request, res: Response) => {
-    getProjects(req.query.token)
+    getProjects(req.body)
         .then(result => {
             res.json(result);
         })
         .catch(err => genericServerError(err, res));
 };
 
-export function getProjects(token?: string): Promise<IProject[]> {
+export function getProjects(projectRequestData?: IGetProjectsRequest): Promise<IProject[]> {
     return new Promise((resolve, reject) => {
         Project
-            .findAll((token ? {
+            .findAll((projectRequestData && projectRequestData.discordId ? {
                 include: [{
                     model: User,
-                    where: { discordId: token }
+                    where: { discordId: projectRequestData.discordId }
                 }]
             } : undefined))
             .then(async results => {
@@ -37,4 +35,8 @@ export function getProjects(token?: string): Promise<IProject[]> {
             })
             .catch(reject);
     });
+}
+
+interface IGetProjectsRequest {
+    discordId?: string;
 }
