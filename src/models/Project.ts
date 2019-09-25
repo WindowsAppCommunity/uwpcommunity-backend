@@ -119,5 +119,6 @@ export async function GenerateMockProject(launch: Launch, user: User): Promise<P
         githubLink: faker.internet.url(),
         externalLink: faker.internet.url()
     };
-    return new Project(mockProject);
+
+    return new Project(await StdToDbModal_Project(mockProject));
 }
