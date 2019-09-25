@@ -27,15 +27,19 @@ export default class Launch extends Model<Launch> {
     updatedAt!: Date;
 }
 
-export async function GetLaunchIdFromYear(year: number): Promise<number | undefined> {
-    const catDb = await Launch.findOne({ where: { year: year } });
-    if (!catDb) return;
-    return catDb.id;
+export async function GetLaunchIdFromYear(year: number): Promise<number> {
+    return new Promise(async (resolve, reject) => {
+        const launchDb = await Launch.findOne({ where: { year: year } }).catch(reject);
+        if (!launchDb) return;
+        resolve(launchDb.id);
+    });
 }
 
-export async function GetLaunchYearFromId(id: number): Promise<number | undefined> {
-    const catDb = await Launch.findOne({ where: { id: id } });
-    if (!catDb) return;
-    return catDb.year;
+export async function GetLaunchYearFromId(id: number): Promise<number> {
+    return new Promise(async (resolve, reject) => {
+        const launchDb = await Launch.findOne({ where: { id: id } }).catch(reject);
+        if (!launchDb) return;
+        resolve(launchDb.year);
+    });
 }
 
