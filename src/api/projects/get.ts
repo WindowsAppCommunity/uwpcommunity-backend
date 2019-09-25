@@ -5,7 +5,7 @@ import { IProject } from "../../models/types";
 import { genericServerError } from "../../common/helpers/generic";
 
 module.exports = (req: Request, res: Response) => {
-    getProjects(req.body)
+    getProjects(req.query)
         .then(result => {
             res.json(result);
         })
