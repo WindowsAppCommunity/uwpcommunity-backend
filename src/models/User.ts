@@ -1,5 +1,5 @@
 import { Column, CreatedAt, Model, Table, UpdatedAt, PrimaryKey, AutoIncrement, DataType, BelongsToMany } from 'sequelize-typescript';
-import Project, { DbToStdModal_Project } from './Project';
+import Project, { DbToStdModal_Project, StdToDbModal_Project } from './Project';
 import * as faker from 'faker'
 
 import UserProject from "./UserProject";
@@ -56,6 +56,28 @@ export async function DbToStdModal_User(user: User): Promise<IUser | undefined> 
         projects: projects
     };
     return stdUser;
+}
+
+/** @summary This converts the data model ONLY, and does not represent the actual data in the database */
+export async function StdToDbModal_User(user: IUser): Promise<User> {
+    let projects: Project[] = [];
+
+    // Convert db user projects to standard API models 
+    if (user.projects) {
+        for (let project of user.projects) {
+            let projectDb = await StdToDbModal_Project(project);
+            if (projectDb) projects.push(projectDb);
+        }
+    }
+
+    const dbUser: any = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        discordId: user.discordId,
+        projects: projects
+    };
+    return dbUser as User;
 }
 
 export function GenerateMockUser(): User {
