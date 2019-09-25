@@ -20,8 +20,6 @@ export interface IUser {
     name: string;
     discordId: string;
     email?: string; // This is a contact email supplied by the user, and is safe to be public 
-
-    projects?: IProject[];
 }
 
 export const ResponseErrorReasons = {
