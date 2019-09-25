@@ -5,6 +5,7 @@ import * as faker from 'faker'
 import UserProject from './UserProject';
 import Category, { GetCategoryIdFromName, GetCategoryNameFromId } from './Category';
 import { IProject } from './types';
+import { levenshteinDistance } from '../common/helpers/generic';
 
 @Table
 export default class Project extends Model<Project> {
@@ -60,7 +61,64 @@ export default class Project extends Model<Project> {
     @Column
     updatedAt!: Date;
 }
+export function isExistingProject(appName: string): Promise<boolean> {
+    return new Promise<boolean>((resolve, reject) => {
+        Project.findAll({
+            where: { appName: appName }
+        }).then(projects => {
+            resolve(projects.length > 0);
+        }).catch(reject)
+    });
+}
 
+export function getProjectsByDiscordId(discordId: string): Promise<Project[]> {
+    return new Promise((resolve, reject) => {
+        Project.findAll({
+            include: [{
+                model: User,
+                where: { discordId: discordId }
+            }]
+        }).then(projects => {
+            if (!projects) { reject("User not found"); return; }
+            resolve(projects);
+        }).catch(reject);
+    });
+}
+
+export interface ISimilarProjectMatch {
+    distance: number;
+    appName: string;
+}
+
+/**
+ * @summary Looks through a list of projects to find the closest matching app name
+ * @param projects Array of projects to look through 
+ * @param appName App name to match against
+ * @returns Closest suitable match if found, otherwise undefined
+ */
+export function findSimilarProjectName(projects: Project[], appName: string): string | undefined {
+    let matches: ISimilarProjectMatch[] = [];
+
+    // Calculate and store the distances of each possible match
+    for (let project of projects) {
+        matches.push({ distance: levenshteinDistance(project.appName, appName), appName: project.appName });
+    }
+    const returnData = matches[0].appName + (matches.length > 1 ? " or " + matches[1].appName : "");
+
+    // Sort by closest match 
+    matches = matches.sort((first, second) => first.distance - second.distance);
+
+    // If the difference is less than X characters, return a possible match.
+    if (matches[0].distance <= 7) return returnData; // 7 characters is just enough for a " (Beta)" label
+
+    // If the difference is greater than 1/3 of the entire string, don't return as a similar app name
+    if ((appName.length / 3) < matches[0].distance) return;
+
+    return returnData;
+}
+
+//#region Converters
+/** @summary This converts the data model ONLY, and does not represent the actual data in the database */
 export async function StdToDbModal_Project(project: IProject): Promise<Project | undefined> {
     const categoryId = await GetCategoryIdFromName(project.category);
     if (!categoryId) return;
@@ -102,6 +160,7 @@ export async function DbToStdModal_Project(project: Project): Promise<IProject |
     };
     return stdProject;
 }
+//#endregion
 
 export async function GenerateMockProject(launch: Launch, user: User): Promise<Project> {
     let LaunchId = await GetLaunchYearFromId(launch.id);

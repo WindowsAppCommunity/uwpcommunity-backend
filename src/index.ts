@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { InitBot } from "./common/discord";
+import { InitBot } from "./common/helpers/discord";
 import { InitDb, CreateMocks } from './common/sequalize';
-import * as swaggerJSDoc from 'swagger-jsdoc';
 
 /**
  * This file sets up API endpoints based on the current folder tree in Heroku.

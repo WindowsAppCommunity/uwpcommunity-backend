@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getUserByDiscordId } from "../../common/helpers";
+import { getUserByDiscordId } from "../../models/User";
 
 module.exports = (req: Request, res: Response) => {
     if (!req.query.token) {

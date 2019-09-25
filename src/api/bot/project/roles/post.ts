@@ -1,7 +1,7 @@
 import { Request, Response } from "express-serve-static-core";
-import { GetGuildUser, GetGuild } from "../../../../common/discord";
-import { Role } from "discord.js";
-import { genericServerError, GetDiscordUser, getProjectsByUserDiscordId } from "../../../../common/helpers";
+import { GetGuildUser, GetGuild, GetDiscordUser } from "../../../../common/helpers/discord";
+import { genericServerError } from "../../../../common/helpers/generic";
+import { getProjectsByDiscordId } from "../../../../models/Project";
 
 module.exports = async (req: Request, res: Response) => {
     if (!req.headers.authorization) {
@@ -41,7 +41,7 @@ module.exports = async (req: Request, res: Response) => {
     }
 
     // If trying to create a role for a project, make sure the project exists
-    let Projects = await getProjectsByUserDiscordId(user.id);
+    let Projects = await getProjectsByDiscordId(user.id);
     if (Projects.filter(project => req.body.appName == project.appName).length == 0) {
         res.status(422);
         res.end(`The project doesn't exist`);

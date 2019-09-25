@@ -1,7 +1,7 @@
 import { Request, Response } from "express-serve-static-core";
-import { GetGuildUser, GetGuildRoles } from "../../../../common/discord";
+import { GetGuildUser, GetGuildRoles, GetDiscordUser } from "../../../../common/helpers/discord";
 import { Role } from "discord.js";
-import { genericServerError, GetDiscordUser } from "../../../../common/helpers";
+import { genericServerError } from "../../../../common/helpers/generic";
 
 module.exports = async (req: Request, res: Response) => {
     if (!req.headers.authorization) {

@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
-import { IDiscordUser } from "../../models/types";
-import { getUserByDiscordId, getProjectsByUserDiscordId, GetDiscordUser, genericServerError, GetDiscordIdFromToken } from "../../common/helpers";
+import { genericServerError } from "../../common/helpers/generic";
+import { getUserByDiscordId } from "../../models/User";
+import { getProjectsByDiscordId } from "../../models/Project";
+import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 
 module.exports = async (req: Request, res: Response) => {
     if (!req.headers.authorization) {
@@ -38,7 +40,7 @@ module.exports = async (req: Request, res: Response) => {
 function deleteUser(discordId: string): Promise<boolean> {
     return new Promise(async (resolve, reject) => {
         // Find the projects
-        const projects = await getProjectsByUserDiscordId(discordId).catch(reject);
+        const projects = await getProjectsByDiscordId(discordId).catch(reject);
 
         if (!projects) return;
 

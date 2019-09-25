@@ -1,4 +1,8 @@
 import * as Discord from "discord.js";
+import fetch from "node-fetch";
+import { IDiscordUser } from "../../models/types";
+import { Response } from "express";
+import { genericServerError } from "./generic";
 
 export let bot: Discord.Client;
 export const uwpCommunityGuildId = "372137812037730304";
@@ -35,4 +39,24 @@ export async function GetGuildRoles() {
     if (!server) return;
 
     return server.roles.array();
+}
+
+export async function GetDiscordUser(accessToken: string): Promise<IDiscordUser | undefined> {
+    const Req = await fetch("https://discordapp.com/api/v6/users/@me", {
+        headers: {
+            "Authorization": "Bearer " + accessToken
+        }
+    });
+    if (!Req || Req.status != 200) return;
+    return await Req.json();
+}
+
+export async function GetDiscordIdFromToken(accessToken: string, res: Response): Promise<string | undefined> {
+    const user = await GetDiscordUser(accessToken).catch((err) => genericServerError(err, res));
+    if (!user) {
+        res.status(401);
+        res.end(`Invalid accessToken`);
+        return;
+    }
+    return (user as IDiscordUser).id;
 }

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { DEVENV } from "../../../common/helpers"
+import { DEVENV } from "../../../common/helpers/generic"
 
 const request = require("request");
 

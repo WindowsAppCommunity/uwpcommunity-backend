@@ -80,6 +80,19 @@ export async function StdToDbModal_User(user: IUser): Promise<User> {
     return dbUser as User;
 }
 
+
+export function getUserByDiscordId(discordId: string): Promise<User | null> {
+    return new Promise<User>((resolve, reject) => {
+        User.findAll({
+            where: { discordId: discordId }
+        }).then(users => {
+            if (!users || (users[0] && users[0].discordId !== discordId)) { resolve(); return; }
+            if (users.length > 1) { reject("More than one user with that id found. Contact a system administrator to fix the data duplication"); return; }
+            resolve(users[0]);
+        }).catch(reject);
+    });
+}
+
 export function GenerateMockUser(): User {
     return new User({
         name: faker.internet.userName(),

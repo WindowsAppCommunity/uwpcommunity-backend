@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
-import User from "../../models/User"
+import User, { getUserByDiscordId } from "../../models/User"
 import { IUser, ResponseErrorReasons } from "../../models/types";
-import { genericServerError, GetDiscordIdFromToken, getUserByDiscordId } from "../../common/helpers";
+import { genericServerError } from "../../common/helpers/generic";
+import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;

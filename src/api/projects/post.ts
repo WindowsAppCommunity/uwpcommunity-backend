@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
-import Project, { StdToDbModal_Project } from "../../models/Project";
-import { checkForExistingProject, getUserFromDB, genericServerError, GetDiscordIdFromToken } from "../../common/helpers";
+import Project, { StdToDbModal_Project, isExistingProject } from "../../models/Project";
+import { genericServerError } from "../../common/helpers/generic";
 import UserProject from "../../models/UserProject";
 import Role from "../../models/Role";
 import { IUser } from "../../models/types";
+import { getUserByDiscordId } from "../../models/User";
+import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;
@@ -51,13 +53,13 @@ function checkBody(body: IPostProjectsRequest): true | string {
 function submitProject(projectRequestData: IPostProjectsRequest, discordId: any): Promise<Project> {
     return new Promise<Project>(async (resolve, reject) => {
 
-        if (await checkForExistingProject(projectRequestData.appName).catch(reject)) {
+        if (await isExistingProject(projectRequestData.appName).catch(reject)) {
             reject("A project with that name already exists");
             return;
         }
 
         // Get a matching user
-        const user = await getUserFromDB(discordId).catch(reject);
+        const user = await getUserByDiscordId(discordId).catch(reject);
         if (!user) {
             reject("User not found");
             return;
