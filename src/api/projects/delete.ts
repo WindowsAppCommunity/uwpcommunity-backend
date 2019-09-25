@@ -28,12 +28,12 @@ module.exports = async (req: Request, res: Response) => {
         .catch(err => genericServerError(err, res));
 };
 
-function checkBody(body: IDeleteProjectsRequest): true | string {
+function checkBody(body: IDeleteProjectsRequestBody): true | string {
     if (!body.appName) return "appName";
     return true;
 }
 
-function deleteProject(projectRequestData: IDeleteProjectsRequest, discordId: string): Promise<void> {
+function deleteProject(projectRequestData: IDeleteProjectsRequestBody, discordId: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
         Project.findAll({
             include: [{
@@ -58,6 +58,6 @@ function deleteProject(projectRequestData: IDeleteProjectsRequest, discordId: st
 }
 
 
-interface IDeleteProjectsRequest {
+interface IDeleteProjectsRequestBody {
     appName: string;
 }

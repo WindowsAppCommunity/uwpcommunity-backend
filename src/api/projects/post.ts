@@ -34,7 +34,7 @@ module.exports = async (req: Request, res: Response) => {
         .catch((err) => genericServerError(err, res));
 };
 
-function checkBody(body: IPostProjectsRequest): true | string {
+function checkBody(body: IPostProjectsRequestBody): true | string {
     if (!body.appName) return "appName";
     if (!body.description) return "description";
     if (!body.role) return "role";
@@ -43,7 +43,7 @@ function checkBody(body: IPostProjectsRequest): true | string {
 }
 
 
-function submitProject(projectRequestData: IPostProjectsRequest, discordId: any): Promise<Project> {
+function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: any): Promise<Project> {
     return new Promise<Project>(async (resolve, reject) => {
 
         if (await isExistingProject(projectRequestData.appName).catch(reject)) {
@@ -86,7 +86,7 @@ function submitProject(projectRequestData: IPostProjectsRequest, discordId: any)
     });
 }
 
-interface IPostProjectsRequest {
+interface IPostProjectsRequestBody {
     role: "Developer" | "Translator" | "Beta Tester" | "Other";
     appName: string;
     category: string;

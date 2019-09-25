@@ -29,12 +29,12 @@ module.exports = async (req: Request, res: Response) => {
         .catch((err) => genericServerError(err, res));
 };
 
-function checkBody(body: IPutUserRequest): true | string {
+function checkBody(body: IPutUserRequestBody): true | string {
     if (!body.name) return "name";
     return true;
 }
 
-function updateUser(userData: IPutUserRequest, discordId: string): Promise<User> {
+function updateUser(userData: IPutUserRequestBody, discordId: string): Promise<User> {
     return new Promise<User>(async (resolve, reject) => {
         let user = await getUserByDiscordId(discordId);
 
@@ -49,7 +49,7 @@ function updateUser(userData: IPutUserRequest, discordId: string): Promise<User>
     });
 }
 
-interface IPutUserRequest {
+interface IPutUserRequestBody {
     name?: string;
     email?: string;
 }

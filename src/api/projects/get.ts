@@ -12,7 +12,7 @@ module.exports = (req: Request, res: Response) => {
         .catch(err => genericServerError(err, res));
 };
 
-export function getProjects(projectRequestData?: IGetProjectsRequest): Promise<IProject[]> {
+export function getProjects(projectRequestData?: IGetProjectsRequestQuery): Promise<IProject[]> {
     return new Promise((resolve, reject) => {
         Project
             .findAll((projectRequestData && projectRequestData.discordId ? {
@@ -37,6 +37,6 @@ export function getProjects(projectRequestData?: IGetProjectsRequest): Promise<I
     });
 }
 
-interface IGetProjectsRequest {
+interface IGetProjectsRequestQuery {
     discordId?: string;
 }

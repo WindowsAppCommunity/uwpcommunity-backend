@@ -43,12 +43,12 @@ module.exports = async (req: Request, res: Response) => {
         .catch((err) => genericServerError(err, res));
 };
 
-function checkBody(body: IPostUserRequest): true | string {
+function checkBody(body: IPostUserRequestBody): true | string {
     if (!body.name) return "name";
     return true;
 }
 
-function submitUser(userData: IPostUserRequest): Promise<User> {
+function submitUser(userData: IPostUserRequestBody): Promise<User> {
     return new Promise<User>((resolve, reject) => {
         User.create({ ...userData })
             .then(resolve)
@@ -56,7 +56,7 @@ function submitUser(userData: IPostUserRequest): Promise<User> {
     });
 }
 
-interface IPostUserRequest {
+interface IPostUserRequestBody {
     name: string;
     email?: string;
 }

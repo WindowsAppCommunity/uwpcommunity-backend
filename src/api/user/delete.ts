@@ -7,6 +7,7 @@ import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 module.exports = async (req: Request, res: Response) => {
     const authAccess = validateAuthenticationHeader(req, res);
     if (!authAccess) return;
+    
     let discordId = await GetDiscordIdFromToken(authAccess, res);
     if (!discordId) return;
 
