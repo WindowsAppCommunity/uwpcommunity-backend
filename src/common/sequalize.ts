@@ -42,7 +42,7 @@ export async function InitDb() {
         })
         .catch(console.error);
 
-    Role.count() 
+    Role.count()
         .then(c => {
             if (c < 1) {
                 Role.bulkCreate([
@@ -56,7 +56,7 @@ export async function InitDb() {
         })
         .catch(console.error);
 
-    Category.count() 
+    Category.count()
         .then(c => {
             if (c < 1) {
                 Category.bulkCreate([
@@ -73,7 +73,7 @@ export async function CreateMocks() {
 
     for (const launch of launches) {
         await Promise.all(Array(5).fill(undefined).map(
-            () => GenerateMockProject(launch, fakeUser).save()
+            async () => (await GenerateMockProject(launch, fakeUser)).save()
         ))
     }
 }
