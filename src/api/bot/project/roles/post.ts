@@ -1,21 +1,13 @@
 import { Request, Response } from "express-serve-static-core";
 import { GetGuildUser, GetGuild, GetDiscordUser } from "../../../../common/helpers/discord";
-import { genericServerError } from "../../../../common/helpers/generic";
+import { genericServerError, validateAuthenticationHeader } from "../../../../common/helpers/generic";
 import { getProjectsByDiscordId } from "../../../../models/Project";
 
 module.exports = async (req: Request, res: Response) => {
-    if (!req.headers.authorization) {
-        res.status(422);
-        res.json(JSON.stringify({
-            error: "Malformed request",
-            reason: "Missing authorization header"
-        }));
-        return;
-    }
+    const authAccess = validateAuthenticationHeader(req, res);
+    if (!authAccess) return;
 
-    let accessToken = req.headers.authorization.replace("Bearer ", "");
-
-    const user = await GetDiscordUser(accessToken).catch((err) => genericServerError(err, res));
+    const user = await GetDiscordUser(authAccess).catch((err) => genericServerError(err, res));
     if (!user) {
         res.status(401);
         res.end(`Invalid accessToken`);

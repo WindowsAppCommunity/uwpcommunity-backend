@@ -1,21 +1,13 @@
 import { Request, Response } from "express";
-import { genericServerError } from "../../common/helpers/generic";
+import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
 import { getUserByDiscordId } from "../../models/User";
 import { getProjectsByDiscordId } from "../../models/Project";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 
 module.exports = async (req: Request, res: Response) => {
-    if (!req.headers.authorization) {
-        res.status(422);
-        res.json({
-            error: "Malformed request",
-            reason: "Missing authorization header"
-        });
-        return;
-    }
-
-    let accessToken = req.headers.authorization.replace("Bearer ", "");
-    let discordId = await GetDiscordIdFromToken(accessToken, res);
+    const authAccess = validateAuthenticationHeader(req, res);
+    if (!authAccess) return;
+    let discordId = await GetDiscordIdFromToken(authAccess, res);
     if (!discordId) return;
 
     deleteUser(discordId)

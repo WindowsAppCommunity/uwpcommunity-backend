@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Response, Request } from "express";
 
 /**
  * @summary Get the first matching regex group, instead of an array with the full string and all matches
@@ -56,6 +56,19 @@ export function genericServerError(err: any, res: Response) {
     console.error(err);
     res.status(500);
     res.end(`Internal server error: ${err}`);
+}
+
+/** @summary Checks that the authentication header contains a valid auth token */
+export function validateAuthenticationHeader(req: Request, res: Response): string | undefined {
+    if (!req.headers.authorization) {
+        res.status(422);
+        res.json({
+            error: "Malformed request",
+            reason: "Missing authorization header"
+        });
+        return;
+    }
+    return req.headers.authorization.replace("Bearer ", "");
 }
 
 export const DEVENV: boolean = process.argv.filter(val => val == 'dev').length > 0;
