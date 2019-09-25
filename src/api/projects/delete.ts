@@ -21,7 +21,7 @@ module.exports = async (req: Request, res: Response) => {
     let discordId = await GetDiscordIdFromToken(authAccess, res);
     if (!discordId) return;
 
-    deleteProject(req.body, req.query.appName)
+    deleteProject(req.body, discordId)
         .then(() => {
             res.end("Success");
         })
