@@ -6,16 +6,16 @@ import { Response, Request } from "express";
  * @param {regex} regex 
  * @returns {string} First matching regex group
  */
-function match(toMatch: string, regex: RegExp) {
+export function match(toMatch: string, regex: RegExp) {
     let m = regex.exec(toMatch);
     return (m && m[1]) ? m[1] : undefined;
 }
 
-function replaceAll(text: string, target: string, replacement: string) {
+export function replaceAll(text: string, target: string, replacement: string) {
     return text.split(target).join(replacement);
 };
 
-function remove(text: string, target: string) {
+export function remove(text: string, target: string) {
     return text.split(target).join("");
 };
 
