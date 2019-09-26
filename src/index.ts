@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import { InitBot } from "./common/discord";
+import { InitBot } from "./common/helpers/discord";
 import { InitDb, CreateMocks } from './common/sequalize';
-import * as swaggerJSDoc from 'swagger-jsdoc';
+import * as helpers from './common/helpers/generic';
 
 /**
  * This file sets up API endpoints based on the current folder tree in Heroku.
@@ -13,7 +13,7 @@ import * as swaggerJSDoc from 'swagger-jsdoc';
  * Example: 
  * The file `./myapp/bugreport/post.js` is set up at `POST https://example.com/myapp/bugreport/`
  * 
- * For local development, run `npm start dev`
+ * For local development, run `npm run dev`
  */
 
 const express = require('express'), app = express();
@@ -21,7 +21,6 @@ const expressWs = require('express-ws')(app);
 
 const bodyParser = require('body-parser');
 const glob = require('glob');
-const helpers = require('./common/helpers');
 const swaggerUi = require('swagger-ui-express');
 
 const PORT = process.env.PORT || 5000;
@@ -74,6 +73,8 @@ function InitApi() {
                 if (helpers.DEVENV) serverPath = serverPath.replace(__dirname.replace(/\\/g, `/`).replace("/build", ""), "");
 
                 const method = helpers.match(filePath, RegexMethods);
+                if (!method) continue;
+
                 console.log(`Setting up ${filePath} as ${method.toUpperCase()} ${serverPath}`);
 
                 switch (method) {

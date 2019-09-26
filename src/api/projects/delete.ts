@@ -1,46 +1,39 @@
 import { Request, Response } from "express";
 import User from "../../models/User"
-import Project from "../../models/Project";
-import { findSimilarProjectName, GetDiscordUser, genericServerError } from "../../common/helpers";
-import { IDiscordUser } from "../../models/types";
+import Project, { findSimilarProjectName } from "../../models/Project";
+import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
+import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 
-module.exports = (req: Request, res: Response) => {
-    const queryCheck = checkQuery(req.query);
-    if (queryCheck !== true) {
+module.exports = async (req: Request, res: Response) => {
+    const bodyCheck = checkBody(req.body);
+    if (bodyCheck !== true) {
         res.status(422);
         res.json({
             error: "Malformed request",
-            reason: `Query string "${queryCheck}" not provided or malformed`
+            reason: `Query string "${bodyCheck}" not provided or malformed`
         });
         return;
     }
 
-    (async () => {
-        const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
-        if (!user) {
-            res.status(401);
-            res.end(`Invalid accessToken`);
-            return;
-        }
+    const authAccess = validateAuthenticationHeader(req, res);
+    if (!authAccess) return;
 
-        let discordId = (user as IDiscordUser).id;
+    let discordId = await GetDiscordIdFromToken(authAccess, res);
+    if (!discordId) return;
 
-        deleteProject(discordId, req.query.appName)
-            .then(results => {
-                res.end("Success");
-            })
-            .catch(err => genericServerError(err, res));
-    })();
+    deleteProject(req.body, discordId)
+        .then(() => {
+            res.end("Success");
+        })
+        .catch(err => genericServerError(err, res));
 };
 
-function checkQuery(query: any): true | string {
-    if (!query.accessToken) return "accessToken";
-    if (!query.appName) return "appName";
-
+function checkBody(body: IDeleteProjectsRequestBody): true | string {
+    if (!body.appName) return "appName";
     return true;
 }
 
-function deleteProject(discordId: string, appName: string): Promise<void> {
+function deleteProject(projectRequestData: IDeleteProjectsRequestBody, discordId: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
         Project.findAll({
             include: [{
@@ -51,10 +44,10 @@ function deleteProject(discordId: string, appName: string): Promise<void> {
             if (projects.length === 0) { reject(`Projects with ID ${discordId} not found`); return; }
 
             // Filter out the correct app name
-            const project = projects.filter(project => JSON.parse(JSON.stringify(project)).appName == appName);
+            const project = projects.filter(project => JSON.parse(JSON.stringify(project)).appName == projectRequestData.appName);
 
-            let similarAppName = findSimilarProjectName(projects, appName);
-            if (project.length === 0) { reject(`Project with name "${appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`); return; }
+            let similarAppName = findSimilarProjectName(projects, projectRequestData.appName);
+            if (project.length === 0) { reject(`Project with name "${projectRequestData.appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`); return; }
             if (project.length > 1) { reject("More than one project with that name found. Contact a system administrator to fix the data duplication"); return; }
 
             project[0].destroy({ force: true })
@@ -62,4 +55,9 @@ function deleteProject(discordId: string, appName: string): Promise<void> {
                 .catch(reject);
         }).catch(reject);
     });
+}
+
+
+interface IDeleteProjectsRequestBody {
+    appName: string;
 }

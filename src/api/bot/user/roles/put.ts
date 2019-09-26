@@ -1,21 +1,13 @@
 import { Request, Response } from "express-serve-static-core";
-import { GetGuildUser, GetGuildRoles } from "../../../../common/discord";
+import { GetGuildUser, GetGuildRoles, GetDiscordUser } from "../../../../common/helpers/discord";
 import { Role } from "discord.js";
-import { genericServerError, GetDiscordUser } from "../../../../common/helpers";
+import { genericServerError, validateAuthenticationHeader } from "../../../../common/helpers/generic";
 
 module.exports = async (req: Request, res: Response) => {
-    if (!req.headers.authorization) {
-        res.status(422);
-        res.json(JSON.stringify({
-            error: "Malformed request",
-            reason: "Missing authorization header"
-        }));
-        return;
-    }
+    const authAccess = validateAuthenticationHeader(req, res);
+    if (!authAccess) return;
 
-    let accessToken = req.headers.authorization.replace("Bearer ", "");
-
-    const user = await GetDiscordUser(accessToken).catch((err) => genericServerError(err, res));
+    const user = await GetDiscordUser(authAccess).catch((err) => genericServerError(err, res));
     if (!user) {
         res.status(401);
         res.end(`Invalid access token`);
@@ -29,24 +21,31 @@ module.exports = async (req: Request, res: Response) => {
     }
 
     // Must have a role in the body (JSON)
-    if (req.body.role) {
-        let guildRoles = await GetGuildRoles();
-        if (!guildRoles) {
-            genericServerError("Unable to get guild roles", res); return;
-        }
+    if (!req.body.role) {
+        res.status(422);
+        res.json(JSON.stringify({
+            error: "Malformed request",
+            reason: "Missing role in body"
+        }));
+        return;
+    }
 
-        let roles: Role[] = guildRoles.filter(role => role.name == req.body.role);
-        if (roles.length == 0) InvalidRole(res);
+    let guildRoles = await GetGuildRoles();
+    if (!guildRoles) {
+        genericServerError("Unable to get guild roles", res); return;
+    }
+
+    let roles: Role[] = guildRoles.filter(role => role.name == req.body.role);
+    if (roles.length == 0) InvalidRole(res);
 
 
-        switch (req.body.role) {
-            case "Developer":
-                guildMember.addRole(roles[0]);
-                res.send("Success");
-                break;
-            default:
-                InvalidRole(res);
-        }
+    switch (req.body.role) {
+        case "Developer":
+            guildMember.addRole(roles[0]);
+            res.send("Success");
+            break;
+        default:
+            InvalidRole(res);
     }
 };
 

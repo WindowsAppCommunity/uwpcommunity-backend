@@ -1,41 +1,29 @@
 import { Request, Response } from "express";
-import { IDiscordUser } from "../../models/types";
-import { getUserByDiscordId, getProjectsByUserDiscordId, GetDiscordUser, genericServerError } from "../../common/helpers";
+import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
+import { getUserByDiscordId } from "../../models/User";
+import { getProjectsByDiscordId } from "../../models/Project";
+import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 
-module.exports = (req: Request, res: Response) => {
-    if (req.query.accessToken == undefined) {
-        res.status(422);
-        res.json({
-            error: "Malformed request",
-            reason: `Query string "accessToken" not provided or malformed`
-        });
-        return;
-    }
+module.exports = async (req: Request, res: Response) => {
+    const authAccess = validateAuthenticationHeader(req, res);
+    if (!authAccess) return;
+    
+    let discordId = await GetDiscordIdFromToken(authAccess, res);
+    if (!discordId) return;
 
-    (async () => {
-        const user = await GetDiscordUser(req.query.accessToken).catch((err) => genericServerError(err, res));
-        if (!user) {
-            res.status(401);
-            res.end(`Invalid accessToken`);
-            return;
-        }
-
-        let discordId = (user as IDiscordUser).id;
-
-        deleteUser(discordId)
-            .then(success => {
-                if (success) {
-                    res.end("Success");
-                } else {
-                    res.status(404);
-                    res.json({
-                        error: "Not found",
-                        reason: `User does not exist in database`
-                    });
-                }
-            })
-            .catch((err) => genericServerError(err, res));
-    })();
+    deleteUser(discordId)
+        .then(success => {
+            if (success) {
+                res.end("Success");
+            } else {
+                res.status(404);
+                res.json({
+                    error: "Not found",
+                    reason: `User does not exist in database`
+                });
+            }
+        })
+        .catch((err) => genericServerError(err, res));
 };
 
 /**
@@ -45,7 +33,7 @@ module.exports = (req: Request, res: Response) => {
 function deleteUser(discordId: string): Promise<boolean> {
     return new Promise(async (resolve, reject) => {
         // Find the projects
-        const projects = await getProjectsByUserDiscordId(discordId).catch(reject);
+        const projects = await getProjectsByDiscordId(discordId).catch(reject);
 
         if (!projects) return;
 

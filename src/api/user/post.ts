@@ -1,19 +1,17 @@
 import { Request, Response } from "express";
-import User from "../../models/User"
-import { IUser } from "../../models/types";
-import { genericServerError, GetDiscordIdFromToken } from "../../common/helpers";
+import User, { getUserByDiscordId } from "../../models/User"
+import { ResponseErrorReasons } from "../../models/types";
+import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
+import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 
-module.exports = (req: Request, res: Response) => {
+module.exports = async (req: Request, res: Response) => {
     const body = req.body;
 
-    if (req.query.accessToken == undefined) {
-        res.status(422);
-        res.json({
-            error: "Malformed request",
-            reason: `Query string "accessToken" not provided or malformed`
-        });
-        return;
-    }
+    const authAccess = validateAuthenticationHeader(req, res);
+    if (!authAccess) return;
+
+    let discordId = await GetDiscordIdFromToken(authAccess, res);
+    if (!discordId) return;
 
     const bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
@@ -25,24 +23,32 @@ module.exports = (req: Request, res: Response) => {
         return;
     }
 
-    (async () => {
-        body.discordId = await GetDiscordIdFromToken(req, res);
+    // Check if the user already exists
+    const user = await getUserByDiscordId(discordId).catch((err) => genericServerError(err, res));
 
-        submitUser(body)
-            .then(() => {
-                res.status(200);
-                res.json({ Success: "Success" });
-            })
-            .catch((err) => genericServerError(err, res));
-    })();
+    if (user) {
+        res.status(400);
+        res.json({
+            error: "Bad request",
+            reason: ResponseErrorReasons.UserExists
+        });
+        return;
+    }
+
+    submitUser({ ...body, discordId: discordId })
+        .then(() => {
+            res.status(200);
+            res.send("Success");
+        })
+        .catch((err) => genericServerError(err, res));
 };
 
-function checkBody(body: IUser): true | string {
+function checkBody(body: IPostUserRequestBody): true | string {
     if (!body.name) return "name";
     return true;
 }
 
-function submitUser(userData: IUser): Promise<User> {
+function submitUser(userData: IPostUserRequestBody): Promise<User> {
     return new Promise<User>((resolve, reject) => {
         User.create({ ...userData })
             .then(resolve)
@@ -50,3 +56,7 @@ function submitUser(userData: IUser): Promise<User> {
     });
 }
 
+interface IPostUserRequestBody {
+    name: string;
+    email?: string;
+}

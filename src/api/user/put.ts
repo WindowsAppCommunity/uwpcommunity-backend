@@ -1,20 +1,16 @@
 import { Request, Response } from "express";
-import User from "../../models/User"
-import { IUser, IDiscordUser } from "../../models/types";
-import { getUserByDiscordId, GetDiscordUser, genericServerError } from "../../common/helpers";
+import User, { getUserByDiscordId } from "../../models/User"
+import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
+import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 
-module.exports = (req: Request, res: Response) => {
+module.exports = async (req: Request, res: Response) => {
     const body = req.body;
-    body.discordId = req.query.accessToken;
 
-    if (req.query.accessToken == undefined) {
-        res.status(422);
-        res.json({
-            error: "Malformed request",
-            reason: `Query string "accessToken" not provided or malformed`
-        });
-        return;
-    }
+    const authAccess = validateAuthenticationHeader(req, res);
+    if (!authAccess) return;
+
+    let discordId = await GetDiscordIdFromToken(authAccess, res);
+    if (!discordId) return;
 
     let bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
@@ -25,32 +21,21 @@ module.exports = (req: Request, res: Response) => {
         });
         return;
     }
-    (async () => {
-        const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
-        if (!user) {
-            res.status(401);
-            res.end(`Invalid accessToken`);
-            return;
-        }
 
-        let discordId = (user as IDiscordUser).id;
-
-        updateUser(body, discordId)
-            .then(results => {
-                res.end("Success");
-            })
-            .catch((err) => genericServerError(err, res));
-    })();
+    updateUser(body, discordId)
+        .then(() => {
+            res.end("Success");
+        })
+        .catch((err) => genericServerError(err, res));
 };
 
-function checkBody(body: IUser): true | string {
+function checkBody(body: IPutUserRequestBody): true | string {
     if (!body.name) return "name";
     return true;
 }
 
-function updateUser(userData: IUser, discordId: string): Promise<User> {
+function updateUser(userData: IPutUserRequestBody, discordId: string): Promise<User> {
     return new Promise<User>(async (resolve, reject) => {
-
         let user = await getUserByDiscordId(discordId);
 
         if (!user) {
@@ -58,10 +43,13 @@ function updateUser(userData: IUser, discordId: string): Promise<User> {
             return;
         }
 
-        // Update only the display name and public contact email
-        user.update({ name: userData.name, email: userData.email })
+        user.update(userData)
             .then(resolve)
             .catch(reject);
     });
 }
 
+interface IPutUserRequestBody {
+    name?: string;
+    email?: string;
+}

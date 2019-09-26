@@ -3,6 +3,8 @@ import Launch from '../models/Launch';
 import Projects, { GenerateMockProject } from '../models/Project';
 import User, { GenerateMockUser } from '../models/User';
 import UserProject from '../models/UserProject';
+import Role from '../models/Role';
+import Category from '../models/Category';
 
 const db_url = process.env.DATABASE_URL;
 
@@ -17,7 +19,7 @@ export const sequelize = new Sequelize(db_url, {
     dialectOptions: {
         ssl: true
     },
-    models: [Launch, Projects, User, UserProject]
+    models: [Launch, Projects, User, UserProject, Role, Category]
 });
 
 export async function InitDb() {
@@ -39,6 +41,30 @@ export async function InitDb() {
             }
         })
         .catch(console.error);
+
+    Role.count()
+        .then(c => {
+            if (c < 1) {
+                Role.bulkCreate([
+                    { name: "Developer" },
+                    { name: "Designer" },
+                    { name: "Tester" },
+                    { name: "Translator" },
+                    { name: "Other" }
+                ]);
+            }
+        })
+        .catch(console.error);
+
+    Category.count()
+        .then(c => {
+            if (c < 1) {
+                Category.bulkCreate([
+                    { name: "Other" }
+                ]);
+            }
+        })
+        .catch(console.error);
 }
 
 export async function CreateMocks() {
@@ -47,7 +73,7 @@ export async function CreateMocks() {
 
     for (const launch of launches) {
         await Promise.all(Array(5).fill(undefined).map(
-            () => GenerateMockProject(launch, fakeUser).save()
+            async () => (await GenerateMockProject(launch, fakeUser)).save()
         ))
     }
 }

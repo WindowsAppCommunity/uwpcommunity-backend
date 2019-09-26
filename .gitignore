@@ -31,6 +31,7 @@ bower_components/
 
 # Debug Files
 npm-debug.*
+.env
 
 # Temp Files
 .cache/

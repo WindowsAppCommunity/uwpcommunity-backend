@@ -1,21 +1,13 @@
 import { Request, Response } from "express-serve-static-core";
-import { GetGuildUser, GetGuild } from "../../../../common/discord";
-import { Role } from "discord.js";
-import { genericServerError, GetDiscordUser, getProjectsByUserDiscordId } from "../../../../common/helpers";
+import { GetGuildUser, GetGuild, GetDiscordUser } from "../../../../common/helpers/discord";
+import { genericServerError, validateAuthenticationHeader } from "../../../../common/helpers/generic";
+import { getProjectsByDiscordId } from "../../../../models/Project";
 
 module.exports = async (req: Request, res: Response) => {
-    if (!req.headers.authorization) {
-        res.status(422);
-        res.json(JSON.stringify({
-            error: "Malformed request",
-            reason: "Missing authorization header"
-        }));
-        return;
-    }
+    const authAccess = validateAuthenticationHeader(req, res);
+    if (!authAccess) return;
 
-    let accessToken = req.headers.authorization.replace("Bearer ", "");
-
-    const user = await GetDiscordUser(accessToken).catch((err) => genericServerError(err, res));
+    const user = await GetDiscordUser(authAccess).catch((err) => genericServerError(err, res));
     if (!user) {
         res.status(401);
         res.end(`Invalid accessToken`);
@@ -41,7 +33,7 @@ module.exports = async (req: Request, res: Response) => {
     }
 
     // If trying to create a role for a project, make sure the project exists
-    let Projects = await getProjectsByUserDiscordId(user.id);
+    let Projects = await getProjectsByDiscordId(user.id);
     if (Projects.filter(project => req.body.appName == project.appName).length == 0) {
         res.status(422);
         res.end(`The project doesn't exist`);
@@ -75,6 +67,7 @@ module.exports = async (req: Request, res: Response) => {
 };
 
 const allowedProjectSubRoles = ["translator", "dev", "beta tester"];
+
 function capitalizeFirstLetter(s: string) {
     return s.charAt(0).toUpperCase() + s.slice(1);
 }

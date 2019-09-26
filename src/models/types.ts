@@ -8,19 +8,27 @@ export interface IProject {
     githubLink?: string;
     externalLink?: string;
 
-    users?: IUser[];
+    collaborators: IUser[];
 
-    launchId: number;
-
-    discordId: number;
+    launchYear?: number;
+    category?: string;
 };
 
 export interface IUser {
+    id?: number;
+
     name: string;
     discordId: string;
     email?: string; // This is a contact email supplied by the user, and is safe to be public 
-    id?: number;
-    projects?: IProject[];
+}
+
+export const ResponseErrorReasons = {
+    MissingAuth: "Missing authorization header",
+    UserExists: "User already exists",
+    UserNotExists: "User does not exist",
+    ProjectExists: "Project already exists",
+    ProjectNotExist: "Project does not exist",
+    GenericError: "Internal server error"
 }
 
 /**
