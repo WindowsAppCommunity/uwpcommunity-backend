@@ -2,9 +2,9 @@ import { Column, CreatedAt, Model, Table, UpdatedAt, ForeignKey, BelongsTo, Prim
 import User from './User';
 import Launch, { GetLaunchIdFromYear, GetLaunchYearFromId } from './Launch';
 import * as faker from 'faker'
-import UserProject from './UserProject';
+import UserProject, { GetProjectCollaborators } from './UserProject';
 import Category, { GetCategoryIdFromName, GetCategoryNameFromId } from './Category';
-import { IProject } from './types';
+import { IProject, IProjectCollaborator } from './types';
 import { levenshteinDistance } from '../common/helpers/generic';
 
 @Table
@@ -141,6 +141,8 @@ export async function DbToStdModal_Project(project: Project): Promise<IProject> 
 
     const launchYear = await GetLaunchYearFromId(project.launchId);
 
+    const collaborators: IProjectCollaborator[] = await GetProjectCollaborators(project.id);
+
     const stdProject: IProject = {
         id: project.id,
         appName: project.appName,
@@ -149,7 +151,7 @@ export async function DbToStdModal_Project(project: Project): Promise<IProject> 
         downloadLink: project.downloadLink,
         githubLink: project.githubLink,
         externalLink: project.externalLink,
-        collaborators: [], // TODO: Create DbToStdModal helpers to get collaborators,
+        collaborators: collaborators,
         launchYear: launchYear,
         category: categoryName,
         awaitingLaunchApproval: project.awaitingLaunchApproval

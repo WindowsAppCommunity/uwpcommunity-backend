@@ -10,11 +10,15 @@ export interface IProject {
 
     awaitingLaunchApproval: boolean;
 
-    collaborators: IUser[];
+    collaborators: IProjectCollaborator[];
 
     launchYear?: number;
     category?: string;
 };
+
+export interface IProjectCollaborator extends IUser {
+    role: "Developer" | "Translator" | "Beta Tester" | "Other";
+}
 
 export interface IUser {
     id?: number;
