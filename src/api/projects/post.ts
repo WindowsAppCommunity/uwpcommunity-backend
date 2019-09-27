@@ -64,7 +64,7 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
         }
 
         // Create the project
-        Project.create(await StdToDbModal_Project({ ...projectRequestData }))
+        Project.create(await StdToDbModal_Project({ ...projectRequestData, collaborators: [] }))
             .then((project) => {
 
                 // Create the userproject
@@ -86,7 +86,7 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
 }
 
 interface IPostProjectsRequestBody {
-    role: "Developer" | "Translator" | "Beta Tester" | "Other";
+    role: "Developer" | "Other"; // Only a developer or "Other" (manager, etc) can create a new project
     appName: string;
     category: string;
     description: string;
@@ -94,7 +94,6 @@ interface IPostProjectsRequestBody {
     downloadLink?: string;
     githubLink?: string;
     externalLink?: string;
-    collaborators: IUser[];
     launchYear: number;
     awaitingLaunchApproval: boolean;
 }
