@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { StdToDbModal_User, getUserByDiscordId } from "../../models/User"
 import Project, { findSimilarProjectName, getProjectsByDiscordId } from "../../models/Project";
 import { genericServerError, validateAuthenticationHeader } from '../../common/helpers/generic';
-import { IProject, IUser } from "../../models/types";
+import { IProject } from "../../models/types";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 import { GetCategoryIdFromName } from "../../models/Category";
 import { GetLaunchIdFromYear } from "../../models/Launch";
@@ -82,7 +82,6 @@ export function StdToDbModal_IPutProjectsRequestBody(updatedProject: IPutProject
             reject("User not found");
             return;
         };
-        const isOwner = await UserOwnsProject(user, dbProject).catch(reject);;
 
         if (updatedProject.description) updatedDbProjectData.description = updatedProject.description;
         if (updatedProject.category) updatedDbProjectData.categoryId = await GetCategoryIdFromName(updatedProject.category)
@@ -92,8 +91,6 @@ export function StdToDbModal_IPutProjectsRequestBody(updatedProject: IPutProject
         if (updatedProject.githubLink) updatedDbProjectData.githubLink = updatedProject.githubLink;
         if (updatedProject.externalLink) updatedDbProjectData.externalLink = updatedProject.externalLink;
 
-        if (updatedProject.collaborators && isOwner) dbProject.users = await Promise.all(updatedProject.collaborators.map(async user => await StdToDbModal_User(user)));
-
         resolve(updatedDbProjectData);
     });
 }
@@ -102,14 +99,12 @@ interface IPutProjectsRequestBody {
     appName: string;
     description?: string;
     isPrivate: boolean;
+    
     downloadLink?: string;
     githubLink?: string;
     externalLink?: string;
 
-    collaborators?: IUser[];
-
     awaitingLaunchApproval: boolean;
-    
     launchYear?: number;
     category?: string;
 }
