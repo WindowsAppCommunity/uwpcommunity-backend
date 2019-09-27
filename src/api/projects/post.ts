@@ -2,8 +2,7 @@ import { Request, Response } from "express";
 import Project, { StdToDbModal_Project, isExistingProject } from "../../models/Project";
 import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
 import UserProject from "../../models/UserProject";
-import Role from "../../models/Role";
-import { IUser } from "../../models/types";
+import { GetRoleByName } from "../../models/Role";
 import { getUserByDiscordId } from "../../models/User";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 
@@ -58,7 +57,7 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
             return;
         }
 
-        const role: Role | void | null = (await Role.findOne({ where: { name: projectRequestData.role } }).catch(reject));
+        const role = await GetRoleByName(projectRequestData.role);
         if (!role) {
             reject("Invalid role");
             return;
