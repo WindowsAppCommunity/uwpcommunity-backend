@@ -6,6 +6,7 @@ import Role from "../../models/Role";
 import { IUser } from "../../models/types";
 import { getUserByDiscordId } from "../../models/User";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
+import { MalformedRequest, Success } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;
@@ -18,18 +19,13 @@ module.exports = async (req: Request, res: Response) => {
 
     const bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
-        res.status(422);
-        res.json({
-            error: "Malformed request",
-            reason: `Parameter "${bodyCheck}" not provided or malformed`
-        });
+        MalformedRequest(res, `Parameter "${bodyCheck}" not provided or malformed`);  
         return;
     }
 
     submitProject(body, discordId)
         .then(() => {
-            res.status(200);
-            res.send("Success");
+            Success(res);
         })
         .catch((err) => genericServerError(err, res));
 };

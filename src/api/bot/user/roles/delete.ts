@@ -2,6 +2,7 @@ import { Request, Response } from "express-serve-static-core";
 import { GetGuildUser, GetDiscordUser } from "../../../../common/helpers/discord";
 import { Role } from "discord.js";
 import { genericServerError, validateAuthenticationHeader } from "../../../../common/helpers/generic";
+import { MalformedRequest, Error401Response, SendSuccess } from "../../../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const authAccess = validateAuthenticationHeader(req, res);
@@ -9,8 +10,7 @@ module.exports = async (req: Request, res: Response) => {
 
     const user = await GetDiscordUser(authAccess).catch((err) => genericServerError(err, res));
     if (!user) {
-        res.status(401);
-        res.end(`Invalid access token`);
+        Error401Response(res, `Invalid accessToken`);
         return;
     }
 
@@ -22,8 +22,7 @@ module.exports = async (req: Request, res: Response) => {
 
     // Must have a role in the body (JSON)
     if (!req.body.name) {
-        res.status(401);
-        res.end(`Missing role name`);
+        Error401Response(res, `Missing role name`);
         return;
     }
 
@@ -34,17 +33,13 @@ module.exports = async (req: Request, res: Response) => {
     switch (req.body.name) {
         case "Developer":
             guildMember.removeRole(roles[0]);
-            res.send("Success");
+            SendSuccess(res);
             break;
         default:
             InvalidRole(res);
     }
 };
 
-function InvalidRole(res: Response) {
-    res.status(422);
-    res.json({
-        error: "Malformed request",
-        reason: "Invalid role"
-    });
+function InvalidRole(res: Response) {    
+    MalformedRequest(res, "Invalid role");        
 }

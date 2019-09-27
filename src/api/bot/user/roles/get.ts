@@ -2,6 +2,7 @@ import { Request, Response } from "express-serve-static-core";
 import { GetGuildUser, GetDiscordUser } from "../../../../common/helpers/discord";
 import { Role } from "discord.js";
 import { genericServerError, validateAuthenticationHeader } from "../../../../common/helpers/generic";
+import { Error401Response } from "../../../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const authAccess = validateAuthenticationHeader(req, res);
@@ -9,8 +10,7 @@ module.exports = async (req: Request, res: Response) => {
 
     const user = await GetDiscordUser(authAccess).catch((err) => genericServerError(err, res));
     if (!user) {
-        res.status(401);
-        res.end(`Invalid access token`);
+        Error401Response(res, `Invalid accessToken`);
         return;
     }
 

@@ -2,6 +2,7 @@ import { Request, Response } from "express-serve-static-core";
 import { GetGuildUser, GetGuild, GetDiscordUser } from "../../../../common/helpers/discord";
 import { genericServerError, validateAuthenticationHeader } from "../../../../common/helpers/generic";
 import { getProjectsByDiscordId } from "../../../../models/Project";
+import { Error422Response, Error401Response, EndSuccess } from "../../../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const authAccess = validateAuthenticationHeader(req, res);
@@ -9,8 +10,7 @@ module.exports = async (req: Request, res: Response) => {
 
     const user = await GetDiscordUser(authAccess).catch((err) => genericServerError(err, res));
     if (!user) {
-        res.status(401);
-        res.end(`Invalid accessToken`);
+        Error401Response(res, `Invalid accessToken`);
         return;
     }
 
@@ -22,27 +22,23 @@ module.exports = async (req: Request, res: Response) => {
 
     // Must have a proper roles in the body (JSON)
     if (!req.body.appName) {
-        res.status(422);
-        res.end(`Missing appName`);
+        Error422Response(res, `Missing appName`);
         return;
     }
     if (!req.body.subRole) {
-        res.status(422);
-        res.end(`Missing subRole`);
+        Error422Response(res, `Missing subRole`);
         return;
     }
 
     // If trying to create a role for a project, make sure the project exists
     let Projects = await getProjectsByDiscordId(user.id);
     if (Projects.filter(project => req.body.appName == project.appName).length == 0) {
-        res.status(422);
-        res.end(`The project doesn't exist`);
+        Error422Response(res, `The project doesn't exist`);
         return;
     }
 
     if (allowedProjectSubRoles.filter(subRole => req.body.subRole == subRole).length == 0) {
-        res.status(422);
-        res.end(`Invalid project subRole. Allowed values are: "${allowedProjectSubRoles.join(`" , "`)}"`);
+        Error422Response(res, `Invalid project subRole. Allowed values are: "${allowedProjectSubRoles.join(`" , "`)}"`);
         return;
     }
 
@@ -52,8 +48,7 @@ module.exports = async (req: Request, res: Response) => {
     const roleName = req.body.appName + " " + capitalizeFirstLetter(req.body.subRole);
     // Check that the role doesn't already exist
     if (server.roles.array().filter(role => role.name == roleName).length > 0) {
-        res.status(401);
-        res.end("Role already exists");
+        Error401Response(res, "Role already exists");
         return;
     }
 
@@ -63,7 +58,7 @@ module.exports = async (req: Request, res: Response) => {
         color: req.body.color
     });
 
-    res.end("Success");
+    EndSuccess(res);
 };
 
 const allowedProjectSubRoles = ["translator", "dev", "beta tester"];

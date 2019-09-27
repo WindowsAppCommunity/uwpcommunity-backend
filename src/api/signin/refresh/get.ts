@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { MalformedRequest } from "../../../common/helpers/responseHelper";
 const request = require("request");
 
 function log(...args: any[]) {
@@ -7,11 +8,7 @@ function log(...args: any[]) {
 
 module.exports = (req: Request, res: Response) => {
     if (!req.query.refreshToken) {
-        res.status(422);
-        res.json({
-            error: "Malformed request",
-            reason: "Missing refreshToken"
-        });
+        MalformedRequest(res, "Missing refreshToken");  
         return;
     }
 

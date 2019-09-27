@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { DEVENV } from "../../../common/helpers/generic"
+import { MalformedRequest } from "../../../common/helpers/responseHelper";
 
 const request = require("request");
 
@@ -19,11 +20,7 @@ module.exports = (req: Request, res: Response) => {
     let code = req.query.code;
 
     if (!code) {
-        res.status(422);
-        res.json({
-            error: "Malformed request",
-            reason: "Missing code query"
-        });
+        MalformedRequest(res, "Missing code query");  
         return;
     }
 

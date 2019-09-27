@@ -2,25 +2,18 @@ import { Request, Response } from "express";
 import { getUserByDiscordId, DbToStdModal_User } from "../../models/User";
 import { IUser } from "../../models/types";
 import { genericServerError } from "../../common/helpers/generic";
+import { MalformedRequest, NotFound } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const queryCheck = checkQuery(req.query);
     if (queryCheck !== true) {
-        res.status(422);
-        res.json({
-            error: "Malformed request",
-            reason: `Query string "${queryCheck}" not provided or malformed`
-        });
+        MalformedRequest(res, `Query string "${queryCheck}" not provided or malformed`);  
         return;
     }
 
     const user: IUser | void = await GetUser(req.query).catch(err => genericServerError(err, res));
     if (!user) {
-        res.status(404);
-        res.json({
-            error: "Not found",
-            reason: `User does not exist`
-        });
+        NotFound(res, `User does not exist in database`);
         return;
     }
     res.json(user);
