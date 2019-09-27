@@ -6,7 +6,6 @@ import UserProject from './UserProject';
 import Category, { GetCategoryIdFromName, GetCategoryNameFromId } from './Category';
 import { IProject } from './types';
 import { levenshteinDistance } from '../common/helpers/generic';
-import { resolve } from 'bluebird';
 
 @Table
 export default class Project extends Model<Project> {
@@ -35,6 +34,8 @@ export default class Project extends Model<Project> {
     @Column
     externalLink!: string;
 
+    @Column
+    awaitingLaunchApproval!: boolean;
 
     @BelongsToMany(() => User, () => UserProject)
     users?: User[];
@@ -129,7 +130,8 @@ export async function StdToDbModal_Project(project: IProject): Promise<Project> 
         launchId: project.launchYear ? await GetLaunchIdFromYear(project.launchYear) : 0,
         downloadLink: project.downloadLink,
         githubLink: project.githubLink,
-        externalLink: project.externalLink
+        externalLink: project.externalLink,
+        awaitingLaunchApproval: project.awaitingLaunchApproval
     };
     return (dbProject);
 }
@@ -149,7 +151,8 @@ export async function DbToStdModal_Project(project: Project): Promise<IProject> 
         externalLink: project.externalLink,
         collaborators: [], // TODO: Create DbToStdModal helpers to get collaborators,
         launchYear: launchYear,
-        category: categoryName
+        category: categoryName,
+        awaitingLaunchApproval: project.awaitingLaunchApproval
     };
     return (stdProject);
 }
@@ -169,7 +172,8 @@ export async function GenerateMockProject(launch: Launch, user: User): Promise<P
         launchYear: LaunchId,
         downloadLink: faker.internet.url(),
         githubLink: faker.internet.url(),
-        externalLink: faker.internet.url()
+        externalLink: faker.internet.url(),
+        awaitingLaunchApproval: faker.random.boolean()
     };
 
     return new Project(await StdToDbModal_Project(mockProject));

@@ -97,4 +97,5 @@ interface IPostProjectsRequestBody {
     externalLink?: string;
     collaborators: IUser[];
     launchYear: number;
+    awaitingLaunchApproval: boolean;
 }

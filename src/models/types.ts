@@ -8,6 +8,8 @@ export interface IProject {
     githubLink?: string;
     externalLink?: string;
 
+    awaitingLaunchApproval: boolean;
+
     collaborators: IUser[];
 
     launchYear?: number;
