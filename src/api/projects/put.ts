@@ -108,6 +108,8 @@ interface IPutProjectsRequestBody {
 
     collaborators?: IUser[];
 
+    awaitingLaunchApproval: boolean;
+    
     launchYear?: number;
     category?: string;
 }
