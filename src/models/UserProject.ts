@@ -2,7 +2,7 @@ import { Column, Model, Table, ForeignKey, PrimaryKey, AutoIncrement, DataType, 
 import User from './User';
 import Project from './Project';
 import Role from './Role';
-
+import { IProjectCollaborator } from './types';
 @Table
 export default class UserProject extends Model<UserProject> {
     @PrimaryKey
@@ -36,6 +36,18 @@ export async function GetUsersByProjectId(ProjectId: number) {
     for (let user of RelevantUserProjects) {
         const RelevantUser = await User.findOne({ where: { id: user.id } });
         if (RelevantUser) users.push(RelevantUser);
+    }
+
+    return users;
+}
+
+export async function GetProjectCollaborators(ProjectId: number): Promise<IProjectCollaborator[]> {
+    const RelevantUserProjects = await UserProject.findAll({ where: { projectId: ProjectId } });
+
+    let users: IProjectCollaborator[] = [];
+    for (let user of RelevantUserProjects) {
+        const RelevantUser = await User.findOne({ where: { id: user.id } });
+        if (RelevantUser) users.push({ ...RelevantUser, role: user.role.name });
     }
 
     return users;
