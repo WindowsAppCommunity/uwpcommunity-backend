@@ -23,3 +23,10 @@ export default class Role extends Model<Role> {
     @Column
     updatedAt!: Date;
 }
+
+export async function GetRoleByName(roleName: string) {
+    return Role.findOne({ where: { name: roleName } });
+}
+export async function GetRoleById(roleName: string) {
+    return Role.findOne({ where: { name: roleName } });
+}
