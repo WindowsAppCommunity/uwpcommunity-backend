@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import Project, { StdToDbModal_Project, isExistingProject } from "../../models/Project";
 import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
-import UserProject from "../../models/UserProject";
+import UserProject, { GetProjectsByUserId } from "../../models/UserProject";
 import { GetRoleByName } from "../../models/Role";
 import { getUserByDiscordId } from "../../models/User";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
@@ -56,10 +56,16 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
             reject("User not found");
             return;
         }
-
+        
         const role = await GetRoleByName(projectRequestData.role);
         if (!role) {
             reject("Invalid role");
+            return;
+        }
+        
+        const existingUserProjects = await GetProjectsByUserId(discordId);
+        if(existingUserProjects.length >= 5) {
+            reject("User has exceeded limit of 5 projects");
             return;
         }
 
