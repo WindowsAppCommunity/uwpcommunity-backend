@@ -90,6 +90,8 @@ export function StdToDbModal_IPutProjectsRequestBody(updatedProject: IPutProject
         if (updatedProject.downloadLink) updatedDbProjectData.downloadLink = updatedProject.downloadLink;
         if (updatedProject.githubLink) updatedDbProjectData.githubLink = updatedProject.githubLink;
         if (updatedProject.externalLink) updatedDbProjectData.externalLink = updatedProject.externalLink;
+        if (updatedProject.heroImage) updatedDbProjectData.heroImage = updatedProject.heroImage;
+        if (updatedProject.awaitingLaunchApproval) updatedDbProjectData.awaitingLaunchApproval = updatedProject.awaitingLaunchApproval;
 
         resolve(updatedDbProjectData);
     });
@@ -99,11 +101,12 @@ interface IPutProjectsRequestBody {
     appName: string;
     description?: string;
     isPrivate: boolean;
-    
+
     downloadLink?: string;
     githubLink?: string;
     externalLink?: string;
 
+    heroImage: string;
     awaitingLaunchApproval: boolean;
     launchYear?: number;
     category?: string;

@@ -8,6 +8,8 @@ export interface IProject {
     githubLink?: string;
     externalLink?: string;
 
+    heroImage: string;
+
     awaitingLaunchApproval: boolean;
 
     collaborators: IProjectCollaborator[];

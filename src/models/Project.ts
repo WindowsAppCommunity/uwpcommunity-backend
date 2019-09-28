@@ -37,6 +37,9 @@ export default class Project extends Model<Project> {
     @Column
     awaitingLaunchApproval!: boolean;
 
+    @Column
+    heroImage!: string;
+
     @BelongsToMany(() => User, () => UserProject)
     users?: User[];
 
@@ -53,7 +56,6 @@ export default class Project extends Model<Project> {
 
     @BelongsTo(() => Category, 'categoryId')
     category!: Category
-
 
     @CreatedAt
     @Column
@@ -131,7 +133,8 @@ export async function StdToDbModal_Project(project: IProject): Promise<Project> 
         downloadLink: project.downloadLink,
         githubLink: project.githubLink,
         externalLink: project.externalLink,
-        awaitingLaunchApproval: project.awaitingLaunchApproval
+        awaitingLaunchApproval: project.awaitingLaunchApproval,
+        heroImage: project.heroImage
     };
     return (dbProject);
 }
@@ -154,7 +157,8 @@ export async function DbToStdModal_Project(project: Project): Promise<IProject> 
         collaborators: collaborators,
         launchYear: launchYear,
         category: categoryName,
-        awaitingLaunchApproval: project.awaitingLaunchApproval
+        awaitingLaunchApproval: project.awaitingLaunchApproval,
+        heroImage: project.heroImage
     };
     return (stdProject);
 }
@@ -165,6 +169,7 @@ export async function GenerateMockProject(launch: Launch, user: User): Promise<P
     if (!LaunchId) LaunchId = 0;
 
     const mockProject: IProject = {
+        heroImage: faker.image.imageUrl(),
         collaborators: [],
         id: faker.random.number({ min: 0, max: 1000 }),
         category: "Other", // TODO: Update this when we get more than one category

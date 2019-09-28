@@ -37,6 +37,7 @@ function checkBody(body: IPostProjectsRequestBody): true | string {
     if (!body.appName) return "appName";
     if (!body.description) return "description";
     if (!body.role) return "role";
+    if (!body.heroImage) return "heroImage";
     if (body.isPrivate == undefined) return "isPrivate";
     return true;
 }
@@ -56,15 +57,15 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
             reject("User not found");
             return;
         }
-        
+
         const role = await GetRoleByName(projectRequestData.role);
         if (!role) {
             reject("Invalid role");
             return;
         }
-        
+
         const existingUserProjects = await GetProjectsByUserId(discordId);
-        if(existingUserProjects.length >= 5) {
+        if (existingUserProjects.length >= 5) {
             reject("User has exceeded limit of 5 projects");
             return;
         }
@@ -102,4 +103,5 @@ interface IPostProjectsRequestBody {
     externalLink?: string;
     launchYear: number;
     awaitingLaunchApproval: boolean;
+    heroImage: string;
 }
