@@ -19,7 +19,7 @@ module.exports = async (req: Request, res: Response) => {
 
     const bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
-        BuildResponse(res, Status.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`, "Malformed request"); 
+        BuildResponse(res, Status.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`); 
         return;
     }
 

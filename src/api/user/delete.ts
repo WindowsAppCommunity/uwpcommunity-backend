@@ -17,7 +17,7 @@ module.exports = async (req: Request, res: Response) => {
             if (success) {
                 BuildResponse(res, Status.Success, "Success");
             } else {
-                BuildResponse(res, Status.NotFound, "User does not exist in database", "Not Found");
+                BuildResponse(res, Status.NotFound, "User does not exist in database");
             }
         })
         .catch((err) => genericServerError(err, res));

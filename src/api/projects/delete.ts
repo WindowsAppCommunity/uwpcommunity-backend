@@ -8,7 +8,7 @@ import { Status, BuildResponse } from "../../common/helpers/responseHelper";
 module.exports = async (req: Request, res: Response) => {
     const bodyCheck = checkBody(req.body);
     if (bodyCheck !== true) {
-        BuildResponse(res, Status.MalformedRequest, `Query string "${bodyCheck}" not provided or malformed`, "Malformed request");
+        BuildResponse(res, Status.MalformedRequest, `Query string "${bodyCheck}" not provided or malformed`);
         return;
     }
 

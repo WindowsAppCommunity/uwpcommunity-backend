@@ -22,7 +22,7 @@ module.exports = async (req: Request, res: Response) => {
 
     // Must have a role in the body (JSON)
     if (!req.body.role) {        
-        BuildResponse(res, Status.MalformedRequest, "Missing role in body", "Malformed request");
+        BuildResponse(res, Status.MalformedRequest, "Missing role in body");
         return;
     }
 
@@ -46,5 +46,5 @@ module.exports = async (req: Request, res: Response) => {
 };
 
 function InvalidRole(res: Response) {
-    BuildResponse(res, Status.MalformedRequest, "Invalid role", "Malformed request");
+    BuildResponse(res, Status.MalformedRequest, "Invalid role");
 }

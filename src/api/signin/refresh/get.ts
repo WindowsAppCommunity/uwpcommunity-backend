@@ -8,7 +8,7 @@ function log(...args: any[]) {
 
 module.exports = (req: Request, res: Response) => {
     if (!req.query.refreshToken) {        
-        BuildResponse(res, Status.MalformedRequest, "Missing refreshToken", "Malformed request"); 
+        BuildResponse(res, Status.MalformedRequest, "Missing refreshToken"); 
         return;
     }
 

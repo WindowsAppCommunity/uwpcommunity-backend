@@ -22,23 +22,23 @@ module.exports = async (req: Request, res: Response) => {
 
     // Must have a proper roles in the body (JSON)
     if (!req.body.appName) {        
-        BuildResponse(res, Status.MalformedRequest, "Missing appName", "Malformed request");
+        BuildResponse(res, Status.MalformedRequest, "Missing appName");
         return;
     }
     if (!req.body.subRole) {
-        BuildResponse(res, Status.MalformedRequest, "Missing subRole", "Malformed request");
+        BuildResponse(res, Status.MalformedRequest, "Missing subRole");
         return;
     }
 
     // If trying to create a role for a project, make sure the project exists
     let Projects = await getProjectsByDiscordId(user.id);
     if (Projects.filter(project => req.body.appName == project.appName).length == 0) {
-        BuildResponse(res, Status.MalformedRequest, "The project doesn't exist", "Malformed request");
+        BuildResponse(res, Status.MalformedRequest, "The project doesn't exist");
         return;
     }
 
     if (allowedProjectSubRoles.filter(subRole => req.body.subRole == subRole).length == 0) {        
-        BuildResponse(res, Status.MalformedRequest, `Invalid project subRole. Allowed values are: "${allowedProjectSubRoles.join(`" , "`)}"`, "Malformed request");
+        BuildResponse(res, Status.MalformedRequest, `Invalid project subRole. Allowed values are: "${allowedProjectSubRoles.join(`" , "`)}"`);
         return;
     }
 

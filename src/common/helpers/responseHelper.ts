@@ -9,14 +9,41 @@ export enum Status {
     Success = 200,
 }
 
-export function BuildResponse(res: Response, status: Status, reasonString: string, errorString?: string): Response {
+export function BuildResponse(res: Response, status: Status, reasonString: string): Response {
+    let errorString = undefined;
+
+    switch (status) {
+        case Status.BadRequest:
+            errorString = "Bad request";
+            break;
+        // TODO: ???
+        // case Status.Unauthorized:
+        //     errorString = "";
+        //     break;
+        case Status.NotFound:
+            errorString = "Not Found";
+            break;
+        case Status.MalformedRequest:
+            errorString = "Malformed request";
+            break;
+        // TODO: ???
+        // case Status.InternalServerError:
+        //     errorString = "";
+        //     break;
+    }
+
+    SendResponse(res, status, reasonString, errorString);
+    return res;
+}
+
+function SendResponse(res: Response, status: Status, reasonString: string, errorString?: string): Response {
     res.status(status);
-    if(errorString){
+    if (errorString) {
         res.send({
             error: errorString,
             reason: reasonString
         });
-    }else{
+    } else {
         res.send(reasonString);
     }
     return res;

@@ -41,5 +41,5 @@ module.exports = async (req: Request, res: Response) => {
 };
 
 function InvalidRole(res: Response) {        
-    BuildResponse(res, Status.MalformedRequest, "Invalid role", "Malformed request");     
+    BuildResponse(res, Status.MalformedRequest, "Invalid role");     
 }

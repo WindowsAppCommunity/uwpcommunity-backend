@@ -20,7 +20,7 @@ module.exports = (req: Request, res: Response) => {
     let code = req.query.code;
 
     if (!code) {        
-        BuildResponse(res, Status.MalformedRequest, "Missing code query", "Malformed request"); 
+        BuildResponse(res, Status.MalformedRequest, "Missing code query"); 
         return;
     }
 

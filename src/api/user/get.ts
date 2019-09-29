@@ -7,13 +7,13 @@ import { Status, BuildResponse } from "../../common/helpers/responseHelper";
 module.exports = async (req: Request, res: Response) => {
     const queryCheck = checkQuery(req.query);
     if (queryCheck !== true) {
-        BuildResponse(res, Status.MalformedRequest, `Query string "${queryCheck}" not provided or malformed`, "Malformed request"); 
+        BuildResponse(res, Status.MalformedRequest, `Query string "${queryCheck}" not provided or malformed`); 
         return;
     }
 
     const user: IUser | void = await GetUser(req.query).catch(err => genericServerError(err, res));
     if (!user) {
-        BuildResponse(res, Status.NotFound, "User does not exist in database", "Not Found");
+        BuildResponse(res, Status.NotFound, "User does not exist in database");
         return;
     }
     

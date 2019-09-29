@@ -20,13 +20,13 @@ module.exports = async (req: Request, res: Response) => {
 
     const queryCheck = checkQuery(req.query);
     if (queryCheck !== true) {
-        BuildResponse(res, Status.MalformedRequest, `Query string "${queryCheck}" not provided or malformed`, "Malformed request"); 
+        BuildResponse(res, Status.MalformedRequest, `Query string "${queryCheck}" not provided or malformed`); 
         return;
     }
 
     const bodyCheck = checkIProject(body);
     if (bodyCheck !== true) {
-        BuildResponse(res, Status.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`, "Malformed request"); 
+        BuildResponse(res, Status.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`); 
         return;
     }
 

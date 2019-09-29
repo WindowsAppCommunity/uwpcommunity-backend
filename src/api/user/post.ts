@@ -16,7 +16,7 @@ module.exports = async (req: Request, res: Response) => {
 
     const bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
-        BuildResponse(res, Status.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`, "Malformed request");       
+        BuildResponse(res, Status.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`);       
         return;
     }
 
@@ -24,7 +24,7 @@ module.exports = async (req: Request, res: Response) => {
     const user = await getUserByDiscordId(discordId).catch((err) => genericServerError(err, res));
 
     if (user) {
-        BuildResponse(res, Status.BadRequest, ResponseErrorReasons.UserExists, "Bad request");
+        BuildResponse(res, Status.BadRequest, ResponseErrorReasons.UserExists);
         return;
     }
 

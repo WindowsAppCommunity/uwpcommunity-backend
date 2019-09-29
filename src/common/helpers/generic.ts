@@ -61,7 +61,7 @@ export function genericServerError(err: any, res: Response) {
 /** @summary Checks that the authentication header contains a valid auth token */
 export function validateAuthenticationHeader(req: Request, res: Response): string | undefined {
     if (!req.headers.authorization) {
-        BuildResponse(res, Status.MalformedRequest, "Missing authorization header", "Malformed request"); 
+        BuildResponse(res, Status.MalformedRequest, "Missing authorization header"); 
         return;
     }
     return req.headers.authorization.replace("Bearer ", "");
