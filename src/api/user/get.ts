@@ -2,22 +2,22 @@ import { Request, Response } from "express";
 import { getUserByDiscordId, DbToStdModal_User } from "../../models/User";
 import { IUser } from "../../models/types";
 import { genericServerError } from "../../common/helpers/generic";
-import { Status, BuildResponse } from "../../common/helpers/responseHelper";
+import { ErrorStatus, BuildErrorResponse, SuccessStatus, BuildSuccessResponse } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const queryCheck = checkQuery(req.query);
     if (queryCheck !== true) {
-        BuildResponse(res, Status.MalformedRequest, `Query string "${queryCheck}" not provided or malformed`); 
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, `Query string "${queryCheck}" not provided or malformed`); 
         return;
     }
 
     const user: IUser | void = await GetUser(req.query).catch(err => genericServerError(err, res));
     if (!user) {
-        BuildResponse(res, Status.NotFound, "User does not exist in database");
+        BuildErrorResponse(res, ErrorStatus.NotFound, "User does not exist in database");
         return;
     }
     
-    BuildResponse(res, Status.Success, JSON.stringify(user));
+    BuildSuccessResponse(res, SuccessStatus.Success, JSON.stringify(user));
 };
 
 function GetUser(query: IGetUserRequestQuery): Promise<IUser> {

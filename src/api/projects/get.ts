@@ -3,12 +3,12 @@ import User from "../../models/User";
 import Project, { DbToStdModal_Project } from "../../models/Project";
 import { IProject } from "../../models/types";
 import { genericServerError } from "../../common/helpers/generic";
-import { Status, BuildResponse } from "../../common/helpers/responseHelper";
+import { ErrorStatus, BuildErrorResponse, SuccessStatus, BuildSuccessResponse } from "../../common/helpers/responseHelper";
 
 module.exports = (req: Request, res: Response) => {
     getProjects(req.query)
         .then(result => {
-            BuildResponse(res, Status.Success, JSON.stringify(result));
+            BuildSuccessResponse(res, SuccessStatus.Success, JSON.stringify(result));
         })
         .catch(err => genericServerError(err, res));
 };

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { DEVENV } from "../../../common/helpers/generic"
-import { BuildResponse, Status } from "../../../common/helpers/responseHelper";
+import { BuildErrorResponse, ErrorStatus } from "../../../common/helpers/responseHelper";
 
 const request = require("request");
 
@@ -20,7 +20,7 @@ module.exports = (req: Request, res: Response) => {
     let code = req.query.code;
 
     if (!code) {        
-        BuildResponse(res, Status.MalformedRequest, "Missing code query"); 
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, "Missing code query"); 
         return;
     }
 

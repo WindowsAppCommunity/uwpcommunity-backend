@@ -2,7 +2,7 @@ import { Request, Response } from "express-serve-static-core";
 import { GetGuildUser, GetDiscordUser } from "../../../../common/helpers/discord";
 import { Role } from "discord.js";
 import { genericServerError, validateAuthenticationHeader } from "../../../../common/helpers/generic";
-import { BuildResponse, Status } from "../../../../common/helpers/responseHelper";
+import { BuildErrorResponse, ErrorStatus, SuccessStatus, BuildSuccessResponse } from "../../../../common/helpers/responseHelper";
 import { json } from "body-parser";
 
 module.exports = async (req: Request, res: Response) => {
@@ -11,7 +11,7 @@ module.exports = async (req: Request, res: Response) => {
 
     const user = await GetDiscordUser(authAccess).catch((err) => genericServerError(err, res));
     if (!user) {        
-        BuildResponse(res, Status.Unauthorized, "Invalid accessToken");
+        BuildErrorResponse(res, ErrorStatus.Unauthorized, "Invalid accessToken");
         return;
     }
 
@@ -23,5 +23,5 @@ module.exports = async (req: Request, res: Response) => {
 
     let roles: Role[] = guildMember.roles.array().map(role => { delete role.guild; return role });
 
-    BuildResponse(res, Status.Success, JSON.stringify(roles));
+    BuildSuccessResponse(res, SuccessStatus.Success, JSON.stringify(roles));
 };

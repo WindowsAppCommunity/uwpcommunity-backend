@@ -7,7 +7,7 @@ import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 import { GetCategoryIdFromName } from "../../models/Category";
 import { GetLaunchIdFromYear } from "../../models/Launch";
 import { UserOwnsProject } from "../../models/UserProject";
-import { BuildResponse, Status } from "../../common/helpers/responseHelper";
+import { BuildErrorResponse, ErrorStatus, SuccessStatus, BuildSuccessResponse } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;
@@ -20,19 +20,19 @@ module.exports = async (req: Request, res: Response) => {
 
     const queryCheck = checkQuery(req.query);
     if (queryCheck !== true) {
-        BuildResponse(res, Status.MalformedRequest, `Query string "${queryCheck}" not provided or malformed`); 
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, `Query string "${queryCheck}" not provided or malformed`); 
         return;
     }
 
     const bodyCheck = checkIProject(body);
     if (bodyCheck !== true) {
-        BuildResponse(res, Status.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`); 
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`); 
         return;
     }
 
     updateProject(body, req.query, discordId)
         .then(() => {
-            BuildResponse(res, Status.Success, "Success");
+            BuildSuccessResponse(res, SuccessStatus.Success, "Success");
         })
         .catch((err) => genericServerError(err, res));
 };

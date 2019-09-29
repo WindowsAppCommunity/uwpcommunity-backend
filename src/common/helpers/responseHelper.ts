@@ -1,50 +1,52 @@
 import { Response } from "express";
 
-export enum Status {
+export enum ErrorStatus {
     BadRequest = 400,
     Unauthorized = 401,
     NotFound = 404,
     MalformedRequest = 422,
-    InternalServerError = 500,
-    Success = 200,
+    InternalServerError = 500
 }
 
-export function BuildResponse(res: Response, status: Status, reasonString: string): Response {
+export enum SuccessStatus {
+    Success = 200
+}
+
+export function BuildErrorResponse(res: Response, status: ErrorStatus, reasonString: string): Response {
     let errorString = undefined;
 
     switch (status) {
-        case Status.BadRequest:
+        case ErrorStatus.BadRequest:
             errorString = "Bad request";
             break;
-        // TODO: ???
-        // case Status.Unauthorized:
-        //     errorString = "";
-        //     break;
-        case Status.NotFound:
+        case ErrorStatus.Unauthorized:
+            errorString = "Unauthorized";
+            break;
+        case ErrorStatus.NotFound:
             errorString = "Not Found";
             break;
-        case Status.MalformedRequest:
+        case ErrorStatus.MalformedRequest:
             errorString = "Malformed request";
             break;
-        // TODO: ???
-        // case Status.InternalServerError:
-        //     errorString = "";
-        //     break;
+        case ErrorStatus.InternalServerError:
+            errorString = "Internal Server Error";
+            break;
     }
 
-    SendResponse(res, status, reasonString, errorString);
+    SendResponse(res, ErrorStatus, {
+        error: errorString,
+        reason: reasonString
+    });
     return res;
 }
 
-function SendResponse(res: Response, status: Status, reasonString: string, errorString?: string): Response {
+export function BuildSuccessResponse(res: Response, status: SuccessStatus, body: string): Response {
+    SendResponse(res, ErrorStatus, body);
+    return res;
+}
+
+function SendResponse(res: Response, status: any, body: any): Response {
     res.status(status);
-    if (errorString) {
-        res.send({
-            error: errorString,
-            reason: reasonString
-        });
-    } else {
-        res.send(reasonString);
-    }
+    res.send(body);
     return res;
 }
