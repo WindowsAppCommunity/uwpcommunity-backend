@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { DEVENV } from "../../../common/helpers/generic"
-import { MalformedRequest } from "../../../common/helpers/responseHelper";
+import { BuildResponse, Status } from "../../../common/helpers/responseHelper";
 
 const request = require("request");
 
@@ -19,8 +19,8 @@ if (process.env.discord_client === undefined || process.env.discord_secret === u
 module.exports = (req: Request, res: Response) => {
     let code = req.query.code;
 
-    if (!code) {
-        MalformedRequest(res, "Missing code query");  
+    if (!code) {        
+        BuildResponse(res, Status.MalformedRequest, "Missing code query", "Malformed request"); 
         return;
     }
 

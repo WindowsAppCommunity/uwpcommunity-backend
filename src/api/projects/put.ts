@@ -7,7 +7,7 @@ import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 import { GetCategoryIdFromName } from "../../models/Category";
 import { GetLaunchIdFromYear } from "../../models/Launch";
 import { UserOwnsProject } from "../../models/UserProject";
-import { MalformedRequest, EndSuccess } from "../../common/helpers/responseHelper";
+import { BuildResponse, Status } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;
@@ -20,19 +20,19 @@ module.exports = async (req: Request, res: Response) => {
 
     const queryCheck = checkQuery(req.query);
     if (queryCheck !== true) {
-        MalformedRequest(res, `Query string "${queryCheck}" not provided or malformed`);  
+        BuildResponse(res, Status.MalformedRequest, `Query string "${queryCheck}" not provided or malformed`, "Malformed request"); 
         return;
     }
 
     const bodyCheck = checkIProject(body);
     if (bodyCheck !== true) {
-        MalformedRequest(res, `Parameter "${bodyCheck}" not provided or malformed`);  
+        BuildResponse(res, Status.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`, "Malformed request"); 
         return;
     }
 
     updateProject(body, req.query, discordId)
         .then(() => {
-            EndSuccess(res);
+            BuildResponse(res, Status.Success, "Success");
         })
         .catch((err) => genericServerError(err, res));
 };

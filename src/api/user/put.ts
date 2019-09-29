@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import User, { getUserByDiscordId } from "../../models/User"
 import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
-import { MalformedRequest, EndSuccess } from "../../common/helpers/responseHelper";
+import { Status, BuildResponse } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;
@@ -15,13 +15,13 @@ module.exports = async (req: Request, res: Response) => {
 
     let bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
-        MalformedRequest(res, `Parameter "${bodyCheck}" not provided or malformed`);  
+        BuildResponse(res, Status.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`, "Malformed request"); 
         return;
     }
 
     updateUser(body, discordId)
         .then(() => {
-            EndSuccess(res);
+            BuildResponse(res, Status.Success, "Success");
         })
         .catch((err) => genericServerError(err, res));
 };

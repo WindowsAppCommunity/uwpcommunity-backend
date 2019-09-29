@@ -3,7 +3,7 @@ import { genericServerError, validateAuthenticationHeader } from "../../common/h
 import { getUserByDiscordId } from "../../models/User";
 import { getProjectsByDiscordId } from "../../models/Project";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
-import { NotFound, EndSuccess } from "../../common/helpers/responseHelper";
+import { BuildResponse, Status } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const authAccess = validateAuthenticationHeader(req, res);
@@ -15,9 +15,9 @@ module.exports = async (req: Request, res: Response) => {
     deleteUser(discordId)
         .then(success => {
             if (success) {
-                EndSuccess(res);
+                BuildResponse(res, Status.Success, "Success");
             } else {
-                NotFound(res, `User does not exist in database`);
+                BuildResponse(res, Status.NotFound, "User does not exist in database", "Not Found");
             }
         })
         .catch((err) => genericServerError(err, res));

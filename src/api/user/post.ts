@@ -3,7 +3,7 @@ import User, { getUserByDiscordId } from "../../models/User"
 import { ResponseErrorReasons } from "../../models/types";
 import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
-import { MalformedRequest, BadRequest, Success } from "../../common/helpers/responseHelper";
+import { BuildResponse, Status } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;
@@ -16,7 +16,7 @@ module.exports = async (req: Request, res: Response) => {
 
     const bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
-        MalformedRequest(res, `Parameter "${bodyCheck}" not provided or malformed`);        
+        BuildResponse(res, Status.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`, "Malformed request");       
         return;
     }
 
@@ -24,13 +24,13 @@ module.exports = async (req: Request, res: Response) => {
     const user = await getUserByDiscordId(discordId).catch((err) => genericServerError(err, res));
 
     if (user) {
-        BadRequest(res, ResponseErrorReasons.UserExists);
+        BuildResponse(res, Status.BadRequest, ResponseErrorReasons.UserExists, "Bad request");
         return;
     }
 
     submitUser({ ...body, discordId: discordId })
         .then(() => {
-            Success(res);
+            BuildResponse(res, Status.Success, "Success");
         })
         .catch((err) => genericServerError(err, res));
 };

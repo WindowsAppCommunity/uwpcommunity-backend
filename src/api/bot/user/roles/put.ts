@@ -2,7 +2,7 @@ import { Request, Response } from "express-serve-static-core";
 import { GetGuildUser, GetGuildRoles, GetDiscordUser } from "../../../../common/helpers/discord";
 import { Role } from "discord.js";
 import { genericServerError, validateAuthenticationHeader } from "../../../../common/helpers/generic";
-import { MalformedRequest, Error401Response, SendSuccess } from "../../../../common/helpers/responseHelper";
+import { BuildResponse, Status } from "../../../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const authAccess = validateAuthenticationHeader(req, res);
@@ -10,7 +10,7 @@ module.exports = async (req: Request, res: Response) => {
 
     const user = await GetDiscordUser(authAccess).catch((err) => genericServerError(err, res));
     if (!user) {
-        Error401Response(res, `Invalid accessToken`);
+        BuildResponse(res, Status.Unauthorized, "Invalid accessToken");
         return;
     }
 
@@ -21,8 +21,8 @@ module.exports = async (req: Request, res: Response) => {
     }
 
     // Must have a role in the body (JSON)
-    if (!req.body.role) {
-        MalformedRequest(res, "Missing role in body");   
+    if (!req.body.role) {        
+        BuildResponse(res, Status.MalformedRequest, "Missing role in body", "Malformed request");
         return;
     }
 
@@ -38,7 +38,7 @@ module.exports = async (req: Request, res: Response) => {
     switch (req.body.role) {
         case "Developer":
             guildMember.addRole(roles[0]);
-            SendSuccess(res);
+            BuildResponse(res, Status.Success, "Success");
             break;
         default:
             InvalidRole(res);
@@ -46,5 +46,5 @@ module.exports = async (req: Request, res: Response) => {
 };
 
 function InvalidRole(res: Response) {
-    MalformedRequest(res, "Invalid role");   
+    BuildResponse(res, Status.MalformedRequest, "Invalid role", "Malformed request");
 }
