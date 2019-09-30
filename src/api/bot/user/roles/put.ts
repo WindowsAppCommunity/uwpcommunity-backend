@@ -2,6 +2,7 @@ import { Request, Response } from "express-serve-static-core";
 import { GetGuildUser, GetGuildRoles, GetDiscordUser } from "../../../../common/helpers/discord";
 import { Role } from "discord.js";
 import { genericServerError, validateAuthenticationHeader } from "../../../../common/helpers/generic";
+import { BuildErrorResponse, ErrorStatus, SuccessStatus, BuildSuccessResponse} from "../../../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const authAccess = validateAuthenticationHeader(req, res);
@@ -9,8 +10,7 @@ module.exports = async (req: Request, res: Response) => {
 
     const user = await GetDiscordUser(authAccess).catch((err) => genericServerError(err, res));
     if (!user) {
-        res.status(401);
-        res.end(`Invalid access token`);
+        BuildErrorResponse(res, ErrorStatus.Unauthorized, "Invalid accessToken");
         return;
     }
 
@@ -21,12 +21,8 @@ module.exports = async (req: Request, res: Response) => {
     }
 
     // Must have a role in the body (JSON)
-    if (!req.body.role) {
-        res.status(422);
-        res.json(JSON.stringify({
-            error: "Malformed request",
-            reason: "Missing role in body"
-        }));
+    if (!req.body.role) {        
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, "Missing role in body");
         return;
     }
 
@@ -42,7 +38,7 @@ module.exports = async (req: Request, res: Response) => {
     switch (req.body.role) {
         case "Developer":
             guildMember.addRole(roles[0]);
-            res.send("Success");
+            BuildSuccessResponse(res, SuccessStatus.Success, "Success");
             break;
         default:
             InvalidRole(res);
@@ -50,9 +46,5 @@ module.exports = async (req: Request, res: Response) => {
 };
 
 function InvalidRole(res: Response) {
-    res.status(422);
-    res.json({
-        error: "Malformed request",
-        reason: "Invalid role"
-    });
+    BuildErrorResponse(res, ErrorStatus.MalformedRequest, "Invalid role");
 }

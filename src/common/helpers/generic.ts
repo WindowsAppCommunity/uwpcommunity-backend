@@ -1,4 +1,5 @@
 import { Response, Request } from "express";
+import { ErrorStatus, BuildErrorResponse } from "./responseHelper";
 
 /**
  * @summary Get the first matching regex group, instead of an array with the full string and all matches
@@ -54,18 +55,13 @@ export function levenshteinDistance(a: string, b: string) {
 
 export function genericServerError(err: any, res: Response) {
     console.error(err);
-    res.status(500);
-    res.end(`Internal server error: ${err}`);
+    BuildErrorResponse(res, ErrorStatus.InternalServerError, `Internal server error: ${err}`);
 }
 
 /** @summary Checks that the authentication header contains a valid auth token */
 export function validateAuthenticationHeader(req: Request, res: Response): string | undefined {
     if (!req.headers.authorization) {
-        res.status(422);
-        res.json({
-            error: "Malformed request",
-            reason: "Missing authorization header"
-        });
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, "Missing authorization header"); 
         return;
     }
     return req.headers.authorization.replace("Bearer ", "");

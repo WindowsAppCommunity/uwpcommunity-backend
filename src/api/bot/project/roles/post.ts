@@ -2,6 +2,7 @@ import { Request, Response } from "express-serve-static-core";
 import { GetGuildUser, GetGuild, GetDiscordUser } from "../../../../common/helpers/discord";
 import { genericServerError, validateAuthenticationHeader } from "../../../../common/helpers/generic";
 import { getProjectsByDiscordId } from "../../../../models/Project";
+import { ErrorStatus, BuildErrorResponse, BuildSuccessResponse, SuccessStatus } from "../../../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const authAccess = validateAuthenticationHeader(req, res);
@@ -9,8 +10,7 @@ module.exports = async (req: Request, res: Response) => {
 
     const user = await GetDiscordUser(authAccess).catch((err) => genericServerError(err, res));
     if (!user) {
-        res.status(401);
-        res.end(`Invalid accessToken`);
+        BuildErrorResponse(res, ErrorStatus.Unauthorized, "Invalid accessToken");
         return;
     }
 
@@ -21,28 +21,24 @@ module.exports = async (req: Request, res: Response) => {
     }
 
     // Must have a proper roles in the body (JSON)
-    if (!req.body.appName) {
-        res.status(422);
-        res.end(`Missing appName`);
+    if (!req.body.appName) {        
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, "Missing appName");
         return;
     }
     if (!req.body.subRole) {
-        res.status(422);
-        res.end(`Missing subRole`);
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, "Missing subRole");
         return;
     }
 
     // If trying to create a role for a project, make sure the project exists
     let Projects = await getProjectsByDiscordId(user.id);
     if (Projects.filter(project => req.body.appName == project.appName).length == 0) {
-        res.status(422);
-        res.end(`The project doesn't exist`);
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, "The project doesn't exist");
         return;
     }
 
-    if (allowedProjectSubRoles.filter(subRole => req.body.subRole == subRole).length == 0) {
-        res.status(422);
-        res.end(`Invalid project subRole. Allowed values are: "${allowedProjectSubRoles.join(`" , "`)}"`);
+    if (allowedProjectSubRoles.filter(subRole => req.body.subRole == subRole).length == 0) {        
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, `Invalid project subRole. Allowed values are: "${allowedProjectSubRoles.join(`" , "`)}"`);
         return;
     }
 
@@ -52,8 +48,7 @@ module.exports = async (req: Request, res: Response) => {
     const roleName = req.body.appName + " " + capitalizeFirstLetter(req.body.subRole);
     // Check that the role doesn't already exist
     if (server.roles.array().filter(role => role.name == roleName).length > 0) {
-        res.status(401);
-        res.end("Role already exists");
+        BuildErrorResponse(res, ErrorStatus.Unauthorized, "Role already exists");
         return;
     }
 
@@ -63,7 +58,7 @@ module.exports = async (req: Request, res: Response) => {
         color: req.body.color
     });
 
-    res.end("Success");
+    BuildSuccessResponse(res, SuccessStatus.Success, "Success");
 };
 
 const allowedProjectSubRoles = ["translator", "dev", "beta tester"];

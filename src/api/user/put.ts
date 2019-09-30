@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import User, { getUserByDiscordId } from "../../models/User"
 import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
+import { ErrorStatus, BuildErrorResponse, SuccessStatus, BuildSuccessResponse } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;
@@ -14,17 +15,13 @@ module.exports = async (req: Request, res: Response) => {
 
     let bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
-        res.status(422);
-        res.json({
-            error: "Malformed request",
-            reason: `Parameter "${bodyCheck}" not provided or malformed`
-        });
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`); 
         return;
     }
 
     updateUser(body, discordId)
         .then(() => {
-            res.end("Success");
+            BuildSuccessResponse(res, SuccessStatus.Success, "Success");
         })
         .catch((err) => genericServerError(err, res));
 };
