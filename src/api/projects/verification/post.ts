@@ -72,12 +72,12 @@ async function getSupportEmail(storeId: string, res: Response): Promise<string |
 }
 
 
-function checkQuery(query: IGetMsstoreSupportemailRequestQuery): IGetMsstoreSupportemailRequestQuery | string {
+function checkQuery(query: IPostProjectsVerificationRequestQuery): IPostProjectsVerificationRequestQuery | string {
     if (!query.storeId) return "storeId";
 
     return query;
 }
-interface IGetMsstoreSupportemailRequestQuery {
+interface IPostProjectsVerificationRequestQuery {
     /** @summary The store ID of a public app */
     storeId: string;
 }
