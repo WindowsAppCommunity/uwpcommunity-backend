@@ -2,26 +2,45 @@ import { Request, Response } from "express";
 import User from "../../models/User";
 import Project, { DbToStdModal_Project } from "../../models/Project";
 import { IProject } from "../../models/types";
-import { genericServerError } from "../../common/helpers/generic";
+import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
+import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 import { ErrorStatus, BuildErrorResponse, SuccessStatus, BuildSuccessResponse } from "../../common/helpers/responseHelper";
 
-module.exports = (req: Request, res: Response) => {
-    getProjects(req.query)
-        .then(result => {
-            BuildSuccessResponse(res, SuccessStatus.Success, JSON.stringify(result));
-        })
-        .catch(err => genericServerError(err, res));
+module.exports = async (req: Request, res: Response) => {
+    // If someone wants the projects for a specific user, they must be authorized
+    if (req.query.discordId) {
+        const authAccess = validateAuthenticationHeader(req, res);
+        if (!authAccess) return;
+
+        const authenticatedDiscordId = await GetDiscordIdFromToken(authAccess, res);
+
+        // Make sure the requested ID matches the current user
+        if (req.query.discordId !== authenticatedDiscordId) {
+            res.status(401).send({
+                error: "Unauthorized",
+                reason: "Discord ID does not belong to user"
+            });
+            return;
+        }
+
+        const results = await getProjectsbyUser(req.query.discordId).catch(err => genericServerError(err, res));
+            BuildSuccessResponse(res, SuccessStatus.Success, JSON.stringify(results));
+
+    } else {
+        const results = await getAllProjects().catch(err => genericServerError(err, res));
+            BuildSuccessResponse(res, SuccessStatus.Success, JSON.stringify(results));
+    }
 };
 
-export function getProjects(projectRequestData?: IGetProjectsRequestQuery): Promise<IProject[]> {
+export function getProjectsbyUser(discordId: string): Promise<IProject[]> {
     return new Promise((resolve, reject) => {
         Project
-            .findAll((projectRequestData && projectRequestData.discordId ? {
+            .findAll({
                 include: [{
                     model: User,
-                    where: { discordId: projectRequestData.discordId }
+                    where: { discordId: discordId }
                 }]
-            } : undefined))
+            })
             .then(async results => {
                 if (results) {
                     let projects: IProject[] = [];
@@ -38,6 +57,25 @@ export function getProjects(projectRequestData?: IGetProjectsRequestQuery): Prom
     });
 }
 
+export function getAllProjects(): Promise<IProject[]> {
+    return new Promise((resolve, reject) => {
+        Project.findAll()
+            .then(async results => {
+                if (results) {
+                    let projects: IProject[] = [];
+
+                    for (let project of results) {
+                        let proj = await DbToStdModal_Project(project).catch(reject);
+                        // Only push a project if not private
+                        if (proj && !proj.isPrivate && !proj.needsManualReview) projects.push(proj);
+                    }
+
+                    resolve(projects);
+                }
+            })
+            .catch(reject);
+    });
+}
 interface IGetProjectsRequestQuery {
     discordId?: string;
 }

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { InitBot } from "./common/helpers/discord";
 import { InitDb, CreateMocks } from './common/sequalize';
 import * as helpers from './common/helpers/generic';
+import cors from "cors";
 
 /**
  * This file sets up API endpoints based on the current folder tree in Heroku.
@@ -26,6 +27,7 @@ const swaggerUi = require('swagger-ui-express');
 const PORT = process.env.PORT || 5000;
 const MOCK = process.argv.filter(val => val == 'mock').length > 0;
 
+app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use((req: Request, res: Response, next: NextFunction) => {

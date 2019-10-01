@@ -1,9 +1,8 @@
 import { Request, Response } from "express";
 import Project, { StdToDbModal_Project, isExistingProject } from "../../models/Project";
 import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
-import UserProject from "../../models/UserProject";
-import Role from "../../models/Role";
-import { IUser } from "../../models/types";
+import UserProject, { GetProjectsByUserId } from "../../models/UserProject";
+import { GetRoleByName } from "../../models/Role";
 import { getUserByDiscordId } from "../../models/User";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 import { BuildErrorResponse, ErrorStatus, SuccessStatus, BuildSuccessResponse } from "../../common/helpers/responseHelper";
@@ -34,6 +33,8 @@ function checkBody(body: IPostProjectsRequestBody): true | string {
     if (!body.appName) return "appName";
     if (!body.description) return "description";
     if (!body.role) return "role";
+    if (!body.category) return "category";
+    if (!body.heroImage) return "heroImage";
     if (body.isPrivate == undefined) return "isPrivate";
     return true;
 }
@@ -54,14 +55,20 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
             return;
         }
 
-        const role: Role | void | null = (await Role.findOne({ where: { name: projectRequestData.role } }).catch(reject));
+        const role = await GetRoleByName(projectRequestData.role);
         if (!role) {
             reject("Invalid role");
             return;
         }
 
+        const existingUserProjects = await GetProjectsByUserId(user.id);
+        if (existingUserProjects.length >= 5) {
+            reject("User has exceeded limit of 5 projects");
+            return;
+        }
+
         // Create the project
-        Project.create(await StdToDbModal_Project({ ...projectRequestData }))
+        Project.create(await StdToDbModal_Project({ ...projectRequestData, collaborators: [] }))
             .then((project) => {
 
                 // Create the userproject
@@ -83,7 +90,7 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
 }
 
 interface IPostProjectsRequestBody {
-    role: "Developer" | "Translator" | "Beta Tester" | "Other";
+    role: "Developer" | "Other"; // Only a developer or "Other" (manager, etc) can create a new project
     appName: string;
     category: string;
     description: string;
@@ -91,6 +98,9 @@ interface IPostProjectsRequestBody {
     downloadLink?: string;
     githubLink?: string;
     externalLink?: string;
-    collaborators: IUser[];
-    launchYear: number;
+    launchYear?: number;
+    awaitingLaunchApproval: boolean;
+    needsManualReview: boolean;
+    heroImage: string;
+    lookingForRoles: string[];
 }

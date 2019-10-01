@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { getUserByDiscordId, DbToStdModal_User } from "../../models/User";
-import { IUser } from "../../models/types";
+import { IUser, ResponseErrorReasons } from "../../models/types";
 import { genericServerError } from "../../common/helpers/generic";
 import { ErrorStatus, BuildErrorResponse, SuccessStatus, BuildSuccessResponse } from "../../common/helpers/responseHelper";
 
@@ -13,20 +13,26 @@ module.exports = async (req: Request, res: Response) => {
 
     const user: IUser | void = await GetUser(req.query).catch(err => genericServerError(err, res));
     if (!user) {
-        BuildErrorResponse(res, ErrorStatus.NotFound, "User does not exist in database");
+        BuildErrorResponse(res, ErrorStatus.NotFound, ResponseErrorReasons.UserNotExists);
         return;
     }
     
     BuildSuccessResponse(res, SuccessStatus.Success, JSON.stringify(user));
 };
 
-function GetUser(query: IGetUserRequestQuery): Promise<IUser> {
+function GetUser(query: IGetUserRequestQuery): Promise<IUser | undefined> {
     return new Promise(async (resolve, reject) => {
         const DbUser = await getUserByDiscordId(query.discordId).catch(reject);
-        if (!DbUser) return;
+        if (!DbUser) {
+            resolve();
+            return;
+        }
 
         const StdUser = await DbToStdModal_User(DbUser).catch(reject);
-        if (StdUser == undefined || StdUser == null) return;
+        if (StdUser == undefined || StdUser == null) {
+            reject("Unable to convert database entry");
+            return;
+        };
         resolve(StdUser);
     });
 }

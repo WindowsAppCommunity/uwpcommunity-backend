@@ -2,11 +2,9 @@ import { Column, CreatedAt, Model, Table, UpdatedAt, ForeignKey, BelongsTo, Prim
 import User from './User';
 import Launch, { GetLaunchIdFromYear, GetLaunchYearFromId } from './Launch';
 import * as faker from 'faker'
-import UserProject from './UserProject';
-import Category, { GetCategoryIdFromName, GetCategoryNameFromId } from './Category';
-import { IProject } from './types';
+import UserProject, { GetProjectCollaborators } from './UserProject';
+import { IProject, IProjectCollaborator } from './types';
 import { levenshteinDistance } from '../common/helpers/generic';
-import { resolve } from 'bluebird';
 
 @Table
 export default class Project extends Model<Project> {
@@ -35,10 +33,20 @@ export default class Project extends Model<Project> {
     @Column
     externalLink!: string;
 
+    @Column
+    awaitingLaunchApproval!: boolean;
+
+    @Column
+    needsManualReview!: boolean;
+
+    @Column
+    lookingForRoles!: string;
+
+    @Column
+    heroImage!: string;
 
     @BelongsToMany(() => User, () => UserProject)
     users?: User[];
-
 
     @ForeignKey(() => Launch)
     launchId!: number;
@@ -46,13 +54,8 @@ export default class Project extends Model<Project> {
     @BelongsTo(() => Launch, 'launchId')
     launch!: Launch
 
-
-    @ForeignKey(() => Category)
-    categoryId!: number;
-
-    @BelongsTo(() => Category, 'categoryId')
-    category!: Category
-
+    @Column
+    category!: string;
 
     @CreatedAt
     @Column
@@ -120,24 +123,28 @@ export function findSimilarProjectName(projects: Project[], appName: string): st
 
 //#region Converters
 /** @summary This converts the data model ONLY, and does not represent the actual data in the database */
-export async function StdToDbModal_Project(project: IProject): Promise<Project> {
-    const dbProject: any = {
-        categoryId: project.category ? await GetCategoryIdFromName(project.category) : 0,
+export async function StdToDbModal_Project(project: IProject): Promise<Partial<Project>> {
+    const dbProject: Partial<Project> = {
+        category: project.category,
         appName: project.appName,
         description: project.description,
         isPrivate: project.isPrivate,
         launchId: project.launchYear ? await GetLaunchIdFromYear(project.launchYear) : 0,
         downloadLink: project.downloadLink,
         githubLink: project.githubLink,
-        externalLink: project.externalLink
+        externalLink: project.externalLink,
+        awaitingLaunchApproval: project.awaitingLaunchApproval,
+        needsManualReview: project.needsManualReview,
+        heroImage: project.heroImage,
+        lookingForRoles: JSON.stringify(project.lookingForRoles)
     };
     return (dbProject);
 }
 
 export async function DbToStdModal_Project(project: Project): Promise<IProject> {
-    const categoryName = await GetCategoryNameFromId(project.categoryId);
-
     const launchYear = await GetLaunchYearFromId(project.launchId);
+
+    const collaborators: IProjectCollaborator[] = await GetProjectCollaborators(project.id);
 
     const stdProject: IProject = {
         id: project.id,
@@ -147,9 +154,13 @@ export async function DbToStdModal_Project(project: Project): Promise<IProject> 
         downloadLink: project.downloadLink,
         githubLink: project.githubLink,
         externalLink: project.externalLink,
-        collaborators: [], // TODO: Create DbToStdModal helpers to get collaborators,
+        collaborators: collaborators,
         launchYear: launchYear,
-        category: categoryName
+        category: project.category,
+        awaitingLaunchApproval: project.awaitingLaunchApproval,
+        needsManualReview: project.needsManualReview,
+        heroImage: project.heroImage,
+        lookingForRoles: JSON.parse(project.lookingForRoles)
     };
     return (stdProject);
 }
@@ -160,6 +171,7 @@ export async function GenerateMockProject(launch: Launch, user: User): Promise<P
     if (!LaunchId) LaunchId = 0;
 
     const mockProject: IProject = {
+        heroImage: faker.image.imageUrl(),
         collaborators: [],
         id: faker.random.number({ min: 0, max: 1000 }),
         category: "Other", // TODO: Update this when we get more than one category
@@ -169,7 +181,10 @@ export async function GenerateMockProject(launch: Launch, user: User): Promise<P
         launchYear: LaunchId,
         downloadLink: faker.internet.url(),
         githubLink: faker.internet.url(),
-        externalLink: faker.internet.url()
+        externalLink: faker.internet.url(),
+        awaitingLaunchApproval: faker.random.boolean(),
+        needsManualReview: faker.random.boolean(),
+        lookingForRoles: undefined
     };
 
     return new Project(await StdToDbModal_Project(mockProject));

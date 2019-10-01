@@ -1,12 +1,10 @@
 import { Request, Response } from "express";
-import { StdToDbModal_User, getUserByDiscordId } from "../../models/User"
+import { getUserByDiscordId } from "../../models/User"
 import Project, { findSimilarProjectName, getProjectsByDiscordId } from "../../models/Project";
 import { genericServerError, validateAuthenticationHeader } from '../../common/helpers/generic';
-import { IProject, IUser } from "../../models/types";
+import { IProject } from "../../models/types";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
-import { GetCategoryIdFromName } from "../../models/Category";
 import { GetLaunchIdFromYear } from "../../models/Launch";
-import { UserOwnsProject } from "../../models/UserProject";
 import { BuildErrorResponse, ErrorStatus, SuccessStatus, BuildSuccessResponse } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
@@ -57,16 +55,18 @@ function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPu
 
         if (!userProjects) { reject(`Project with name "${query.appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`); return; }
 
-        const DbProjectData: Project = await StdToDbModal_IPutProjectsRequestBody(projectUpdateRequest, userProjects[0], discordId);
+        const DbProjectData: Partial<Project> = await StdToDbModal_IPutProjectsRequestBody(projectUpdateRequest, discordId);
         userProjects[0].update(DbProjectData)
             .then(resolve)
             .catch(reject);
     });
 }
 
-export function StdToDbModal_IPutProjectsRequestBody(updatedProject: IPutProjectsRequestBody, dbProject: Project, discordId: string): Promise<Project> {
+export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRequestBody, discordId: string): Promise<Partial<Project>> {
     return new Promise(async (resolve, reject) => {
-        const updatedDbProjectData: any = {
+        const updatedProject = projectData as IProject;
+
+        const updatedDbProjectData: Partial<Project> = {
             appName: updatedProject.appName
         };
 
@@ -75,32 +75,37 @@ export function StdToDbModal_IPutProjectsRequestBody(updatedProject: IPutProject
             reject("User not found");
             return;
         };
-        const isOwner = await UserOwnsProject(user, dbProject).catch(reject);;
 
         if (updatedProject.description) updatedDbProjectData.description = updatedProject.description;
-        if (updatedProject.category) updatedDbProjectData.categoryId = await GetCategoryIdFromName(updatedProject.category)
+        if (updatedProject.category) updatedDbProjectData.category = updatedProject.category;
         if (updatedProject.launchYear !== undefined) updatedDbProjectData.launchId = await GetLaunchIdFromYear(updatedProject.launchYear);
         if (updatedProject.isPrivate) updatedDbProjectData.isPrivate = updatedProject.isPrivate;
         if (updatedProject.downloadLink) updatedDbProjectData.downloadLink = updatedProject.downloadLink;
         if (updatedProject.githubLink) updatedDbProjectData.githubLink = updatedProject.githubLink;
         if (updatedProject.externalLink) updatedDbProjectData.externalLink = updatedProject.externalLink;
-
-        if (updatedProject.collaborators && isOwner) dbProject.users = await Promise.all(updatedProject.collaborators.map(async user => await StdToDbModal_User(user)));
+        if (updatedProject.heroImage) updatedDbProjectData.heroImage = updatedProject.heroImage;
+        if (updatedProject.awaitingLaunchApproval) updatedDbProjectData.awaitingLaunchApproval = updatedProject.awaitingLaunchApproval;
+        if (updatedProject.needsManualReview) updatedDbProjectData.needsManualReview = updatedProject.needsManualReview;
+        if (updatedProject.lookingForRoles) updatedDbProjectData.lookingForRoles = JSON.stringify(updatedProject.lookingForRoles);
 
         resolve(updatedDbProjectData);
     });
 }
 
+/** @interface IProject */
 interface IPutProjectsRequestBody {
     appName: string;
     description?: string;
     isPrivate: boolean;
+
     downloadLink?: string;
     githubLink?: string;
     externalLink?: string;
 
-    collaborators?: IUser[];
-
+    heroImage: string;
+    awaitingLaunchApproval: boolean;
+    needsManualReview: boolean;
+    lookingForRoles?: string[];
     launchYear?: number;
     category?: string;
 }
