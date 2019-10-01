@@ -41,6 +41,9 @@ export default class Project extends Model<Project> {
     needsManualReview!: boolean;
 
     @Column
+    lookingForRoles!: string;
+
+    @Column
     heroImage!: string;
 
     @BelongsToMany(() => User, () => UserProject)
@@ -52,7 +55,6 @@ export default class Project extends Model<Project> {
 
     @BelongsTo(() => Launch, 'launchId')
     launch!: Launch
-
 
     @ForeignKey(() => Category)
     categoryId!: number;
@@ -138,7 +140,8 @@ export async function StdToDbModal_Project(project: IProject): Promise<Partial<P
         externalLink: project.externalLink,
         awaitingLaunchApproval: project.awaitingLaunchApproval,
         needsManualReview: project.needsManualReview,
-        heroImage: project.heroImage
+        heroImage: project.heroImage,
+        lookingForRoles: JSON.stringify(project.lookingForRoles)
     };
     return (dbProject);
 }
@@ -163,7 +166,8 @@ export async function DbToStdModal_Project(project: Project): Promise<IProject> 
         category: categoryName,
         awaitingLaunchApproval: project.awaitingLaunchApproval,
         needsManualReview: project.needsManualReview,
-        heroImage: project.heroImage
+        heroImage: project.heroImage,
+        lookingForRoles: JSON.parse(project.lookingForRoles)
     };
     return (stdProject);
 }
@@ -186,7 +190,8 @@ export async function GenerateMockProject(launch: Launch, user: User): Promise<P
         githubLink: faker.internet.url(),
         externalLink: faker.internet.url(),
         awaitingLaunchApproval: faker.random.boolean(),
-        needsManualReview: faker.random.boolean()
+        needsManualReview: faker.random.boolean(),
+        lookingForRoles: undefined
     };
 
     return new Project(await StdToDbModal_Project(mockProject));

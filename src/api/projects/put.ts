@@ -95,12 +95,14 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
         if (updatedProject.heroImage) updatedDbProjectData.heroImage = updatedProject.heroImage;
         if (updatedProject.awaitingLaunchApproval) updatedDbProjectData.awaitingLaunchApproval = updatedProject.awaitingLaunchApproval;
         if (updatedProject.needsManualReview) updatedDbProjectData.needsManualReview = updatedProject.needsManualReview;
+        if (updatedProject.lookingForRoles) updatedDbProjectData.lookingForRoles = JSON.stringify(updatedProject.lookingForRoles);
 
         resolve(updatedDbProjectData);
     });
 }
 
-interface IPutProjectsRequestBody extends Partial<IProject> {
+/** @interface IProject */
+interface IPutProjectsRequestBody {
     appName: string;
     description?: string;
     isPrivate: boolean;
@@ -112,6 +114,7 @@ interface IPutProjectsRequestBody extends Partial<IProject> {
     heroImage: string;
     awaitingLaunchApproval: boolean;
     needsManualReview: boolean;
+    lookingForRoles?: string[];
     launchYear?: number;
     category?: string;
 }

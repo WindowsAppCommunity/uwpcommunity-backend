@@ -105,4 +105,5 @@ interface IPostProjectsRequestBody {
     awaitingLaunchApproval: boolean;
     needsManualReview: boolean;
     heroImage: string;
+    lookingForRoles: string[];
 }
