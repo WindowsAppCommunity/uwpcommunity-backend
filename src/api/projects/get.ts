@@ -27,7 +27,7 @@ export function getProjects(projectRequestData?: IGetProjectsRequestQuery): Prom
 
                     for (let project of results) {
                         let proj = await DbToStdModal_Project(project).catch(reject);
-                        if (proj) projects.push(proj);
+                        if (proj && !proj.isPrivate) projects.push(proj);
                     }
 
                     resolve(projects);
