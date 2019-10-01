@@ -47,7 +47,7 @@ export async function GetProjectCollaborators(ProjectId: number): Promise<IProje
     let users: IProjectCollaborator[] = [];
     for (let user of RelevantUserProjects) {
         const RelevantUser = await User.findOne({ where: { id: user.id } });
-        if (RelevantUser) users.push({ ...RelevantUser, role: user.role.name });
+        if (RelevantUser) users.push({ ...RelevantUser, role: user.role ? user.role.name : "Other" });
     }
 
     return users;
