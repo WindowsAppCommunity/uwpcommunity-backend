@@ -3,6 +3,7 @@ import User from "../../models/User";
 import Project, { DbToStdModal_Project } from "../../models/Project";
 import { IProject } from "../../models/types";
 import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
+import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 
 module.exports = async (req: Request, res: Response) => {
     // If someone wants the projects for a specific user, they must be authorized
@@ -10,8 +11,10 @@ module.exports = async (req: Request, res: Response) => {
         const authAccess = validateAuthenticationHeader(req, res);
         if (!authAccess) return;
 
+        const authenticatedDiscordId = await GetDiscordIdFromToken(authAccess, res);
+
         // Make sure the requested ID matches the current user
-        if (req.query.discordId !== authAccess) {
+        if (req.query.discordId !== authenticatedDiscordId) {
             res.status(401).send({
                 error: "Unauthorized",
                 reason: "Discord ID does not belong to user"
