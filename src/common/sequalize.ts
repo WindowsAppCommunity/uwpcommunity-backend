@@ -4,7 +4,6 @@ import Projects, { GenerateMockProject } from '../models/Project';
 import User, { GenerateMockUser } from '../models/User';
 import UserProject from '../models/UserProject';
 import Role from '../models/Role';
-import Category from '../models/Category';
 
 const db_url = process.env.DATABASE_URL;
 
@@ -19,7 +18,7 @@ export const sequelize = new Sequelize(db_url, {
     dialectOptions: {
         ssl: true
     },
-    models: [Launch, Projects, User, UserProject, Role, Category]
+    models: [Launch, Projects, User, UserProject, Role]
 });
 
 export async function InitDb() {
@@ -47,19 +46,8 @@ export async function InitDb() {
             if (c < 1) {
                 Role.bulkCreate([
                     { name: "Developer" },
-                    { name: "Designer" },
-                    { name: "Tester" },
+                    { name: "Beta tester" },
                     { name: "Translator" },
-                    { name: "Other" }
-                ]);
-            }
-        })
-        .catch(console.error);
-
-    Category.count()
-        .then(c => {
-            if (c < 1) {
-                Category.bulkCreate([
                     { name: "Other" }
                 ]);
             }
