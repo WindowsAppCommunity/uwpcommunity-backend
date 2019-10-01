@@ -23,14 +23,7 @@ module.exports = async (req: Request, res: Response) => {
     }
 
     const supportEmail = await getSupportEmail(checkedQuery.storeId, res);
-
-    if (!supportEmail) {
-        res.status(404).send({
-            error: "Not found",
-            reason: "Support email not present"
-        });
-        return;
-    }
+    if (!supportEmail) return;
 
     // Random six digit code
     const verificationCode = Math.floor(Math.random() * (999999 - 111111) + 111111);
@@ -67,6 +60,14 @@ async function getSupportEmail(storeId: string, res: Response): Promise<string |
     }
 
     const supportEmail = match(storeScrapeResult, /<a .* href="mailto:(.*?)" .*'>.* support<\/a>/);
+
+    if (!supportEmail) {
+        res.status(404).send({
+            error: "Not found",
+            reason: "Support email not present"
+        });
+        return;
+    }
 
     return supportEmail;
 }
