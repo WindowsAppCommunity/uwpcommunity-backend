@@ -33,7 +33,7 @@ export function BuildErrorResponse(res: Response, status: ErrorStatus, reasonStr
             break;
     }
 
-    SendResponse(res, ErrorStatus, {
+    SendResponse(res, status.valueOf(), {
         error: errorString,
         reason: reasonString
     });
@@ -41,7 +41,7 @@ export function BuildErrorResponse(res: Response, status: ErrorStatus, reasonStr
 }
 
 export function BuildSuccessResponse(res: Response, status: SuccessStatus, body: string): Response {
-    SendResponse(res, ErrorStatus, body);
+    SendResponse(res, status.valueOf(), body);
     return res;
 }
 
