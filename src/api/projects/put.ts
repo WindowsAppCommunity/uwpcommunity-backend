@@ -64,16 +64,18 @@ function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPu
 
         if (!userProjects) { reject(`Project with name "${query.appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`); return; }
 
-        const DbProjectData: Project = await StdToDbModal_IPutProjectsRequestBody(projectUpdateRequest, userProjects[0], discordId);
+        const DbProjectData: Partial<Project> = await StdToDbModal_IPutProjectsRequestBody(projectUpdateRequest, discordId);
         userProjects[0].update(DbProjectData)
             .then(resolve)
             .catch(reject);
     });
 }
 
-export function StdToDbModal_IPutProjectsRequestBody(updatedProject: IPutProjectsRequestBody, dbProject: Project, discordId: string): Promise<Project> {
+export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRequestBody, discordId: string): Promise<Partial<Project>> {
     return new Promise(async (resolve, reject) => {
-        const updatedDbProjectData: any = {
+        const updatedProject = projectData as IProject;
+
+        const updatedDbProjectData: Partial<Project> = {
             appName: updatedProject.appName
         };
 
@@ -92,12 +94,13 @@ export function StdToDbModal_IPutProjectsRequestBody(updatedProject: IPutProject
         if (updatedProject.externalLink) updatedDbProjectData.externalLink = updatedProject.externalLink;
         if (updatedProject.heroImage) updatedDbProjectData.heroImage = updatedProject.heroImage;
         if (updatedProject.awaitingLaunchApproval) updatedDbProjectData.awaitingLaunchApproval = updatedProject.awaitingLaunchApproval;
+        if (updatedProject.needsManualReview) updatedDbProjectData.needsManualReview = updatedProject.needsManualReview;
 
         resolve(updatedDbProjectData);
     });
 }
 
-interface IPutProjectsRequestBody {
+interface IPutProjectsRequestBody extends Partial<IProject> {
     appName: string;
     description?: string;
     isPrivate: boolean;
@@ -108,6 +111,7 @@ interface IPutProjectsRequestBody {
 
     heroImage: string;
     awaitingLaunchApproval: boolean;
+    needsManualReview: boolean;
     launchYear?: number;
     category?: string;
 }

@@ -11,7 +11,8 @@ export interface IProject {
     heroImage: string;
 
     awaitingLaunchApproval: boolean;
-
+    needsManualReview: boolean;
+    
     collaborators: IProjectCollaborator[];
 
     launchYear?: number;

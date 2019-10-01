@@ -103,5 +103,6 @@ interface IPostProjectsRequestBody {
     externalLink?: string;
     launchYear: number;
     awaitingLaunchApproval: boolean;
+    needsManualReview: boolean;
     heroImage: string;
 }

@@ -38,6 +38,9 @@ export default class Project extends Model<Project> {
     awaitingLaunchApproval!: boolean;
 
     @Column
+    needsManualReview!: boolean;
+
+    @Column
     heroImage!: string;
 
     @BelongsToMany(() => User, () => UserProject)
@@ -123,8 +126,8 @@ export function findSimilarProjectName(projects: Project[], appName: string): st
 
 //#region Converters
 /** @summary This converts the data model ONLY, and does not represent the actual data in the database */
-export async function StdToDbModal_Project(project: IProject): Promise<Project> {
-    const dbProject: any = {
+export async function StdToDbModal_Project(project: IProject): Promise<Partial<Project>> {
+    const dbProject: Partial<Project> = {
         categoryId: project.category ? await GetCategoryIdFromName(project.category) : 0,
         appName: project.appName,
         description: project.description,
@@ -134,6 +137,7 @@ export async function StdToDbModal_Project(project: IProject): Promise<Project> 
         githubLink: project.githubLink,
         externalLink: project.externalLink,
         awaitingLaunchApproval: project.awaitingLaunchApproval,
+        needsManualReview: project.needsManualReview,
         heroImage: project.heroImage
     };
     return (dbProject);
@@ -158,6 +162,7 @@ export async function DbToStdModal_Project(project: Project): Promise<IProject> 
         launchYear: launchYear,
         category: categoryName,
         awaitingLaunchApproval: project.awaitingLaunchApproval,
+        needsManualReview: project.needsManualReview,
         heroImage: project.heroImage
     };
     return (stdProject);
@@ -180,7 +185,8 @@ export async function GenerateMockProject(launch: Launch, user: User): Promise<P
         downloadLink: faker.internet.url(),
         githubLink: faker.internet.url(),
         externalLink: faker.internet.url(),
-        awaitingLaunchApproval: faker.random.boolean()
+        awaitingLaunchApproval: faker.random.boolean(),
+        needsManualReview: faker.random.boolean()
     };
 
     return new Project(await StdToDbModal_Project(mockProject));
