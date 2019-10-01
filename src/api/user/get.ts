@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { getUserByDiscordId, DbToStdModal_User } from "../../models/User";
-import { IUser } from "../../models/types";
+import { IUser, ResponseErrorReasons } from "../../models/types";
 import { genericServerError } from "../../common/helpers/generic";
 
 module.exports = async (req: Request, res: Response) => {
@@ -19,20 +19,26 @@ module.exports = async (req: Request, res: Response) => {
         res.status(404);
         res.json({
             error: "Not found",
-            reason: `User does not exist`
+            reason: ResponseErrorReasons.UserNotExists
         });
         return;
     }
     res.json(user);
 };
 
-function GetUser(query: IGetUserRequestQuery): Promise<IUser> {
+function GetUser(query: IGetUserRequestQuery): Promise<IUser | undefined> {
     return new Promise(async (resolve, reject) => {
         const DbUser = await getUserByDiscordId(query.discordId).catch(reject);
-        if (!DbUser) return;
+        if (!DbUser) {
+            resolve();
+            return;
+        }
 
         const StdUser = await DbToStdModal_User(DbUser).catch(reject);
-        if (StdUser == undefined || StdUser == null) return;
+        if (StdUser == undefined || StdUser == null) {
+            reject("Unable to convert database entry");
+            return;
+        };
         resolve(StdUser);
     });
 }
