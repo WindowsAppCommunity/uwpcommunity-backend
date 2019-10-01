@@ -13,23 +13,23 @@ if (!api_key) {
 }
 
 module.exports = async (req: Request, res: Response) => {
-    const checkedQuery = checkQuery(req.query);
-    if (typeof checkedQuery == "string") {
+    const checkedBody = checkBody(req.body);
+    if (typeof checkedBody == "string") {
         res.status(422).send({
             error: "Malformed request",
-            reason: `Query string "${checkedQuery}" not provided or malformed`
+            reason: `Query string "${checkedBody}" not provided or malformed`
         });
         return;
     }
 
-    const supportEmail = await getSupportEmail(checkedQuery.storeId, res);
+    const supportEmail = await getSupportEmail(checkedBody.storeId, res);
     if (!supportEmail) return;
 
     // Random six digit code
     const verificationCode = Math.floor(Math.random() * (999999 - 111111) + 111111);
 
     verificationStorage.push({
-        storeId: checkedQuery.storeId,
+        storeId: checkedBody.storeId,
         code: verificationCode
     });
     sendVerificationEmail(supportEmail, verificationCode);
@@ -73,12 +73,12 @@ async function getSupportEmail(storeId: string, res: Response): Promise<string |
 }
 
 
-function checkQuery(query: IPostProjectsVerificationRequestQuery): IPostProjectsVerificationRequestQuery | string {
+function checkBody(query: IPostProjectsVerificationRequestBody): IPostProjectsVerificationRequestBody | string {
     if (!query.storeId) return "storeId";
 
     return query;
 }
-interface IPostProjectsVerificationRequestQuery {
+interface IPostProjectsVerificationRequestBody {
     /** @summary The store ID of a public app */
     storeId: string;
 }
