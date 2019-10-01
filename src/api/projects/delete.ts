@@ -3,15 +3,12 @@ import User from "../../models/User"
 import Project, { findSimilarProjectName } from "../../models/Project";
 import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
+import { ErrorStatus, BuildErrorResponse, SuccessStatus, BuildSuccessResponse } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const bodyCheck = checkBody(req.body);
     if (bodyCheck !== true) {
-        res.status(422);
-        res.json({
-            error: "Malformed request",
-            reason: `Query string "${bodyCheck}" not provided or malformed`
-        });
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, `Query string "${bodyCheck}" not provided or malformed`);
         return;
     }
 
@@ -23,7 +20,7 @@ module.exports = async (req: Request, res: Response) => {
 
     deleteProject(req.body, discordId)
         .then(() => {
-            res.end("Success");
+            BuildSuccessResponse(res, SuccessStatus.Success, "Success");
         })
         .catch(err => genericServerError(err, res));
 };

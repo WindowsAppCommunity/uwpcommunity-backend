@@ -5,6 +5,7 @@ import UserProject, { GetProjectsByUserId } from "../../models/UserProject";
 import { GetRoleByName } from "../../models/Role";
 import { getUserByDiscordId } from "../../models/User";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
+import { BuildErrorResponse, ErrorStatus, SuccessStatus, BuildSuccessResponse } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;
@@ -17,18 +18,13 @@ module.exports = async (req: Request, res: Response) => {
 
     const bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
-        res.status(422);
-        res.json({
-            error: "Malformed request",
-            reason: `Parameter "${bodyCheck}" not provided or malformed`
-        });
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`); 
         return;
     }
 
     submitProject(body, discordId)
         .then(() => {
-            res.status(200);
-            res.send("Success");
+            BuildSuccessResponse(res, SuccessStatus.Success, "Success");
         })
         .catch((err) => genericServerError(err, res));
 };
