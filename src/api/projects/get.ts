@@ -66,7 +66,7 @@ export function getAllProjects(): Promise<IProject[]> {
                     for (let project of results) {
                         let proj = await DbToStdModal_Project(project).catch(reject);
                         // Only push a project if not private
-                        if (proj && !proj.isPrivate) projects.push(proj);
+                        if (proj && !proj.isPrivate && !proj.needsManualReview) projects.push(proj);
                     }
 
                     resolve(projects);
