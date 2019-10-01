@@ -1,12 +1,10 @@
 import { Request, Response } from "express";
-import { StdToDbModal_User, getUserByDiscordId } from "../../models/User"
+import { getUserByDiscordId } from "../../models/User"
 import Project, { findSimilarProjectName, getProjectsByDiscordId } from "../../models/Project";
 import { genericServerError, validateAuthenticationHeader } from '../../common/helpers/generic';
 import { IProject } from "../../models/types";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
-import { GetCategoryIdFromName } from "../../models/Category";
 import { GetLaunchIdFromYear } from "../../models/Launch";
-import { UserOwnsProject } from "../../models/UserProject";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;
@@ -86,7 +84,7 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
         };
 
         if (updatedProject.description) updatedDbProjectData.description = updatedProject.description;
-        if (updatedProject.category) updatedDbProjectData.categoryId = await GetCategoryIdFromName(updatedProject.category)
+        if (updatedProject.category) updatedDbProjectData.category = updatedProject.category;
         if (updatedProject.launchYear !== undefined) updatedDbProjectData.launchId = await GetLaunchIdFromYear(updatedProject.launchYear);
         if (updatedProject.isPrivate) updatedDbProjectData.isPrivate = updatedProject.isPrivate;
         if (updatedProject.downloadLink) updatedDbProjectData.downloadLink = updatedProject.downloadLink;

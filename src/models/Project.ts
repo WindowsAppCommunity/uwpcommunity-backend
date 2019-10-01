@@ -3,7 +3,6 @@ import User from './User';
 import Launch, { GetLaunchIdFromYear, GetLaunchYearFromId } from './Launch';
 import * as faker from 'faker'
 import UserProject, { GetProjectCollaborators } from './UserProject';
-import Category, { GetCategoryIdFromName, GetCategoryNameFromId } from './Category';
 import { IProject, IProjectCollaborator } from './types';
 import { levenshteinDistance } from '../common/helpers/generic';
 
@@ -49,18 +48,14 @@ export default class Project extends Model<Project> {
     @BelongsToMany(() => User, () => UserProject)
     users?: User[];
 
-
     @ForeignKey(() => Launch)
     launchId!: number;
 
     @BelongsTo(() => Launch, 'launchId')
     launch!: Launch
 
-    @ForeignKey(() => Category)
-    categoryId!: number;
-
-    @BelongsTo(() => Category, 'categoryId')
-    category!: Category
+    @Column
+    category!: string;
 
     @CreatedAt
     @Column
@@ -130,7 +125,7 @@ export function findSimilarProjectName(projects: Project[], appName: string): st
 /** @summary This converts the data model ONLY, and does not represent the actual data in the database */
 export async function StdToDbModal_Project(project: IProject): Promise<Partial<Project>> {
     const dbProject: Partial<Project> = {
-        categoryId: project.category ? await GetCategoryIdFromName(project.category) : 0,
+        category: project.category,
         appName: project.appName,
         description: project.description,
         isPrivate: project.isPrivate,
@@ -147,8 +142,6 @@ export async function StdToDbModal_Project(project: IProject): Promise<Partial<P
 }
 
 export async function DbToStdModal_Project(project: Project): Promise<IProject> {
-    const categoryName = await GetCategoryNameFromId(project.categoryId);
-
     const launchYear = await GetLaunchYearFromId(project.launchId);
 
     const collaborators: IProjectCollaborator[] = await GetProjectCollaborators(project.id);
@@ -163,7 +156,7 @@ export async function DbToStdModal_Project(project: Project): Promise<IProject> 
         externalLink: project.externalLink,
         collaborators: collaborators,
         launchYear: launchYear,
-        category: categoryName,
+        category: project.category,
         awaitingLaunchApproval: project.awaitingLaunchApproval,
         needsManualReview: project.needsManualReview,
         heroImage: project.heroImage,

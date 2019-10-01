@@ -37,6 +37,7 @@ function checkBody(body: IPostProjectsRequestBody): true | string {
     if (!body.appName) return "appName";
     if (!body.description) return "description";
     if (!body.role) return "role";
+    if (!body.category) return "category";
     if (!body.heroImage) return "heroImage";
     if (body.isPrivate == undefined) return "isPrivate";
     return true;
@@ -101,7 +102,7 @@ interface IPostProjectsRequestBody {
     downloadLink?: string;
     githubLink?: string;
     externalLink?: string;
-    launchYear: number;
+    launchYear?: number;
     awaitingLaunchApproval: boolean;
     needsManualReview: boolean;
     heroImage: string;
