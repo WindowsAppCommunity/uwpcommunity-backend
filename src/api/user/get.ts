@@ -1,31 +1,48 @@
 import { Request, Response } from "express";
-import { getUserByDiscordId } from "../../common/helpers";
+import { getUserByDiscordId, DbToStdModal_User } from "../../models/User";
+import { IUser, ResponseErrorReasons } from "../../models/types";
+import { genericServerError } from "../../common/helpers/generic";
+import { ErrorStatus, BuildErrorResponse, SuccessStatus, BuildSuccessResponse } from "../../common/helpers/responseHelper";
 
-module.exports = (req: Request, res: Response) => {
-    if (!req.query.token) {
-        res.status(422);
-        res.json(JSON.stringify({
-            error: "Malformed request",
-            reason: `Query "token" not provided or malformed`
-        }));
+module.exports = async (req: Request, res: Response) => {
+    const queryCheck = checkQuery(req.query);
+    if (queryCheck !== true) {
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, `Query string "${queryCheck}" not provided or malformed`); 
         return;
     }
 
-    getUserByDiscordId(req.query.token)
-        .then(results => {
-            if (!results) {
-                res.status(404);
-                res.json(JSON.stringify({
-                    error: "Not found",
-                    reason: `User does not exist`
-                }));
-                return;
-            }
-            res.end(JSON.stringify(results))
-        })
-        .catch(err => {
-            console.error(err);
-            res.status(500);
-            res.end(`Internal server error: ${err}`);
-        });
+    const user: IUser | void = await GetUser(req.query).catch(err => genericServerError(err, res));
+    if (!user) {
+        BuildErrorResponse(res, ErrorStatus.NotFound, ResponseErrorReasons.UserNotExists);
+        return;
+    }
+    
+    BuildSuccessResponse(res, SuccessStatus.Success, JSON.stringify(user));
 };
+
+function GetUser(query: IGetUserRequestQuery): Promise<IUser | undefined> {
+    return new Promise(async (resolve, reject) => {
+        const DbUser = await getUserByDiscordId(query.discordId).catch(reject);
+        if (!DbUser) {
+            resolve();
+            return;
+        }
+
+        const StdUser = await DbToStdModal_User(DbUser).catch(reject);
+        if (StdUser == undefined || StdUser == null) {
+            reject("Unable to convert database entry");
+            return;
+        };
+        resolve(StdUser);
+    });
+}
+
+function checkQuery(query: IGetUserRequestQuery): true | string {
+    if (!query.discordId) return "discordId";
+
+    return true;
+}
+interface IGetUserRequestQuery {
+    /** @summary The discord ID of the user to get */
+    discordId: string;
+}

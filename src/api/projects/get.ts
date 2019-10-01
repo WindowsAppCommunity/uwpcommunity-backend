@@ -1,90 +1,81 @@
 import { Request, Response } from "express";
 import User from "../../models/User";
-import Project from "../../models/Project";
-import { Dirent } from "fs";
-import * as path from 'path';
+import Project, { DbToStdModal_Project } from "../../models/Project";
+import { IProject } from "../../models/types";
+import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
+import { GetDiscordIdFromToken } from "../../common/helpers/discord";
+import { ErrorStatus, BuildErrorResponse, SuccessStatus, BuildSuccessResponse } from "../../common/helpers/responseHelper";
 
-module.exports = (req: Request, res: Response) => {
-    getProjectsCached(req.query.token)
-        .then(result => {
-            res.end(JSON.stringify(result));
-        })
-        .catch(err => {
-            res.status(500);
-            res.end(`Internal server error: ${err}`);
-        });
+module.exports = async (req: Request, res: Response) => {
+    // If someone wants the projects for a specific user, they must be authorized
+    if (req.query.discordId) {
+        const authAccess = validateAuthenticationHeader(req, res);
+        if (!authAccess) return;
+
+        const authenticatedDiscordId = await GetDiscordIdFromToken(authAccess, res);
+
+        // Make sure the requested ID matches the current user
+        if (req.query.discordId !== authenticatedDiscordId) {
+            res.status(401).send({
+                error: "Unauthorized",
+                reason: "Discord ID does not belong to user"
+            });
+            return;
+        }
+
+        const results = await getProjectsbyUser(req.query.discordId).catch(err => genericServerError(err, res));
+            BuildSuccessResponse(res, SuccessStatus.Success, JSON.stringify(results));
+
+    } else {
+        const results = await getAllProjects().catch(err => genericServerError(err, res));
+            BuildSuccessResponse(res, SuccessStatus.Success, JSON.stringify(results));
+    }
 };
 
-export function getProjects(token?: string, shouldCache = true): Promise<Project[]> {
+export function getProjectsbyUser(discordId: string): Promise<IProject[]> {
     return new Promise((resolve, reject) => {
         Project
-            .findAll((token ? {
+            .findAll({
                 include: [{
                     model: User,
-                    where: { discordId: token }
+                    where: { discordId: discordId }
                 }]
-            } : undefined))
-            .then(results => {
+            })
+            .then(async results => {
                 if (results) {
+                    let projects: IProject[] = [];
 
-                    results = JSON.parse(JSON.stringify(results)); // Serialize and deserialize to convert from class to standard JSON-compatible object
-                    results = results.map(project => {
-                        // Remove any data that doesn't match the IProject interface 
-                        delete project.createdAt;
-                        delete project.updatedAt;
-                        delete project.id;
-                        delete project.userId;
+                    for (let project of results) {
+                        let proj = await DbToStdModal_Project(project).catch(reject);
+                        if (proj) projects.push(proj);
+                    }
 
-                        if (project.user) {
-                            delete project.user.email;
-                            delete project.user.discordId; // This one is especially important, as it could be used to modify project details
-                            delete project.user.updatedAt;
-                            delete project.user.createdAt;
-                            delete project.user.id;
-                        }
-                        return project;
-                    });
-
-                    if (shouldCache) fs.writeFile(launchTableCachePath, JSON.stringify(results), () => { }); // Cache the results
+                    resolve(projects);
                 }
-                resolve(results);
             })
             .catch(reject);
     });
 }
 
-
-// Get and cache the list of launch participants
-// This API is our only surface for interacting with the database, so the cache should be updated when a new participant is added
-const fs = require("fs");
-const launchTableCacheFilename: string = "launchTableCache.json";
-const launchTableCachePath = path.join(__dirname, launchTableCacheFilename);
-
-export function getProjectsCached(token?: string): Promise<Project[]> {
+export function getAllProjects(): Promise<IProject[]> {
     return new Promise((resolve, reject) => {
+        Project.findAll()
+            .then(async results => {
+                if (results) {
+                    let projects: IProject[] = [];
 
-        fs.readdir(__dirname, (err: Error, fileResults: string[] | Buffer[] | Dirent) => {
-            // If missing, get data from database and create the cache
-            if (!(fileResults instanceof Array && fileResults instanceof String) || !fileResults.includes(launchTableCacheFilename)) {
-                console.info("Data not cached, refreshing from DB");
-                getProjects(token)
-                    .then(resolve)
-                    .catch(reject)
-                return;
-            }
+                    for (let project of results) {
+                        let proj = await DbToStdModal_Project(project).catch(reject);
+                        // Only push a project if not private
+                        if (proj && !proj.isPrivate && !proj.needsManualReview) projects.push(proj);
+                    }
 
-            // If the file exists, get the contents
-            fs.readFile(launchTableCachePath, (err: Error, file: string[] | Buffer[] | Dirent) => {
-                let fileContents = file.toString();
-
-                if (fileContents.length <= 5) {
-                    // Retry
-                    getProjectsCached(token);
-                    return;
+                    resolve(projects);
                 }
-                resolve(JSON.parse(fileContents));
-            });
-        });
-
+            })
+            .catch(reject);
     });
+}
+interface IGetProjectsRequestQuery {
+    discordId?: string;
 }

@@ -1,55 +1,46 @@
 import { Request, Response } from "express";
-import User from "../../models/User"
-import { IUser, IDiscordUser } from "../../models/types";
-import { GetDiscordUser, genericServerError } from "../../common/helpers";
+import User, { getUserByDiscordId } from "../../models/User"
+import { ResponseErrorReasons } from "../../models/types";
+import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
+import { GetDiscordIdFromToken } from "../../common/helpers/discord";
+import { BuildErrorResponse, ErrorStatus, SuccessStatus, BuildSuccessResponse } from "../../common/helpers/responseHelper";
 
-module.exports = (req: Request, res: Response) => {
+module.exports = async (req: Request, res: Response) => {
     const body = req.body;
-    body.discordId = req.query.accessToken;
 
-    if (req.query.accessToken == undefined) {
-        res.status(422);
-        res.json(JSON.stringify({
-            error: "Malformed request",
-            reason: `Query string "accessToken" not provided or malformed`
-        }));
-        return;
-    }
+    const authAccess = validateAuthenticationHeader(req, res);
+    if (!authAccess) return;
+
+    let discordId = await GetDiscordIdFromToken(authAccess, res);
+    if (!discordId) return;
 
     const bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
-        res.status(422);
-        res.json(JSON.stringify({
-            error: "Malformed request",
-            reason: `Parameter "${bodyCheck}" not provided or malformed`
-        }));
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`);       
         return;
     }
-    (async () => {
-        const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
-        if (!user) {
-            res.status(401);
-            res.end(`Invalid accessToken`);
-            return;
-        }
 
-        let discordId = (user as IDiscordUser).id;
-        body.discordId = discordId;
+    // Check if the user already exists
+    const user = await getUserByDiscordId(discordId).catch((err) => genericServerError(err, res));
 
-        submitUser(body)
-            .then(results => {
-                res.end("Success");
-            })
-            .catch((err) => genericServerError(err, res));
-    })();
+    if (user) {
+        BuildErrorResponse(res, ErrorStatus.BadRequest, ResponseErrorReasons.UserExists);
+        return;
+    }
+
+    submitUser({ ...body, discordId: discordId })
+        .then(() => {
+            BuildSuccessResponse(res, SuccessStatus.Success, "Success");
+        })
+        .catch((err) => genericServerError(err, res));
 };
 
-function checkBody(body: IUser): true | string {
+function checkBody(body: IPostUserRequestBody): true | string {
     if (!body.name) return "name";
     return true;
 }
 
-function submitUser(userData: IUser): Promise<User> {
+function submitUser(userData: IPostUserRequestBody): Promise<User> {
     return new Promise<User>((resolve, reject) => {
         User.create({ ...userData })
             .then(resolve)
@@ -57,3 +48,7 @@ function submitUser(userData: IUser): Promise<User> {
     });
 }
 
+interface IPostUserRequestBody {
+    name: string;
+    email?: string;
+}

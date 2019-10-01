@@ -1,80 +1,106 @@
 import { Request, Response } from "express";
-import User from "../../models/User"
-import Project from "../../models/Project";
-import { IProject, IDiscordUser } from "../../models/types";
-import { checkForExistingProject, getUserFromDB, GetDiscordUser, genericServerError } from "../../common/helpers";
+import Project, { StdToDbModal_Project, isExistingProject } from "../../models/Project";
+import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
+import UserProject, { GetProjectsByUserId } from "../../models/UserProject";
+import { GetRoleByName } from "../../models/Role";
+import { getUserByDiscordId } from "../../models/User";
+import { GetDiscordIdFromToken } from "../../common/helpers/discord";
+import { BuildErrorResponse, ErrorStatus, SuccessStatus, BuildSuccessResponse } from "../../common/helpers/responseHelper";
 
-module.exports = (req: Request, res: Response) => {
+module.exports = async (req: Request, res: Response) => {
     const body = req.body;
 
-    if (req.query.accessToken == undefined) {
-        res.status(422);
-        res.json(JSON.stringify({
-            error: "Malformed request",
-            reason: `Query string "accessToken" not provided or malformed`
-        }));
-        return;
-    }
+    const authAccess = validateAuthenticationHeader(req, res);
+    if (!authAccess) return;
+
+    let discordId = await GetDiscordIdFromToken(authAccess, res);
+    if (!discordId) return;
 
     const bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
-        res.status(422);
-        res.json(JSON.stringify({
-            error: "Malformed request",
-            reason: `Parameter "${bodyCheck}" not provided or malformed`
-        }));
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`); 
         return;
     }
 
-
-    (async () => {
-        const user = await GetDiscordUser(req.body.accessToken).catch((err) => genericServerError(err, res));
-        if (!user) {
-            res.status(401);
-            res.end(`Invalid accessToken`);
-            return;
-        }
-        
-        let discordId = (user as IDiscordUser).id;
-
-        submitProject(body, discordId)
-            .then(results => {
-                res.end("Success");
-            })
-            .catch((err) => genericServerError(err, res));
-    })();
+    submitProject(body, discordId)
+        .then(() => {
+            BuildSuccessResponse(res, SuccessStatus.Success, "Success");
+        })
+        .catch((err) => genericServerError(err, res));
 };
 
-function checkBody(body: IProject): true | string {
+function checkBody(body: IPostProjectsRequestBody): true | string {
     if (!body.appName) return "appName";
     if (!body.description) return "description";
+    if (!body.role) return "role";
+    if (!body.category) return "category";
+    if (!body.heroImage) return "heroImage";
     if (body.isPrivate == undefined) return "isPrivate";
-
     return true;
 }
 
-function submitProject(projectData: IProject, discordId: string): Promise<Project> {
+
+function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: any): Promise<Project> {
     return new Promise<Project>(async (resolve, reject) => {
 
-        if (await checkForExistingProject(projectData).catch(reject)) {
+        if (await isExistingProject(projectRequestData.appName).catch(reject)) {
             reject("A project with that name already exists");
             return;
         }
 
         // Get a matching user
-        const user = await getUserFromDB(discordId).catch(reject);
+        const user = await getUserByDiscordId(discordId).catch(reject);
         if (!user) {
             reject("User not found");
             return;
         }
 
-        // Set the userId to the found user
-        projectData.userId = user.id;
+        const role = await GetRoleByName(projectRequestData.role);
+        if (!role) {
+            reject("Invalid role");
+            return;
+        }
+
+        const existingUserProjects = await GetProjectsByUserId(user.id);
+        if (existingUserProjects.length >= 5) {
+            reject("User has exceeded limit of 5 projects");
+            return;
+        }
 
         // Create the project
-        Project.create(
-            { ...projectData })
-            .then(resolve)
+        Project.create(await StdToDbModal_Project({ ...projectRequestData, collaborators: [] }))
+            .then((project) => {
+
+                // Create the userproject
+                UserProject.create(
+                    {
+                        userId: user.id,
+                        projectId: project.id,
+                        isOwner: true, // Only the project owner can create the project
+                        roleId: role.id
+                    })
+                    .then(() => {
+                        resolve(project)
+                    })
+                    .catch(reject);
+
+            })
             .catch(reject);
     });
+}
+
+interface IPostProjectsRequestBody {
+    role: "Developer" | "Other"; // Only a developer or "Other" (manager, etc) can create a new project
+    appName: string;
+    category: string;
+    description: string;
+    isPrivate: boolean;
+    downloadLink?: string;
+    githubLink?: string;
+    externalLink?: string;
+    launchYear?: number;
+    awaitingLaunchApproval: boolean;
+    needsManualReview: boolean;
+    heroImage: string;
+    lookingForRoles: string[];
 }

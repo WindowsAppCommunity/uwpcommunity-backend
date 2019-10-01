@@ -1,20 +1,24 @@
 import { Sequelize } from 'sequelize-typescript';
 import Launch from '../models/Launch';
-import Projects from '../models/Project';
-import User from '../models/User';
+import Projects, { GenerateMockProject } from '../models/Project';
+import User, { GenerateMockUser } from '../models/User';
+import UserProject from '../models/UserProject';
+import Role from '../models/Role';
 
 const db_url = process.env.DATABASE_URL;
 
 if (!db_url) throw new Error(`The environment variable "DATABASE_URL" is missing. Unable to initialize Sequelize database`);
 
+const dialect = db_url.includes('sqlite') ? 'sqlite' : 'postgres'
+
 export const sequelize = new Sequelize(db_url, {
-    dialect: 'postgres',
+    dialect,
     logging: false,
-    protocol: 'postgres',
+    protocol: dialect,
     dialectOptions: {
         ssl: true
     },
-    models: [ Launch, Projects, User ]
+    models: [Launch, Projects, User, UserProject, Role]
 });
 
 export async function InitDb() {
@@ -36,4 +40,28 @@ export async function InitDb() {
             }
         })
         .catch(console.error);
+
+    Role.count()
+        .then(c => {
+            if (c < 1) {
+                Role.bulkCreate([
+                    { name: "Developer" },
+                    { name: "Beta tester" },
+                    { name: "Translator" },
+                    { name: "Other" }
+                ]);
+            }
+        })
+        .catch(console.error);
+}
+
+export async function CreateMocks() {
+    const fakeUser = await GenerateMockUser().save()
+    const launches = await Launch.findAll()
+
+    for (const launch of launches) {
+        await Promise.all(Array(5).fill(undefined).map(
+            async () => (await GenerateMockProject(launch, fakeUser)).save()
+        ))
+    }
 }

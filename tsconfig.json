@@ -7,6 +7,7 @@
             "esnext"
         ],
         "allowJs": true,
+        "esModuleInterop": true,
         "skipLibCheck": true,
         "strict": true,
         "forceConsistentCasingInFileNames": false,
@@ -17,7 +18,8 @@
         "rootDir": "./src",
         "sourceMap": true,
         "sourceRoot": "./src",
-        "mapRoot": "./src"
+        "mapRoot": "./src",
+        "removeComments": false
     },
     "include": [
         "./src/**/*"

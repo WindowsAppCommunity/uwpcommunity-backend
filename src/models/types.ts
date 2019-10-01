@@ -1,21 +1,44 @@
 export interface IProject {
+    id?: number;
+
     appName: string;
     description: string;
     isPrivate: boolean;
-    launchId: number;
-    user: IUser;
-    userId?: number;
-    id?: number;
     downloadLink?: string;
     githubLink?: string;
     externalLink?: string;
+
+    heroImage: string;
+
+    awaitingLaunchApproval: boolean;
+    needsManualReview: boolean;
+    lookingForRoles?: string[];
+
+    collaborators: IProjectCollaborator[];
+
+    launchYear?: number;
+    category?: string;
 };
 
+export interface IProjectCollaborator extends IUser {
+    role: "Developer" | "Translator" | "Beta Tester" | "Other";
+}
+
 export interface IUser {
+    id?: number;
+
     name: string;
     discordId: string;
     email?: string; // This is a contact email supplied by the user, and is safe to be public 
-    id?: number;
+}
+
+export const ResponseErrorReasons = {
+    MissingAuth: "Missing authorization header",
+    UserExists: "User already exists",
+    UserNotExists: "User does not exist",
+    ProjectExists: "Project already exists",
+    ProjectNotExist: "Project does not exist",
+    GenericError: "Internal server error"
 }
 
 /**
