@@ -20,13 +20,9 @@ module.exports = async (req: Request, res: Response) => {
         return;
     }
 
-    // Must have a proper roles in the body (JSON)
-    if (!req.body.appName) {        
-        BuildErrorResponse(res, ErrorStatus.MalformedRequest, "Missing appName");
-        return;
-    }
-    if (!req.body.subRole) {
-        BuildErrorResponse(res, ErrorStatus.MalformedRequest, "Missing subRole");
+    const body = checkBody(req.body);
+    if (typeof body == "string") {
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, `Parameter "${body}" not provided or malformed`);
         return;
     }
 
@@ -37,7 +33,7 @@ module.exports = async (req: Request, res: Response) => {
         return;
     }
 
-    if (allowedProjectSubRoles.filter(subRole => req.body.subRole == subRole).length == 0) {        
+    if (allowedProjectSubRoles.filter(subRole => req.body.subRole == subRole).length == 0) {
         BuildErrorResponse(res, ErrorStatus.MalformedRequest, `Invalid project subRole. Allowed values are: "${allowedProjectSubRoles.join(`" , "`)}"`);
         return;
     }
@@ -46,6 +42,7 @@ module.exports = async (req: Request, res: Response) => {
     if (!server) return;
 
     const roleName = req.body.appName + " " + capitalizeFirstLetter(req.body.subRole);
+
     // Check that the role doesn't already exist
     if (server.roles.array().filter(role => role.name == roleName).length > 0) {
         BuildErrorResponse(res, ErrorStatus.Unauthorized, "Role already exists");
@@ -61,8 +58,21 @@ module.exports = async (req: Request, res: Response) => {
     BuildSuccessResponse(res, SuccessStatus.Success, "Success");
 };
 
-const allowedProjectSubRoles = ["translator", "dev", "beta tester"];
-
 function capitalizeFirstLetter(s: string) {
     return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+const allowedProjectSubRoles = ["translator", "dev", "beta tester"];
+
+interface IPostProjectRoles {
+    appName: "Cortana",
+    subRole: "dev" | "beta tester" | "translator",
+    color: string;
+}
+
+function checkBody(body: IPostProjectRoles): IPostProjectRoles | string {
+    if (!body.appName) return "appName";
+    if (!allowedProjectSubRoles.includes(body.subRole)) return "subRole";
+
+    return body;
 }
