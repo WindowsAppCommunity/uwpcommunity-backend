@@ -24,11 +24,11 @@ module.exports = async (req: Request, res: Response) => {
         }
 
         const results = await getProjectsbyUser(req.query.discordId).catch(err => genericServerError(err, res));
-            BuildSuccessResponse(res, SuccessStatus.Success, JSON.stringify(results));
+        if(results) BuildSuccessResponse(res, SuccessStatus.Success, results);
 
     } else {
         const results = await getAllProjects().catch(err => genericServerError(err, res));
-            BuildSuccessResponse(res, SuccessStatus.Success, JSON.stringify(results));
+        if(results) BuildSuccessResponse(res, SuccessStatus.Success, results);
     }
 };
 
