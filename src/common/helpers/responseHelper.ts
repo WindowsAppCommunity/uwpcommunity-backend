@@ -40,7 +40,7 @@ export function BuildErrorResponse(res: Response, status: ErrorStatus, reasonStr
     return res;
 }
 
-export function BuildSuccessResponse(res: Response, status: SuccessStatus, body: string): Response {
+export function BuildSuccessResponse(res: Response, status: SuccessStatus, body: string | object): Response {
     SendResponse(res, status, body);
     return res;
 }

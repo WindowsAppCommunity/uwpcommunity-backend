@@ -21,6 +21,7 @@ export interface IProject {
 };
 
 export interface IProjectCollaborator extends IUser {
+    isOwner: boolean;
     role: "Developer" | "Translator" | "Beta Tester" | "Other";
 }
 

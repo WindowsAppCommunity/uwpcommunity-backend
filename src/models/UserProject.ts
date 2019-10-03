@@ -1,5 +1,5 @@
 import { Column, Model, Table, ForeignKey, PrimaryKey, AutoIncrement, DataType, BelongsTo } from 'sequelize-typescript';
-import User from './User';
+import User, { DbToStdModal_User } from './User';
 import Project from './Project';
 import Role from './Role';
 import { IProjectCollaborator } from './types';
@@ -47,7 +47,9 @@ export async function GetProjectCollaborators(ProjectId: number): Promise<IProje
     let users: IProjectCollaborator[] = [];
     for (let user of RelevantUserProjects) {
         const RelevantUser = await User.findOne({ where: { id: user.id } });
-        if (RelevantUser) users.push({ ...RelevantUser, role: user.role ? user.role.name : "Other" });
+        if (RelevantUser) {
+            users.push({ ...(await DbToStdModal_User(RelevantUser)), role: user.role ? user.role.name : "Other", isOwner: user.isOwner });
+        }
     }
 
     return users;
