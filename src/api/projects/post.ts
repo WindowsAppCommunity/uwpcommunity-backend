@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import Project, { StdToDbModal_Project, isExistingProject } from "../../models/Project";
-import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
+import { genericServerError, validateAuthenticationHeader, match } from "../../common/helpers/generic";
 import UserProject, { GetProjectsByUserId } from "../../models/UserProject";
 import { GetRoleByName } from "../../models/Role";
 import { getUserByDiscordId } from "../../models/User";
@@ -18,9 +18,11 @@ module.exports = async (req: Request, res: Response) => {
 
     const bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
-        BuildErrorResponse(res, ErrorStatus.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`); 
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`);
         return;
     }
+
+    if (!ProjectFieldsAreValid(body, res)) return;
 
     submitProject(body, discordId)
         .then(() => {
@@ -89,6 +91,35 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
     });
 }
 
+
+function ProjectFieldsAreValid(project: IPostProjectsRequestBody, res: Response): boolean {
+    // Make sure download link is a valid URL
+    if (project.downloadLink && !match(project.downloadLink, /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig)) {
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, "Invalid downloadLink");
+        return false;
+    }
+
+    // Make sure download link is a valid URL
+    if (project.githubLink && !match(project.githubLink, /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig)) {
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, "Invalid githubLink");
+        return false;
+    }
+
+    // Make sure download link is a valid URL
+    if (project.externalLink && !match(project.externalLink, /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig)) {
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, "Invalid externalLink");
+        return false;
+    }
+
+    // Make sure hero image is an image URL or a microsoft store image
+    if (project.heroImage && !(match(project.heroImage, /(?:(?:https?:\/\/))[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&\/=].+(\.jpe?g|\.png|\.gif))/) && match(project.heroImage, /(store-images.s-microsoft.com\/image\/apps)/))) {
+        BuildErrorResponse(res, ErrorStatus.MalformedRequest, "Invalid externalLink");
+        return false;
+    }
+
+
+    return true;
+}
 interface IPostProjectsRequestBody {
     role: "Developer" | "Other"; // Only a developer or "Other" (manager, etc) can create a new project
     appName: string;
