@@ -1,4 +1,5 @@
 import { Response } from "express";
+import { camelCaseToSpacedString } from "./generic";
 
 export enum HttpStatus {
     BadRequest = 400,
@@ -14,7 +15,7 @@ export function BuildResponse(res: Response, status: HttpStatus, body?: string |
         SendResponse(res, status, body);
     } else {
         SendResponse(res, status, {
-            error: HttpStatus[status],
+            error: camelCaseToSpacedString(HttpStatus[status]),
             reason: body
         });
     }
