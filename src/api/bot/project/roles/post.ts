@@ -2,7 +2,7 @@ import { Request, Response } from "express-serve-static-core";
 import { GetGuildUser, GetGuild, GetDiscordUser } from "../../../../common/helpers/discord";
 import { genericServerError, validateAuthenticationHeader } from "../../../../common/helpers/generic";
 import { getProjectsByDiscordId } from "../../../../models/Project";
-import { ErrorStatus, BuildErrorResponse, BuildSuccessResponse, SuccessStatus } from "../../../../common/helpers/responseHelper";
+import { HttpStatus, BuildResponse } from "../../../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const authAccess = validateAuthenticationHeader(req, res);
@@ -10,7 +10,7 @@ module.exports = async (req: Request, res: Response) => {
 
     const user = await GetDiscordUser(authAccess).catch((err) => genericServerError(err, res));
     if (!user) {
-        BuildErrorResponse(res, ErrorStatus.Unauthorized, "Invalid accessToken");
+        BuildResponse(res, HttpStatus.Unauthorized, "Invalid accessToken");
         return;
     }
 
@@ -22,19 +22,19 @@ module.exports = async (req: Request, res: Response) => {
 
     const body = checkBody(req.body);
     if (typeof body == "string") {
-        BuildErrorResponse(res, ErrorStatus.MalformedRequest, `Parameter "${body}" not provided or malformed`);
+        BuildResponse(res, HttpStatus.MalformedRequest, `Parameter "${body}" not provided or malformed`);
         return;
     }
 
     // If trying to create a role for a project, make sure the project exists
     let Projects = await getProjectsByDiscordId(user.id);
     if (Projects.filter(project => req.body.appName == project.appName).length == 0) {
-        BuildErrorResponse(res, ErrorStatus.MalformedRequest, "The project doesn't exist");
+        BuildResponse(res, HttpStatus.MalformedRequest, "The project doesn't exist");
         return;
     }
 
     if (allowedProjectSubRoles.filter(subRole => req.body.subRole == subRole).length == 0) {
-        BuildErrorResponse(res, ErrorStatus.MalformedRequest, `Invalid project subRole. Allowed values are: "${allowedProjectSubRoles.join(`" , "`)}"`);
+        BuildResponse(res, HttpStatus.MalformedRequest, `Invalid project subRole. Allowed values are: "${allowedProjectSubRoles.join(`" , "`)}"`);
         return;
     }
 
@@ -45,7 +45,7 @@ module.exports = async (req: Request, res: Response) => {
 
     // Check that the role doesn't already exist
     if (server.roles.array().filter(role => role.name == roleName).length > 0) {
-        BuildErrorResponse(res, ErrorStatus.Unauthorized, "Role already exists");
+        BuildResponse(res, HttpStatus.Unauthorized, "Role already exists");
         return;
     }
 
@@ -55,7 +55,7 @@ module.exports = async (req: Request, res: Response) => {
         color: req.body.color
     });
 
-    BuildSuccessResponse(res, SuccessStatus.Success, "Success");
+    BuildResponse(res, HttpStatus.Success, "Success");
 };
 
 function capitalizeFirstLetter(s: string) {

@@ -3,7 +3,7 @@ import fetch from "node-fetch";
 import { IDiscordUser } from "../../models/types";
 import { Response } from "express";
 import { genericServerError } from "./generic";
-import { BuildErrorResponse, ErrorStatus } from "./responseHelper";
+import { BuildResponse, HttpStatus } from "./responseHelper";
 
 export let bot: Discord.Client;
 export const uwpCommunityGuildId = "372137812037730304";
@@ -55,7 +55,7 @@ export async function GetDiscordUser(accessToken: string): Promise<IDiscordUser 
 export async function GetDiscordIdFromToken(accessToken: string, res: Response): Promise<string | undefined> {
     const user = await GetDiscordUser(accessToken).catch((err) => genericServerError(err, res));
     if (!user) {
-        BuildErrorResponse(res, ErrorStatus.Unauthorized, "Invalid accessToken");
+        BuildResponse(res, HttpStatus.Unauthorized, "Invalid accessToken");
         return;
     }
     return (user as IDiscordUser).id;

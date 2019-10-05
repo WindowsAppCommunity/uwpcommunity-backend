@@ -5,7 +5,7 @@ import UserProject, { GetProjectsByUserId } from "../../models/UserProject";
 import { GetRoleByName } from "../../models/Role";
 import { getUserByDiscordId } from "../../models/User";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
-import { BuildErrorResponse, ErrorStatus, SuccessStatus, BuildSuccessResponse } from "../../common/helpers/responseHelper";
+import { BuildResponse, HttpStatus, } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;
@@ -18,7 +18,7 @@ module.exports = async (req: Request, res: Response) => {
 
     const bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
-        BuildErrorResponse(res, ErrorStatus.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`);
+        BuildResponse(res, HttpStatus.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`);
         return;
     }
 
@@ -26,7 +26,7 @@ module.exports = async (req: Request, res: Response) => {
 
     submitProject(body, discordId)
         .then(() => {
-            BuildSuccessResponse(res, SuccessStatus.Success, "Success");
+            BuildResponse(res, HttpStatus.Success, "Success");
         })
         .catch((err) => genericServerError(err, res));
 };
@@ -95,25 +95,25 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
 function ProjectFieldsAreValid(project: IPostProjectsRequestBody, res: Response): boolean {
     // Make sure download link is a valid URL
     if (project.downloadLink && !match(project.downloadLink, /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig)) {
-        BuildErrorResponse(res, ErrorStatus.MalformedRequest, "Invalid downloadLink");
+        BuildResponse(res, HttpStatus.MalformedRequest, "Invalid downloadLink");
         return false;
     }
 
     // Make sure download link is a valid URL
     if (project.githubLink && !match(project.githubLink, /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig)) {
-        BuildErrorResponse(res, ErrorStatus.MalformedRequest, "Invalid githubLink");
+        BuildResponse(res, HttpStatus.MalformedRequest, "Invalid githubLink");
         return false;
     }
 
     // Make sure download link is a valid URL
     if (project.externalLink && !match(project.externalLink, /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig)) {
-        BuildErrorResponse(res, ErrorStatus.MalformedRequest, "Invalid externalLink");
+        BuildResponse(res, HttpStatus.MalformedRequest, "Invalid externalLink");
         return false;
     }
 
     // Make sure hero image is an image URL or a microsoft store image
     if (project.heroImage && !(match(project.heroImage, /(?:(?:https?:\/\/))[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&\/=].+(\.jpe?g|\.png|\.gif))/) && match(project.heroImage, /(store-images.s-microsoft.com\/image\/apps)/))) {
-        BuildErrorResponse(res, ErrorStatus.MalformedRequest, "Invalid externalLink");
+        BuildResponse(res, HttpStatus.MalformedRequest, "Invalid externalLink");
         return false;
     }
 
