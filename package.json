@@ -26,6 +26,7 @@
     "express": "^4.17.1",
     "express-ws": "^4.0.0",
     "faker": "^4.1.0",
+    "fs-extra": "^8.1.0",
     "glob": "^7.1.4",
     "js-yaml": "^3.13.1",
     "jsonwebtoken": "^8.5.1",
@@ -45,9 +46,10 @@
     "typescript": "^3.6.3"
   },
   "scripts": {
-    "start": "tsc && node ./build/index.js",
-    "dev": "tsc && node -r dotenv/config ./build/index.js \"dev\"",
-    "build": "tsc"
+    "start": "npm run build && node ./build/index.js",
+    "dev": "npm run build && node -r dotenv/config ./build/index.js \"dev\"",
+    "build": "npm run prebuild && tsc",
+    "prebuild": "node tasks/cleanup.js"
   },
   "repository": {
     "type": "git",
