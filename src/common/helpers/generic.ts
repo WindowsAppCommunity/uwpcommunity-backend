@@ -53,6 +53,9 @@ export function levenshteinDistance(a: string, b: string) {
     return matrix[b.length][a.length];
 };
 
+export function capitalizeFirstLetter(s: string) {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
 export function genericServerError(err: any, res: Response) {
     console.error(err);
     BuildResponse(res, HttpStatus.InternalServerError, `Internal server error: ${err}`);

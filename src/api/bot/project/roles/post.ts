@@ -1,6 +1,6 @@
 import { Request, Response } from "express-serve-static-core";
 import { GetGuildUser, GetGuild, GetDiscordUser } from "../../../../common/helpers/discord";
-import { genericServerError, validateAuthenticationHeader } from "../../../../common/helpers/generic";
+import { genericServerError, validateAuthenticationHeader, capitalizeFirstLetter } from "../../../../common/helpers/generic";
 import { getProjectsByDiscordId } from "../../../../models/Project";
 import { HttpStatus, BuildResponse } from "../../../../common/helpers/responseHelper";
 
@@ -57,10 +57,6 @@ module.exports = async (req: Request, res: Response) => {
 
     BuildResponse(res, HttpStatus.Success, "Success");
 };
-
-function capitalizeFirstLetter(s: string) {
-    return s.charAt(0).toUpperCase() + s.slice(1);
-}
 
 const allowedProjectSubRoles = ["translator", "dev", "beta tester"];
 
