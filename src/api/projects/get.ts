@@ -4,7 +4,7 @@ import Project, { DbToStdModal_Project } from "../../models/Project";
 import { IProject } from "../../models/types";
 import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
-import { ErrorStatus, BuildErrorResponse, SuccessStatus, BuildSuccessResponse } from "../../common/helpers/responseHelper";
+import { HttpStatus, BuildResponse } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     // If someone wants the projects for a specific user, they must be authorized
@@ -24,11 +24,11 @@ module.exports = async (req: Request, res: Response) => {
         }
 
         const results = await getProjectsbyUser(req.query.discordId).catch(err => genericServerError(err, res));
-        if(results) BuildSuccessResponse(res, SuccessStatus.Success, results);
+        if(results) BuildResponse(res, HttpStatus.Success, results);
 
     } else {
         const results = await getAllProjects().catch(err => genericServerError(err, res));
-        if(results) BuildSuccessResponse(res, SuccessStatus.Success, results);
+        if(results) BuildResponse(res, HttpStatus.Success, results);
     }
 };
 

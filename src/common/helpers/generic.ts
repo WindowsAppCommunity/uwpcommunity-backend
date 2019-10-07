@@ -1,5 +1,5 @@
 import { Response, Request } from "express";
-import { ErrorStatus, BuildErrorResponse } from "./responseHelper";
+import { HttpStatus, BuildResponse } from "./responseHelper";
 
 /**
  * @summary Get the first matching regex group, instead of an array with the full string and all matches
@@ -53,15 +53,23 @@ export function levenshteinDistance(a: string, b: string) {
     return matrix[b.length][a.length];
 };
 
+export function capitalizeFirstLetter(s: string) {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+export function camelCaseToSpacedString(toConvert: string): string {
+    return capitalizeFirstLetter(toConvert.replace(/([A-Z])([A-Z])([a-z])|([a-z])([A-Z])/g, '$1$4 $2$3$5'));
+}
+
 export function genericServerError(err: any, res: Response) {
     console.error(err);
-    BuildErrorResponse(res, ErrorStatus.InternalServerError, `Internal server error: ${err}`);
+    BuildResponse(res, HttpStatus.InternalServerError, `Internal server error: ${err}`);
 }
 
 /** @summary Checks that the authentication header contains a valid auth token */
 export function validateAuthenticationHeader(req: Request, res: Response): string | undefined {
     if (!req.headers.authorization) {
-        BuildErrorResponse(res, ErrorStatus.MalformedRequest, "Missing authorization header"); 
+        BuildResponse(res, HttpStatus.MalformedRequest, "Missing authorization header");
         return;
     }
     return req.headers.authorization.replace("Bearer ", "");

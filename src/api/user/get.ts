@@ -2,22 +2,22 @@ import { Request, Response } from "express";
 import { getUserByDiscordId, DbToStdModal_User } from "../../models/User";
 import { IUser, ResponseErrorReasons } from "../../models/types";
 import { genericServerError } from "../../common/helpers/generic";
-import { ErrorStatus, BuildErrorResponse, SuccessStatus, BuildSuccessResponse } from "../../common/helpers/responseHelper";
+import { HttpStatus, BuildResponse } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const queryCheck = checkQuery(req.query);
     if (queryCheck !== true) {
-        BuildErrorResponse(res, ErrorStatus.MalformedRequest, `Query string "${queryCheck}" not provided or malformed`); 
+        BuildResponse(res, HttpStatus.MalformedRequest, `Query string "${queryCheck}" not provided or malformed`); 
         return;
     }
 
     const user: IUser | void = await GetUser(req.query).catch(err => genericServerError(err, res));
     if (!user) {
-        BuildErrorResponse(res, ErrorStatus.NotFound, ResponseErrorReasons.UserNotExists);
+        BuildResponse(res, HttpStatus.NotFound, ResponseErrorReasons.UserNotExists);
         return;
     }
     
-    BuildSuccessResponse(res, SuccessStatus.Success, JSON.stringify(user));
+    BuildResponse(res, HttpStatus.Success, JSON.stringify(user));
 };
 
 function GetUser(query: IGetUserRequestQuery): Promise<IUser | undefined> {

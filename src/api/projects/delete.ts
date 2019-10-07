@@ -3,12 +3,12 @@ import User from "../../models/User"
 import Project, { findSimilarProjectName } from "../../models/Project";
 import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
-import { ErrorStatus, BuildErrorResponse, SuccessStatus, BuildSuccessResponse } from "../../common/helpers/responseHelper";
+import { HttpStatus, BuildResponse } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const bodyCheck = checkBody(req.body);
     if (bodyCheck !== true) {
-        BuildErrorResponse(res, ErrorStatus.MalformedRequest, `Query string "${bodyCheck}" not provided or malformed`);
+        BuildResponse(res, HttpStatus.MalformedRequest, `Query string "${bodyCheck}" not provided or malformed`);
         return;
     }
 
@@ -20,7 +20,7 @@ module.exports = async (req: Request, res: Response) => {
 
     deleteProject(req.body, discordId)
         .then(() => {
-            BuildSuccessResponse(res, SuccessStatus.Success, "Success");
+            BuildResponse(res, HttpStatus.Success, "Success");
         })
         .catch(err => genericServerError(err, res));
 };

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { ErrorStatus, BuildErrorResponse, SuccessStatus, BuildSuccessResponse } from "../../../common/helpers/responseHelper";
+import { HttpStatus, BuildResponse } from "../../../common/helpers/responseHelper";
 const request = require("request");
 
 function log(...args: any[]) {
@@ -7,8 +7,8 @@ function log(...args: any[]) {
 }
 
 module.exports = (req: Request, res: Response) => {
-    if (!req.query.refreshToken) {        
-        BuildErrorResponse(res, ErrorStatus.MalformedRequest, "Missing refreshToken"); 
+    if (!req.query.refreshToken) {
+        BuildResponse(res, HttpStatus.MalformedRequest, "Missing refreshToken");
         return;
     }
 
@@ -24,7 +24,7 @@ module.exports = (req: Request, res: Response) => {
             scope: "identify guilds"
         }
     }, (err: Error, httpResponse: any, body: string) => {
-        BuildSuccessResponse(res, SuccessStatus.Success, JSON.stringify(body));
+        BuildResponse(res, HttpStatus.Success, JSON.stringify(body));
     });
 };
 
