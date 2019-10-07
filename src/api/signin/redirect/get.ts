@@ -38,6 +38,6 @@ module.exports = (req: Request, res: Response) => {
         // This is an IDiscordAuthResponse, convert it to base64 to use in a URL
         let authResponse: string = Buffer.from(body).toString('base64');
 
-        res.redirect(`http://${DEVENV ? "localhost:3000" : "uwpcommunity.github.io"}/signin?authResponse=${authResponse}`);
+        res.redirect(`http://${DEVENV ? "localhost:3000" : "uwpcommunity.com"}/signin?authResponse=${authResponse}`);
     });
 };
