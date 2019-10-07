@@ -99,21 +99,21 @@ function ProjectFieldsAreValid(project: IPostProjectsRequestBody, res: Response)
         return false;
     }
 
-    // Make sure download link is a valid URL
+    // Make sure github link is a valid URL
     if (project.githubLink && !match(project.githubLink, /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig)) {
         BuildResponse(res, HttpStatus.MalformedRequest, "Invalid githubLink");
         return false;
     }
 
-    // Make sure download link is a valid URL
-    if (project.externalLink && !match(project.externalLink, /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig)) {
+    // Make sure external link is a valid URL
+    if (project.externalLink !== undefined && !match(project.externalLink, /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig)) {
         BuildResponse(res, HttpStatus.MalformedRequest, "Invalid externalLink");
         return false;
     }
 
     // Make sure hero image is an image URL or a microsoft store image
-    if (project.heroImage && !(match(project.heroImage, /(?:(?:https?:\/\/))[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&\/=].+(\.jpe?g|\.png|\.gif))/) && match(project.heroImage, /(store-images.s-microsoft.com\/image\/apps)/))) {
-        BuildResponse(res, HttpStatus.MalformedRequest, "Invalid externalLink");
+    if (project.heroImage && !match(project.heroImage, /(?:(?:https?:\/\/))[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&\/=].+(\.jpe?g|\.png|\.gif))|(store-images.s-microsoft.com\/image\/apps)/)) {
+        BuildResponse(res, HttpStatus.MalformedRequest, "Invalid heroImage");
         return false;
     }
 
