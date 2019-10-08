@@ -14,7 +14,6 @@ import cors from "cors";
  * Example: 
  * The file `./myapp/bugreport/post.js` is set up at `POST https://example.com/myapp/bugreport/`
  * 
- * For local development, run `npm run dev`
  */
 
 const express = require('express'), app = express();
