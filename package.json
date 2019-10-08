@@ -46,8 +46,7 @@
     "typescript": "^3.6.3"
   },
   "scripts": {
-    "start": "npm run build && node ./build/index.js",
-    "dev": "npm run build && node -r dotenv/config ./build/index.js \"dev\"",
+    "start": "npm run build && node -r dotenv/config ./build/index.js",
     "build": "npm run prebuild && tsc",
     "prebuild": "node tasks/cleanup.js"
   },
