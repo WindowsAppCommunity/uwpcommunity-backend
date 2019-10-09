@@ -45,10 +45,10 @@ export async function GetProjectCollaborators(ProjectId: number): Promise<IProje
     const RelevantUserProjects = await UserProject.findAll({ where: { projectId: ProjectId } });
 
     let users: IProjectCollaborator[] = [];
-    for (let user of RelevantUserProjects) {
-        const RelevantUser = await User.findOne({ where: { id: user.id } });
+    for (let userProject of RelevantUserProjects) {
+        const RelevantUser = await User.findOne({ where: { id: userProject.userId } });
         if (RelevantUser) {
-            users.push({ ...(await DbToStdModal_User(RelevantUser)), role: user.role ? user.role.name : "Other", isOwner: user.isOwner });
+            users.push({ ...(await DbToStdModal_User(RelevantUser)), role: userProject.role ? userProject.role.name : "Other", isOwner: userProject.isOwner });
         }
     }
 

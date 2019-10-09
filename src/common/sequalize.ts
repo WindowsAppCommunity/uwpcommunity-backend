@@ -4,6 +4,7 @@ import Projects, { GenerateMockProject } from '../models/Project';
 import User, { GenerateMockUser } from '../models/User';
 import UserProject from '../models/UserProject';
 import Role from '../models/Role';
+import * as helpers from './helpers/generic';
 
 const db_url = process.env.DATABASE_URL;
 
@@ -28,31 +29,35 @@ export async function InitDb() {
             throw new Error('Unable to connect to the database: ' + err); // Throwing prevents the rest of the code below from running
         });
 
-    await sequelize.sync().catch(console.error);
+    if (helpers.DEVENV) {
 
-    Launch.count() // There an error in the log related to this line
-        .then(c => {
-            if (c < 1) {
-                Launch.bulkCreate([
-                    { year: 2019 },
-                    { year: 2020 }
-                ]);
-            }
-        })
-        .catch(console.error);
+        await sequelize.sync().catch(console.error);
 
-    Role.count()
-        .then(c => {
-            if (c < 1) {
-                Role.bulkCreate([
-                    { name: "Developer" },
-                    { name: "Beta tester" },
-                    { name: "Translator" },
-                    { name: "Other" }
-                ]);
-            }
-        })
-        .catch(console.error);
+        Launch.count() // There an error in the log related to this line
+            .then(c => {
+                if (c < 1) {
+                    Launch.bulkCreate([
+                        { year: 2019 },
+                        { year: 2020 }
+                    ]);
+                }
+            })
+            .catch(console.error);
+
+        Role.count()
+            .then(c => {
+                if (c < 1) {
+                    Role.bulkCreate([
+                        { name: "Developer" },
+                        { name: "Beta tester" },
+                        { name: "Translator" },
+                        { name: "Other" }
+                    ]);
+                }
+            })
+            .catch(console.error);
+            
+    }
 }
 
 export async function CreateMocks() {

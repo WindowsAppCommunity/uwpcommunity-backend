@@ -75,4 +75,4 @@ export function validateAuthenticationHeader(req: Request, res: Response): strin
     return req.headers.authorization.replace("Bearer ", "");
 }
 
-export const DEVENV: boolean = process.argv.filter(val => val == 'dev').length > 0;
+export const DEVENV: boolean = process.env.environment == "development";

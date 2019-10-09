@@ -1,7 +1,7 @@
 import { Request, Response } from "express-serve-static-core";
 import { GetGuildUser, GetDiscordUser } from "../../../../common/helpers/discord";
 import { Role } from "discord.js";
-import { genericServerError, validateAuthenticationHeader } from "../../../../common/helpers/generic";
+import { genericServerError, validateAuthenticationHeader, DEVENV } from "../../../../common/helpers/generic";
 import { BuildResponse, HttpStatus, } from "../../../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
@@ -9,18 +9,24 @@ module.exports = async (req: Request, res: Response) => {
     if (!authAccess) return;
 
     const user = await GetDiscordUser(authAccess).catch((err) => genericServerError(err, res));
-    if (!user) {        
+    if (!user) {
         BuildResponse(res, HttpStatus.Unauthorized, "Invalid accessToken");
         return;
     }
 
-    const guildMember = await GetGuildUser(user.id);
-    if (!guildMember) {
-        genericServerError("Unable to get guild details", res);
-        return;
-    }
+    let roles: Role[] = [];
 
-    let roles: Role[] = guildMember.roles.array().map(role => { delete role.guild; return role });
+    if (!DEVENV) {
+        const guildMember = await GetGuildUser(user.id);
+        if (!guildMember) {
+            genericServerError("Unable to get guild details", res);
+            return;
+        }
 
-    BuildResponse(res, HttpStatus.Success, JSON.stringify(roles));
+        roles = guildMember.roles.array().map(role => { delete role.guild; return role });
+        BuildResponse(res, HttpStatus.Success, JSON.stringify(roles));
+    }else{        
+        BuildResponse(res, HttpStatus.Success, JSON.stringify([{"name":"Developer"}]));
+    }  
+
 };

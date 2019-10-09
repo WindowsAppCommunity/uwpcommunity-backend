@@ -7,7 +7,7 @@ import sgMail from "@sendgrid/mail";
 const api_key = process.env.SENDGRID_API_KEY;
 
 if (!api_key) {
-    throw new Error("Missing SENDGRID_API_KEY environment variable. Email verification will not work");
+    console.error("Missing SENDGRID_API_KEY environment variable. Email verification will not work");
 } else {
     sgMail.setApiKey(api_key);
 }
