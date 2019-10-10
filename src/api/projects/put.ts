@@ -5,7 +5,7 @@ import { genericServerError, validateAuthenticationHeader } from '../../common/h
 import { IProject } from "../../models/types";
 import { GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
 import { GetLaunchIdFromYear } from "../../models/Launch";
-import { BuildResponse, HttpStatus } from "../../common/helpers/responseHelper";
+import { BuildResponse, HttpStatus, ResponsePromiseReject, IRequestPromiseReject } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;
@@ -32,7 +32,7 @@ module.exports = async (req: Request, res: Response) => {
         .then(() => {
             BuildResponse(res, HttpStatus.Success, "Success");
         })
-        .catch((err) => genericServerError(err, res));
+        .catch((err) => BuildResponse(res, (err as IRequestPromiseReject).status, (err as IRequestPromiseReject).reason));
 };
 
 function checkQuery(query: IPutProjectRequestQuery): true | string {
@@ -55,8 +55,8 @@ function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPu
 
         if (!userProjects) { reject(`Project with name "${query.appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`); return; }
 
-        const DbProjectData: Partial<Project> = await StdToDbModal_IPutProjectsRequestBody(projectUpdateRequest, discordId);
-        userProjects[0].update(DbProjectData)
+        const DbProjectData: Partial<Project> | void = await StdToDbModal_IPutProjectsRequestBody(projectUpdateRequest, discordId).catch(reject);
+        if (DbProjectData) userProjects[0].update(DbProjectData)
             .then(resolve)
             .catch(reject);
     });
@@ -76,7 +76,6 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
             return;
         };
 
-
         if (updatedProject.description) updatedDbProjectData.description = updatedProject.description;
         if (updatedProject.category) updatedDbProjectData.category = updatedProject.category;
         if (updatedProject.isPrivate) updatedDbProjectData.isPrivate = updatedProject.isPrivate;
@@ -90,8 +89,12 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
 
         const guildMember = await GetGuildUser(discordId);
         // Only mods or admins can approve an app for Launch
+        if (updatedProject.launchYear !== undefined) {
             if (guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").length > 0) {
                 updatedDbProjectData.launchId = await GetLaunchIdFromYear(updatedProject.launchYear);
+            } else {
+                ResponsePromiseReject("User has insufficient permissions", HttpStatus.Unauthorized, reject);
+            }
         }
 
         resolve(updatedDbProjectData);
