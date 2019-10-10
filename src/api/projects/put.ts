@@ -90,8 +90,8 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
 
         const guildMember = await GetGuildUser(discordId);
         // Only mods or admins can approve an app for Launch
-        if (guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin")) {
-            if (updatedProject.launchYear !== undefined) updatedDbProjectData.launchId = await GetLaunchIdFromYear(updatedProject.launchYear);
+            if (guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").length > 0) {
+                updatedDbProjectData.launchId = await GetLaunchIdFromYear(updatedProject.launchYear);
         }
 
         resolve(updatedDbProjectData);
