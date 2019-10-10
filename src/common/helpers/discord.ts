@@ -60,3 +60,11 @@ export async function GetDiscordIdFromToken(accessToken: string, res: Response):
     }
     return (user as IDiscordUser).id;
 }
+
+export async function TryToGetDiscordIdFromToken(accessToken: string, res: Response): Promise<string | null> {
+    const user = await GetDiscordUser(accessToken).catch((err) => genericServerError(err, res));
+    if (!user) {        
+        return null;
+    }
+    return (user as IDiscordUser).id;
+}
