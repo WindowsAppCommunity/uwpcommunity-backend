@@ -32,7 +32,7 @@ module.exports = async (req: Request, res: Response) => {
         .then(() => {
             BuildResponse(res, HttpStatus.Success, "Success");
         })
-        .catch((err) => BuildResponse(res, (err as IRequestPromiseReject).status, (err as IRequestPromiseReject).reason));
+        .catch((err: IRequestPromiseReject) => BuildResponse(res, err.status, err.reason));
 };
 
 function checkQuery(query: IPutProjectRequestQuery): true | string {
