@@ -3,7 +3,7 @@ import { getUserByDiscordId } from "../../models/User"
 import Project, { findSimilarProjectName, getProjectsByDiscordId } from "../../models/Project";
 import { genericServerError, validateAuthenticationHeader } from '../../common/helpers/generic';
 import { IProject } from "../../models/types";
-import { GetDiscordIdFromToken } from "../../common/helpers/discord";
+import { GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
 import { GetLaunchIdFromYear } from "../../models/Launch";
 import { BuildResponse, HttpStatus } from "../../common/helpers/responseHelper";
 
@@ -18,13 +18,13 @@ module.exports = async (req: Request, res: Response) => {
 
     const queryCheck = checkQuery(req.query);
     if (queryCheck !== true) {
-        BuildResponse(res, HttpStatus.MalformedRequest, `Query string "${queryCheck}" not provided or malformed`); 
+        BuildResponse(res, HttpStatus.MalformedRequest, `Query string "${queryCheck}" not provided or malformed`);
         return;
     }
 
     const bodyCheck = checkIProject(body);
     if (bodyCheck !== true) {
-        BuildResponse(res, HttpStatus.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`); 
+        BuildResponse(res, HttpStatus.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`);
         return;
     }
 
@@ -76,9 +76,9 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
             return;
         };
 
+
         if (updatedProject.description) updatedDbProjectData.description = updatedProject.description;
         if (updatedProject.category) updatedDbProjectData.category = updatedProject.category;
-        if (updatedProject.launchYear !== undefined) updatedDbProjectData.launchId = await GetLaunchIdFromYear(updatedProject.launchYear);
         if (updatedProject.isPrivate) updatedDbProjectData.isPrivate = updatedProject.isPrivate;
         if (updatedProject.downloadLink) updatedDbProjectData.downloadLink = updatedProject.downloadLink;
         if (updatedProject.githubLink) updatedDbProjectData.githubLink = updatedProject.githubLink;
@@ -87,6 +87,12 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
         if (updatedProject.awaitingLaunchApproval) updatedDbProjectData.awaitingLaunchApproval = updatedProject.awaitingLaunchApproval;
         if (updatedProject.needsManualReview) updatedDbProjectData.needsManualReview = updatedProject.needsManualReview;
         if (updatedProject.lookingForRoles) updatedDbProjectData.lookingForRoles = JSON.stringify(updatedProject.lookingForRoles);
+
+        const guildMember = await GetGuildUser(discordId);
+        // Only mods or admins can approve an app for Launch
+        if (guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin")) {
+            if (updatedProject.launchYear !== undefined) updatedDbProjectData.launchId = await GetLaunchIdFromYear(updatedProject.launchYear);
+        }
 
         resolve(updatedDbProjectData);
     });
