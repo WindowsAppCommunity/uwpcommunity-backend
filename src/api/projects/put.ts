@@ -49,11 +49,14 @@ function checkIProject(body: IProject): true | string {
 function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPutProjectRequestQuery, discordId: string): Promise<Project> {
     return new Promise<Project>(async (resolve, reject) => {
         const userProjects = (await getProjectsByDiscordId(discordId)).filter(p => query.appName == p.appName);
-        if (userProjects.length === 0) { reject(`Project "${query.appName}" not found`); return; }
+        if (userProjects.length === 0) { ResponsePromiseReject(`Project "${query.appName}" not found`, HttpStatus.NotFound, reject); return; }
 
         let similarAppName = findSimilarProjectName(userProjects, query.appName);
 
-        if (!userProjects) { reject(`Project with name "${query.appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`); return; }
+        if (!userProjects) {
+            ResponsePromiseReject(`Project with name "${query.appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`, HttpStatus.NotFound, reject);
+            return;
+        }
 
         const DbProjectData: Partial<Project> | void = await StdToDbModal_IPutProjectsRequestBody(projectUpdateRequest, discordId).catch(reject);
         if (DbProjectData) userProjects[0].update(DbProjectData)
@@ -72,7 +75,7 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
 
         const user = await getUserByDiscordId(discordId).catch(reject);
         if (!user) {
-            reject("User not found");
+            ResponsePromiseReject("User not found", HttpStatus.NotFound, reject);
             return;
         };
 
