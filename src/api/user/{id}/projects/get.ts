@@ -3,29 +3,27 @@ import User from "../../../../models/User";
 import Project, { DbToStdModal_Project } from "../../../../models/Project";
 import { IProject } from "../../../../models/types";
 import { genericServerError, validateAuthenticationHeader } from "../../../../common/helpers/generic";
-import { GetDiscordIdFromToken, TryToGetDiscordIdFromToken } from "../../../../common/helpers/discord";
+import { GetDiscordIdFromToken } from "../../../../common/helpers/discord";
 import { HttpStatus, BuildResponse } from "../../../../common/helpers/responseHelper";
-import UserProject from "../../../../models/UserProject";
 
 module.exports = async (req: Request, res: Response) => {
     let discordId = req.params['id'];
-    let includePrivate = false;
 
     // If someone wants the projects for a specific user, they must be authorized
     const authAccess = validateAuthenticationHeader(req, res);
-    if (authAccess) {
-        const authenticatedDiscordId = await TryToGetDiscordIdFromToken(authAccess, res);
+    if (!authAccess) return;
 
-        // Make sure the requested ID matches the current user
-        if (discordId === authenticatedDiscordId) {
-            includePrivate = true;
-        }
+    const authenticatedDiscordId = await GetDiscordIdFromToken(authAccess, res);
+
+    if (authenticatedDiscordId) {
+        // If discordId === authenticatedDiscordId return all projects
+        // Else return only public projects
+        const results = (discordId === authenticatedDiscordId)
+            ? await getAllProjectsbyUser(discordId).catch(err => genericServerError(err, res))
+            : await getPublicProjectsbyUser(discordId).catch(err => genericServerError(err, res));
+
+        if (results) BuildResponse(res, HttpStatus.Success, results);
     }
-
-    const results = (includePrivate) ? await getAllProjectsbyUser(discordId).catch(err => genericServerError(err, res))
-        : await getPublicProjectsbyUser(discordId).catch(err => genericServerError(err, res));
-
-    if (results) BuildResponse(res, HttpStatus.Success, results);
 };
 
 export function getAllProjectsbyUser(discordId: string): Promise<IProject[]> {
