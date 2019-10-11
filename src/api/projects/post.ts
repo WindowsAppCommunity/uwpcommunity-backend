@@ -117,6 +117,11 @@ function ProjectFieldsAreValid(project: IPostProjectsRequestBody, res: Response)
         return false;
     }
 
+    // Make sure the user isn't trying to spoof the launch status
+    if ((project as any).launchYear) {
+        BuildResponse(res, HttpStatus.MalformedRequest, "launchYear cannot be set when registering");
+        return false;
+    }
 
     return true;
 }
@@ -129,7 +134,6 @@ interface IPostProjectsRequestBody {
     downloadLink?: string;
     githubLink?: string;
     externalLink?: string;
-    launchYear?: number;
     awaitingLaunchApproval: boolean;
     needsManualReview: boolean;
     heroImage: string;

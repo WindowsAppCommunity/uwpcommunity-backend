@@ -62,7 +62,6 @@ export function camelCaseToSpacedString(toConvert: string): string {
 }
 
 export function genericServerError(err: any, res: Response) {
-    console.error(err);
     BuildResponse(res, HttpStatus.InternalServerError, `Internal server error: ${err}`);
 }
 
