@@ -7,7 +7,7 @@ import { GetDiscordIdFromToken } from "../../../../common/helpers/discord";
 import { HttpStatus, BuildResponse } from "../../../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
-    let discordId = req.params['id'];
+    let discordId = req.params['discordId'];
 
     // If someone wants the projects for a specific user, they must be authorized
     const authAccess = validateAuthenticationHeader(req, res);
