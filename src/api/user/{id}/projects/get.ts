@@ -27,65 +27,55 @@ module.exports = async (req: Request, res: Response) => {
 };
 
 export function getAllProjectsbyUser(discordId: string): Promise<IProject[]> {
+    return new Promise(async (resolve, reject) => {
 
-    return new Promise((resolve, reject) => {
-        Project
-            .findAll(
-                {
-                    include: [{
-                        model: User,
-                        where: {
-                            discordId: discordId
-                        }
-                    }]
+        const results = await Project.findAll({
+            include: [{
+                model: User,
+                where: {
+                    discordId: discordId
                 }
-            )
-            .then(async results => {
-                if (results) {
-                    let projects: IProject[] = [];
+            }]
+        }).catch(reject);
 
-                    for (let project of results) {
-                        let proj = await DbToStdModal_Project(project).catch(reject);
-                        if (proj) projects.push(proj);
-                    }
+        if (results) {
+            let projects: IProject[] = [];
 
-                    resolve(projects);
-                }
-            })
-            .catch(reject);
+            for (let project of results) {
+                let proj = await DbToStdModal_Project(project).catch(reject);
+                if (proj) projects.push(proj);
+            }
+
+            resolve(projects);
+        }
     });
 }
 
 export function getPublicProjectsbyUser(discordId: string): Promise<IProject[]> {
+    return new Promise(async (resolve, reject) => {
 
-    return new Promise((resolve, reject) => {
-        Project
-            .findAll(
-                {
-                    include: [{
-                        model: User,
-                        where: {
-                            discordId: discordId
-                        }
-                    }],
-                    where: {
-                        isPrivate: false
-                    }
+        const results = await Project.findAll({
+            include: [{
+                model: User,
+                where: {
+                    discordId: discordId
                 }
-            )
-            .then(async results => {
-                if (results) {
-                    let projects: IProject[] = [];
+            }],
+            where: {
+                isPrivate: false
+            }
+        }).catch(reject);
 
-                    for (let project of results) {
-                        let proj = await DbToStdModal_Project(project).catch(reject);
-                        if (proj) projects.push(proj);
-                    }
+        if (results) {
+            let projects: IProject[] = [];
 
-                    resolve(projects);
-                }
-            })
-            .catch(reject);
+            for (let project of results) {
+                let proj = await DbToStdModal_Project(project).catch(reject);
+                if (proj) projects.push(proj);
+            }
+
+            resolve(projects);
+        }
     });
 }
 
