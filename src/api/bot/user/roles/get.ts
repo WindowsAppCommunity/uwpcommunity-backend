@@ -16,17 +16,12 @@ module.exports = async (req: Request, res: Response) => {
 
     let roles: Role[] = [];
 
-    if (!DEVENV) {
-        const guildMember = await GetGuildUser(user.id);
-        if (!guildMember) {
-            genericServerError("Unable to get guild details", res);
-            return;
-        }
+    const guildMember = await GetGuildUser(user.id);
+    if (!guildMember) {
+        genericServerError("Unable to get guild details", res);
+        return;
+    }
 
-        roles = guildMember.roles.array().map(role => { delete role.guild; return role });
-        BuildResponse(res, HttpStatus.Success, JSON.stringify(roles));
-    }else{        
-        BuildResponse(res, HttpStatus.Success, JSON.stringify([{"name":"Developer"}]));
-    }  
-
+    roles = guildMember.roles.array().map(role => { delete role.guild; return role });
+    BuildResponse(res, HttpStatus.Success, roles);
 };
