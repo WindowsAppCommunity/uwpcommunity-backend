@@ -52,10 +52,10 @@ export async function GetDiscordUser(accessToken: string): Promise<IDiscordUser 
     return await Req.json();
 }
 
-export async function GetDiscordIdFromToken(accessToken: string, res: Response): Promise<string | undefined> {
+export async function GetDiscordIdFromToken(accessToken: string, res: Response, emitResponseOnFailure?: boolean): Promise<string | undefined> {
     const user = await GetDiscordUser(accessToken).catch((err) => genericServerError(err, res));
     if (!user) {
-        BuildResponse(res, HttpStatus.Unauthorized, "Invalid accessToken");
+        if (emitResponseOnFailure !== false) BuildResponse(res, HttpStatus.Unauthorized, "Invalid accessToken");
         return;
     }
     return (user as IDiscordUser).id;
