@@ -70,7 +70,20 @@ function InitApi() {
 
             if (!filePath.includes("node_modules") && helpers.match(filePath, RegexMethods)) {
                 let serverPath = filePath.replace(RegexMethods, "").replace("/app", "").replace("/api", "").replace("/build", "");
-                serverPath = serverPath.replace('{', ':').replace('}', '');
+
+                if (helpers.match(serverPath, /{(.+)}/)) {
+                    serverPath = serverPath.replace(/{(.+)}/, ":$1");
+
+                    const fileSiblingDir = filePath.replace(/{.+}(.+)$/, "");
+
+                    glob(fileSiblingDir + '/**/*', (err: Error, siblingDir: string[]) => {
+                        for (let path of siblingDir) {
+                            if (helpers.match(path, /(.+\/[^{].+[^}]\/[^{}]*)/)) {
+                                throw new Error("Folder representing a route parameter cannot have sibling folders: " + path);
+                            }
+                        }
+                    });
+                }
 
                 if (helpers.DEVENV) serverPath = serverPath.replace(__dirname.replace(/\\/g, `/`).replace("/build", ""), "");
 
