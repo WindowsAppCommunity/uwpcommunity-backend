@@ -72,10 +72,11 @@ function InitApi() {
                 let serverPath = filePath.replace(RegexMethods, "").replace("/app", "").replace("/api", "").replace("/build", "");
 
                 if (helpers.match(serverPath, /{(.+)}\/?$/)) {
-                    // Reformat route params from folder-friendly to express spec
-                    serverPath = serverPath.replace(/{(.+)}\/?$/, ":$1");
                     checkSiblingDirInRouteParam(filePath);
                 }
+
+                // Reformat route params from folder-friendly to express spec
+                serverPath = serverPath.replace(/{([^\/]+)}/g, ":$1");
 
                 if (helpers.DEVENV) serverPath = serverPath.replace(__dirname.replace(/\\/g, `/`).replace("/build", ""), "");
 
