@@ -1,8 +1,8 @@
 import { Request, Response } from "express-serve-static-core";
-import { GetGuildUser, GetDiscordUser } from "../../../../common/helpers/discord";
+import { GetGuildUser, GetDiscordUser } from "../../../../../common/helpers/discord";
 import { Role } from "discord.js";
-import { genericServerError, validateAuthenticationHeader } from "../../../../common/helpers/generic";
-import { BuildResponse, HttpStatus, } from "../../../../common/helpers/responseHelper";
+import { genericServerError, validateAuthenticationHeader } from "../../../../../common/helpers/generic";
+import { BuildResponse, HttpStatus, } from "../../../../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const authAccess = validateAuthenticationHeader(req, res);
