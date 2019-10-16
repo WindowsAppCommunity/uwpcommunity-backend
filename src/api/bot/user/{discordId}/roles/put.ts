@@ -14,6 +14,11 @@ module.exports = async (req: Request, res: Response) => {
         return;
     }
 
+    if (req.params['discordId'] !== user.id) {
+        BuildResponse(res, HttpStatus.Unauthorized, "Authenticated user and requested ID don't match");
+        return;
+    }
+
     if (!DEVENV) {
         const guildMember = await GetGuildUser(user.id);
         if (!guildMember) {

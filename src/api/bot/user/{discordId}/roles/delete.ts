@@ -14,6 +14,11 @@ module.exports = async (req: Request, res: Response) => {
         return;
     }
 
+    if (req.params['discordId'] !== user.id) {
+        BuildResponse(res, HttpStatus.Unauthorized, "Authenticated user and requested ID don't match");
+        return;
+    }
+
     const guildMember = await GetGuildUser(user.id);
     if (!guildMember) {
         genericServerError("Unable to get guild details", res);
@@ -40,6 +45,6 @@ module.exports = async (req: Request, res: Response) => {
     }
 };
 
-function InvalidRole(res: Response) {        
-    BuildResponse(res, HttpStatus.MalformedRequest, "Invalid role");     
+function InvalidRole(res: Response) {
+    BuildResponse(res, HttpStatus.MalformedRequest, "Invalid role");
 }
