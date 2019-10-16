@@ -12,8 +12,7 @@ import cors from "cors";
  * The path of the file is set up as the endpoint on the server, and is set up with the HTTP method indicated by the filename 
  * 
  * Example: 
- * The file `./myapp/bugreport/post.js` is set up at `POST https://example.com/myapp/bugreport/`
- * 
+ * The file `./src/myapp/bugreport/post.js` is set up at `POST https://example.com/myapp/bugreport/`
  */
 
 const express = require('express'), app = express();
