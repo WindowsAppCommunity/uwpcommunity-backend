@@ -4,7 +4,7 @@ import Project, { DbToStdModal_Project } from "../../../models/Project";
 import { IProject } from "../../../models/types";
 import { genericServerError, validateAuthenticationHeader } from "../../../common/helpers/generic";
 import { GetDiscordIdFromToken } from "../../../common/helpers/discord";
-import { HttpStatus, BuildResponse } from "../../../common/helpers/responseHelper";
+import { HttpStatus, BuildResponse, ResponsePromiseReject } from "../../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     let id = req.params['id'];
@@ -23,9 +23,9 @@ module.exports = async (req: Request, res: Response) => {
 
                 let showPrivate = false;
 
-                if (result.users) {
-                    result.users.forEach(element => {
-                        if (element.discordId == authenticatedDiscordId) {
+                if (result.collaborators) {
+                    result.collaborators.forEach(collaborator => {
+                        if (collaborator.discordId == authenticatedDiscordId) {
                             showPrivate = true;
                         }
                     });
@@ -45,16 +45,21 @@ module.exports = async (req: Request, res: Response) => {
 
 };
 
-export function getPrjectById(projectId: string): Promise<Project> {
+export function getPrjectById(projectId: string): Promise<IProject> {
     return new Promise(async (resolve, reject) => {
 
-        let project: Project = new Project();
-        const result = await Project.findByPk(projectId, { include: [{ model: User }] })
-        if (result) {
-            project = result;
-        }
-
-        resolve(project);
+        let project: IProject;
+        Project.findByPk(projectId, { include: [{ model: User }] }).then(
+            async result => {
+                if (result) {
+                    let proj = await DbToStdModal_Project(result).catch(reject);
+                    if(proj){
+                        project = proj;
+                        resolve(project);
+                    }
+                }
+            }
+        ).catch(err => ResponsePromiseReject("Internal server error: " + err, HttpStatus.InternalServerError, reject));
 
     });
 }
