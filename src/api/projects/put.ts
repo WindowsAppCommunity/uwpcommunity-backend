@@ -61,17 +61,13 @@ function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPu
         const DbProjectData: Partial<Project> | void = await StdToDbModal_IPutProjectsRequestBody(projectUpdateRequest, discordId).catch(reject);
         if (DbProjectData) userProjects[0].update(DbProjectData)
             .then(resolve)
-            .catch(reject);
+            .catch(error => reject({ status: HttpStatus.InternalServerError, reason: `Internal server error: ${error}` }));
     });
 }
 
 export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRequestBody, discordId: string): Promise<Partial<Project>> {
     return new Promise(async (resolve, reject) => {
         const updatedProject = projectData as IProject;
-
-        const updatedDbProjectData: Partial<Project> = {
-            appName: updatedProject.appName
-        };
 
         const user = await getUserByDiscordId(discordId).catch(reject);
         if (!user) {
