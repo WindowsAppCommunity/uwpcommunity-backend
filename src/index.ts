@@ -71,7 +71,11 @@ function InitApi() {
                 let serverPath = filePath.replace(RegexMethods, "").replace("/app", "").replace("/api", "").replace("/build", "");
 
                 if (helpers.match(serverPath, /{(.+)}\/?$/)) {
-                    checkSiblingDirInRouteParam(filePath);
+                    // Check paths with route params for sibling folders  
+                    const folderPath = filePath.replace(/{.+}(.+)$/, "\/\*\/");
+                    glob(folderPath, (err: Error, siblingDir: string[]) => {
+                        if (siblingDir.length > 1) throw new Error("Folder representing a route parameter cannot have sibling folders: " + folderPath);
+                    });
                 }
 
                 // Reformat route params from folder-friendly to express spec
@@ -121,11 +125,3 @@ function InitApi() {
     }
 }
 //#endregion
-
-function checkSiblingDirInRouteParam(filePath: string) {
-    const fileSiblingDir = filePath.replace(/{.+}(.+)$/, "");
-
-    glob(fileSiblingDir + '/*/', (err: Error, siblingDir: string[]) => {
-        if (siblingDir.length > 1) throw new Error("Folder representing a route parameter cannot have sibling folders: " + fileSiblingDir);
-    });
-}

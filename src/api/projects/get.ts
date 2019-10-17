@@ -1,8 +1,7 @@
 import { Request, Response } from "express";
-import User from "../../models/User";
 import Project, { DbToStdModal_Project } from "../../models/Project";
 import { IProject } from "../../models/types";
-import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
+import { validateAuthenticationHeader } from "../../common/helpers/generic";
 import { GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
 import { HttpStatus, BuildResponse, ResponsePromiseReject, IRequestPromiseReject } from "../../common/helpers/responseHelper";
 
