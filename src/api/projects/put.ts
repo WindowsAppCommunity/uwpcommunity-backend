@@ -77,6 +77,7 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
 
         const updatedDbProjectData: Partial<Project> = {
             appName: updatedProject.appName,
+            description: updatedProject.description,
             category: updatedProject.category,
             isPrivate: updatedProject.isPrivate,
             downloadLink: updatedProject.downloadLink,
