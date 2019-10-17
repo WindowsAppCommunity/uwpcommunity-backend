@@ -75,16 +75,18 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
             return;
         };
 
-        if (updatedProject.description) updatedDbProjectData.description = updatedProject.description;
-        if (updatedProject.category) updatedDbProjectData.category = updatedProject.category;
-        if (updatedProject.isPrivate) updatedDbProjectData.isPrivate = updatedProject.isPrivate;
-        if (updatedProject.downloadLink) updatedDbProjectData.downloadLink = updatedProject.downloadLink;
-        if (updatedProject.githubLink) updatedDbProjectData.githubLink = updatedProject.githubLink;
-        if (updatedProject.externalLink) updatedDbProjectData.externalLink = updatedProject.externalLink;
-        if (updatedProject.heroImage) updatedDbProjectData.heroImage = updatedProject.heroImage;
-        if (updatedProject.awaitingLaunchApproval) updatedDbProjectData.awaitingLaunchApproval = updatedProject.awaitingLaunchApproval;
-        if (updatedProject.needsManualReview) updatedDbProjectData.needsManualReview = updatedProject.needsManualReview;
-        if (updatedProject.lookingForRoles) updatedDbProjectData.lookingForRoles = JSON.stringify(updatedProject.lookingForRoles);
+        const updatedDbProjectData: Partial<Project> = {
+            appName: updatedProject.appName,
+            category: updatedProject.category,
+            isPrivate: updatedProject.isPrivate,
+            downloadLink: updatedProject.downloadLink,
+            githubLink: updatedProject.githubLink,
+            externalLink: updatedProject.externalLink,
+            heroImage: updatedProject.heroImage,
+            awaitingLaunchApproval: updatedProject.awaitingLaunchApproval,
+            needsManualReview: updatedProject.needsManualReview,
+            lookingForRoles: JSON.stringify(updatedProject.lookingForRoles)
+        };
 
         const guildMember = await GetGuildUser(discordId);
         // Only mods or admins can approve an app for Launch
