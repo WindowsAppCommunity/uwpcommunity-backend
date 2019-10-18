@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import { getUserByDiscordId } from "../../models/User"
 import Project, { findSimilarProjectName, getProjectsByDiscordId } from "../../models/Project";
-import { genericServerError, validateAuthenticationHeader } from '../../common/helpers/generic';
+import { validateAuthenticationHeader } from '../../common/helpers/generic';
 import { IProject } from "../../models/types";
 import { GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
-import { GetLaunchIdFromYear } from "../../models/Launch";
+import { GetLaunchIdFromYear, GetLaunchYearFromId } from "../../models/Launch";
 import { BuildResponse, HttpStatus, ResponsePromiseReject, IRequestPromiseReject } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
@@ -62,14 +62,18 @@ function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPu
             return;
         }
 
-        const DbProjectData: Partial<Project> | void = await StdToDbModal_IPutProjectsRequestBody(projectUpdateRequest, discordId).catch(reject);
+        const currentLaunchYear = await GetLaunchYearFromId(userProjects[0].launchId);
+        const shouldUpdateLaunch: boolean = currentLaunchYear !== projectUpdateRequest.launchYear;
+
+        const DbProjectData: Partial<Project> | void = await StdToDbModal_IPutProjectsRequestBody(projectUpdateRequest, discordId, shouldUpdateLaunch).catch(reject);
+
         if (DbProjectData) userProjects[0].update(DbProjectData)
             .then(resolve)
             .catch(error => reject({ status: HttpStatus.InternalServerError, reason: `Internal server error: ${error}` }));
     });
 }
 
-export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRequestBody, discordId: string): Promise<Partial<Project>> {
+export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRequestBody, discordId: string, shouldUpdateLaunch: boolean): Promise<Partial<Project>> {
     return new Promise(async (resolve, reject) => {
         const updatedProject = projectData as IProject;
 
@@ -94,12 +98,12 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
         if (updatedProject.lookingForRoles) updatedDbProjectData.lookingForRoles = JSON.stringify(updatedProject.lookingForRoles);
 
         const guildMember = await GetGuildUser(discordId);
-        // Only Launch Coordinators can approve an app for Launch
-        if (updatedProject.launchYear !== undefined) {
-            if (guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "Launch Coordinator").length > 0) {
+        const isLaunchCoordinator = guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "Launch Coordinator").length > 0;
+
+        if (shouldUpdateLaunch && updatedProject.launchYear) {
+            if (!isLaunchCoordinator) ResponsePromiseReject("User has insufficient permissions", HttpStatus.Unauthorized, reject);
+            else {
                 updatedDbProjectData.launchId = await GetLaunchIdFromYear(updatedProject.launchYear);
-            } else {
-                ResponsePromiseReject("User has insufficient permissions", HttpStatus.Unauthorized, reject);
             }
         }
 
