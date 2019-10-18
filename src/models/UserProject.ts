@@ -61,7 +61,7 @@ export async function UserOwnsProject(user: User, project: Project): Promise<boo
     return false;
 }
 
-export async function GetProjectsByUserId(UserId: number) {
+export async function GetProjectsByUserId(UserId: number): Promise<Project[]> {
     const RelevantUserProjects = await UserProject.findAll({ where: { userId: UserId } });
 
     let projects: Project[] = [];
@@ -70,5 +70,5 @@ export async function GetProjectsByUserId(UserId: number) {
         if (RelevantProject) projects.push(RelevantProject);
     }
 
-    return Project;
+    return projects;
 }
