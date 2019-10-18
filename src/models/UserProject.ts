@@ -65,8 +65,8 @@ export async function GetProjectsByUserId(UserId: number): Promise<Project[]> {
     const RelevantUserProjects = await UserProject.findAll({ where: { userId: UserId } });
 
     let projects: Project[] = [];
-    for (let project of RelevantUserProjects) {
-        const RelevantProject = await Project.findOne({ where: { id: project.id } });
+    for (let userProject of RelevantUserProjects) {
+        const RelevantProject = await Project.findOne({ where: { id: userProject.projectId } });
         if (RelevantProject) projects.push(RelevantProject);
     }
 

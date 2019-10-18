@@ -64,8 +64,9 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
         }
 
         const existingUserProjects = await GetProjectsByUserId(user.id);
-        if (existingUserProjects.length >= 3) {
-            reject("User has exceeded limit of 3 projects");
+
+        if (existingUserProjects.length > 5) {
+            reject("User has reached or exceeded 5 project limit");
             return;
         }
 
