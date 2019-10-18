@@ -69,10 +69,12 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
             return;
         }
 
+        // If review status is unspecified, default to true
+        if (projectRequestData.needsManualReview == undefined) projectRequestData.needsManualReview = true;
+
         // Create the project
         Project.create(await StdToDbModal_Project({ ...projectRequestData, collaborators: [] }))
             .then((project) => {
-
                 // Create the userproject
                 UserProject.create(
                     {
