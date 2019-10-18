@@ -52,13 +52,23 @@ function checkIProject(body: IProject): true | string {
 
 function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPutProjectRequestQuery, discordId: string): Promise<Project> {
     return new Promise<Project>(async (resolve, reject) => {
-        const userProjects = (await getProjectsByDiscordId(discordId)).filter(p => query.appName == p.appName);
-        if (userProjects.length === 0) { ResponsePromiseReject(`Project "${query.appName}" not found`, HttpStatus.NotFound, reject); return; }
+        const userProjects = await Project.findAll({
+            where: { appName: query.appName }
+        });
 
         let similarAppName = findSimilarProjectName(userProjects, query.appName);
 
         if (!userProjects) {
             ResponsePromiseReject(`Project with name "${query.appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`, HttpStatus.NotFound, reject);
+            return;
+        }
+
+        const guildMember = await GetGuildUser(discordId);
+        const isMod = guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").length > 0;
+        const userCanModify = userProjects.filter(proj => (proj.users && proj.users[0].discordId === discordId)).length > 0 || isMod;
+
+        if (!userCanModify) {
+            ResponsePromiseReject("Unauthorized user", HttpStatus.Unauthorized, reject);
             return;
         }
 
@@ -98,7 +108,7 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
         if (updatedProject.lookingForRoles) updatedDbProjectData.lookingForRoles = JSON.stringify(updatedProject.lookingForRoles);
 
         const guildMember = await GetGuildUser(discordId);
-        const isLaunchCoordinator = guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "Launch Coordinator").length > 0;
+        const isLaunchCoordinator = guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "launch coordinator").length > 0;
 
         if (shouldUpdateLaunch && updatedProject.launchYear) {
             if (!isLaunchCoordinator) ResponsePromiseReject("User has insufficient permissions", HttpStatus.Unauthorized, reject);

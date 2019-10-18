@@ -1,9 +1,8 @@
 import { Request, Response } from "express";
-import User from "../../models/User"
 import Project, { findSimilarProjectName } from "../../models/Project";
-import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
-import { GetDiscordIdFromToken } from "../../common/helpers/discord";
-import { HttpStatus, BuildResponse } from "../../common/helpers/responseHelper";
+import { validateAuthenticationHeader } from "../../common/helpers/generic";
+import { GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
+import { HttpStatus, BuildResponse, ResponsePromiseReject, IRequestPromiseReject } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const bodyCheck = checkBody(req.body);
@@ -22,7 +21,7 @@ module.exports = async (req: Request, res: Response) => {
         .then(() => {
             BuildResponse(res, HttpStatus.Success, "Success");
         })
-        .catch(err => genericServerError(err, res));
+        .catch((err: IRequestPromiseReject) => BuildResponse(res, err.status, err.reason));
 };
 
 function checkBody(body: IDeleteProjectsRequestBody): true | string {
@@ -33,24 +32,25 @@ function checkBody(body: IDeleteProjectsRequestBody): true | string {
 function deleteProject(projectRequestData: IDeleteProjectsRequestBody, discordId: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
         Project.findAll({
-            include: [{
-                model: User,
-                where: { discordId: discordId }
-            }]
-        }).then(projects => {
-            if (projects.length === 0) { reject(`Projects with ID ${discordId} not found`); return; }
+            where: { appName: projectRequestData.appName }
+        }).then(async (projects) => {
+            const guildMember = await GetGuildUser(discordId);
+            const isMod = guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").length > 0;
+            const userCanModify = projects.filter(proj => (proj.users && proj.users[0].discordId === discordId)).length > 0 || isMod;
 
-            // Filter out the correct app name
-            const project = projects.filter(project => JSON.parse(JSON.stringify(project)).appName == projectRequestData.appName);
+            if (!userCanModify) {
+                ResponsePromiseReject("Unauthorized user", HttpStatus.Unauthorized, reject);
+                return;
+            }
 
             let similarAppName = findSimilarProjectName(projects, projectRequestData.appName);
-            if (project.length === 0) { reject(`Project with name "${projectRequestData.appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`); return; }
-            if (project.length > 1) { reject("More than one project with that name found. Contact a system administrator to fix the data duplication"); return; }
+            if (projects.length === 0) { ResponsePromiseReject(`Project with name "${projectRequestData.appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`, HttpStatus.NotFound, reject); return; }
+            if (projects.length > 1) { ResponsePromiseReject("More than one project with that name found. Contact a system administrator to fix the data duplication", HttpStatus.InternalServerError, reject); return; }
 
-            project[0].destroy({ force: true })
+            projects[0].destroy({ force: true })
                 .then(resolve)
-                .catch(reject);
-        }).catch(reject);
+                .catch(err => ResponsePromiseReject(err, HttpStatus.InternalServerError, reject));
+        }).catch(err => ResponsePromiseReject(err, HttpStatus.InternalServerError, reject));
     });
 }
 
