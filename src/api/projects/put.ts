@@ -94,9 +94,9 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
         if (updatedProject.lookingForRoles) updatedDbProjectData.lookingForRoles = JSON.stringify(updatedProject.lookingForRoles);
 
         const guildMember = await GetGuildUser(discordId);
-        // Only mods or admins can approve an app for Launch
+        // Only Launch Coordinators can approve an app for Launch
         if (updatedProject.launchYear !== undefined) {
-            if (guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").length > 0) {
+            if (guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "Launch Coordinator").length > 0) {
                 updatedDbProjectData.launchId = await GetLaunchIdFromYear(updatedProject.launchYear);
             } else {
                 ResponsePromiseReject("User has insufficient permissions", HttpStatus.Unauthorized, reject);
