@@ -16,7 +16,7 @@ module.exports = async (req: Request, res: Response) => {
     const authenticatedDiscordId = await GetDiscordIdFromToken(authAccess, res);
     if (authenticatedDiscordId) {
 
-        getProjectById(id)
+        getProjectById(id, res)
             .then(result => {
                 if (result) {
                     if (result.isPrivate) {
@@ -47,7 +47,7 @@ module.exports = async (req: Request, res: Response) => {
     }
 };
 
-export function getProjectById(projectId: string): Promise<IProject> {
+export function getProjectById(projectId: string, res: Response): Promise<IProject> {
     return new Promise(async (resolve, reject) => {
 
         let project: IProject;
@@ -62,7 +62,8 @@ export function getProjectById(projectId: string): Promise<IProject> {
                         }
                     }
                 }
-            ).catch(err => ResponsePromiseReject("Internal server error: " + err, HttpStatus.InternalServerError, reject));
+            ).catch(err => genericServerError(err, res));
+
 
     });
 }
