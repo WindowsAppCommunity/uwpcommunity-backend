@@ -42,6 +42,10 @@ function checkQuery(query: IPutProjectRequestQuery): true | string {
 }
 function checkIProject(body: IProject): true | string {
     if (!body.appName) return "appName";
+    if (!body.description) return "description";
+    if (body.isPrivate === undefined) return "isPrivate";
+    if (body.awaitingLaunchApproval === undefined) return "awaitingLaunchApproval";
+    if (body.needsManualReview === undefined) return "needsManualReview";
 
     return true;
 }
