@@ -74,7 +74,7 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
         if (projectRequestData.needsManualReview == undefined) projectRequestData.needsManualReview = true;
 
         // Create the project
-        Project.create(await StdToDbModal_Project({ ...projectRequestData, collaborators: [] }))
+        Project.create(await StdToDbModal_Project({ ...projectRequestData }))
             .then((project) => {
                 // Create the userproject
                 UserProject.create(

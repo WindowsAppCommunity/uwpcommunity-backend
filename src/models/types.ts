@@ -16,6 +16,8 @@ export interface IProject {
 
     collaborators: IProjectCollaborator[];
 
+    createdAt: Date;
+    updatedAt: Date;
     launchYear?: number;
     category?: string;
 };
