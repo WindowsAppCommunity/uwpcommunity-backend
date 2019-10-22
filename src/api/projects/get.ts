@@ -1,63 +1,33 @@
 import { Request, Response } from "express";
-import User from "../../models/User";
 import Project, { DbToStdModal_Project } from "../../models/Project";
 import { IProject } from "../../models/types";
-import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
-import { GetDiscordIdFromToken } from "../../common/helpers/discord";
-import { HttpStatus, BuildResponse } from "../../common/helpers/responseHelper";
+import { validateAuthenticationHeader } from "../../common/helpers/generic";
+import { GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
+import { HttpStatus, BuildResponse, ResponsePromiseReject, IRequestPromiseReject } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
-    // If someone wants the projects for a specific user, they must be authorized
-    if (req.query.discordId) {
-        const authAccess = validateAuthenticationHeader(req, res);
-        if (!authAccess) return;
+    const reqQuery = req.query as IGetProjectsRequestQuery;
 
-        const authenticatedDiscordId = await GetDiscordIdFromToken(authAccess, res);
-
-        // Make sure the requested ID matches the current user
-        if (req.query.discordId !== authenticatedDiscordId) {
-            res.status(401).send({
-                error: "Unauthorized",
-                reason: "Discord ID does not belong to user"
-            });
-            return;
-        }
-
-        const results = await getProjectsbyUser(req.query.discordId).catch(err => genericServerError(err, res));
-        if(results) BuildResponse(res, HttpStatus.Success, results);
-
-    } else {
-        const results = await getAllProjects().catch(err => genericServerError(err, res));
-        if(results) BuildResponse(res, HttpStatus.Success, results);
+    const projects = await getAllProjects(reqQuery.all && await isMod(req, res)).catch((err: IRequestPromiseReject) => BuildResponse(res, err.status, err.reason));
+    if (projects) {
+        BuildResponse(res, HttpStatus.Success, projects);
     }
 };
 
-export function getProjectsbyUser(discordId: string): Promise<IProject[]> {
-    return new Promise((resolve, reject) => {
-        Project
-            .findAll({
-                include: [{
-                    model: User,
-                    where: { discordId: discordId }
-                }]
-            })
-            .then(async results => {
-                if (results) {
-                    let projects: IProject[] = [];
+async function isMod(req: Request, res: Response): Promise<boolean> {
+    const authAccess = validateAuthenticationHeader(req, res, false);
+    if (authAccess) {
+        const discordId = await GetDiscordIdFromToken(authAccess, res, false);
+        if (!discordId) return false;
 
-                    for (let project of results) {
-                        let proj = await DbToStdModal_Project(project).catch(reject);
-                        if (proj) projects.push(proj);
-                    }
-
-                    resolve(projects);
-                }
-            })
-            .catch(reject);
-    });
+        const user = await GetGuildUser(discordId);
+        if (!user) return false;
+        return user.roles.array().filter(role => role.name == "Mod" || role.name == "Admin").length > 0;
+    }
+    return false;
 }
 
-export function getAllProjects(): Promise<IProject[]> {
+export function getAllProjects(all?: boolean): Promise<IProject[]> {
     return new Promise((resolve, reject) => {
         Project.findAll()
             .then(async results => {
@@ -67,15 +37,15 @@ export function getAllProjects(): Promise<IProject[]> {
                     for (let project of results) {
                         let proj = await DbToStdModal_Project(project).catch(reject);
                         // Only push a project if not private
-                        if (proj && !proj.isPrivate && !proj.needsManualReview) projects.push(proj);
+                        if (proj && (!proj.isPrivate && !proj.needsManualReview || all)) projects.push(proj);
                     }
 
                     resolve(projects);
                 }
-            })
-            .catch(reject);
+            }).catch(err => ResponsePromiseReject("Internal server error: " + err, HttpStatus.InternalServerError, reject));
     });
 }
 interface IGetProjectsRequestQuery {
-    discordId?: string;
+    /** @summary Only useable if user is a mod or admin */
+    all?: boolean;
 }

@@ -64,15 +64,18 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
         }
 
         const existingUserProjects = await GetProjectsByUserId(user.id);
-        if (existingUserProjects.length >= 3) {
-            reject("User has exceeded limit of 3 projects");
+
+        if (existingUserProjects.length > 5) {
+            reject("User has reached or exceeded 5 project limit");
             return;
         }
 
-        // Create the project
-        Project.create(await StdToDbModal_Project({ ...projectRequestData, collaborators: [] }))
-            .then((project) => {
+        // If review status is unspecified, default to true
+        if (projectRequestData.needsManualReview == undefined) projectRequestData.needsManualReview = true;
 
+        // Create the project
+        Project.create(await StdToDbModal_Project({ ...projectRequestData }))
+            .then((project) => {
                 // Create the userproject
                 UserProject.create(
                     {
@@ -117,6 +120,11 @@ function ProjectFieldsAreValid(project: IPostProjectsRequestBody, res: Response)
         return false;
     }
 
+    // Make sure the user isn't trying to spoof the launch status
+    if ((project as any).launchYear) {
+        BuildResponse(res, HttpStatus.MalformedRequest, "launchYear cannot be set when registering");
+        return false;
+    }
 
     return true;
 }
@@ -129,7 +137,6 @@ interface IPostProjectsRequestBody {
     downloadLink?: string;
     githubLink?: string;
     externalLink?: string;
-    launchYear?: number;
     awaitingLaunchApproval: boolean;
     needsManualReview: boolean;
     heroImage: string;

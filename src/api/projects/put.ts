@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
 import { getUserByDiscordId } from "../../models/User"
 import Project, { findSimilarProjectName, getProjectsByDiscordId } from "../../models/Project";
-import { genericServerError, validateAuthenticationHeader } from '../../common/helpers/generic';
+import { validateAuthenticationHeader } from '../../common/helpers/generic';
 import { IProject } from "../../models/types";
-import { GetDiscordIdFromToken } from "../../common/helpers/discord";
-import { GetLaunchIdFromYear } from "../../models/Launch";
-import { BuildResponse, HttpStatus } from "../../common/helpers/responseHelper";
+import { GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
+import { GetLaunchIdFromYear, GetLaunchYearFromId } from "../../models/Launch";
+import { BuildResponse, HttpStatus, ResponsePromiseReject, IRequestPromiseReject } from "../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;
@@ -18,13 +18,13 @@ module.exports = async (req: Request, res: Response) => {
 
     const queryCheck = checkQuery(req.query);
     if (queryCheck !== true) {
-        BuildResponse(res, HttpStatus.MalformedRequest, `Query string "${queryCheck}" not provided or malformed`); 
+        BuildResponse(res, HttpStatus.MalformedRequest, `Query string "${queryCheck}" not provided or malformed`);
         return;
     }
 
     const bodyCheck = checkIProject(body);
     if (bodyCheck !== true) {
-        BuildResponse(res, HttpStatus.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`); 
+        BuildResponse(res, HttpStatus.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`);
         return;
     }
 
@@ -32,7 +32,7 @@ module.exports = async (req: Request, res: Response) => {
         .then(() => {
             BuildResponse(res, HttpStatus.Success, "Success");
         })
-        .catch((err) => genericServerError(err, res));
+        .catch((err: IRequestPromiseReject) => BuildResponse(res, err.status, err.reason));
 };
 
 function checkQuery(query: IPutProjectRequestQuery): true | string {
@@ -42,51 +42,80 @@ function checkQuery(query: IPutProjectRequestQuery): true | string {
 }
 function checkIProject(body: IProject): true | string {
     if (!body.appName) return "appName";
+    if (!body.description) return "description";
+    if (body.isPrivate === undefined) return "isPrivate";
+    if (body.awaitingLaunchApproval === undefined) return "awaitingLaunchApproval";
+    if (body.needsManualReview === undefined) return "needsManualReview";
 
     return true;
 }
 
 function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPutProjectRequestQuery, discordId: string): Promise<Project> {
     return new Promise<Project>(async (resolve, reject) => {
-        const userProjects = (await getProjectsByDiscordId(discordId)).filter(p => query.appName == p.appName);
-        if (userProjects.length === 0) { reject(`Project "${query.appName}" not found`); return; }
+        const userProjects = await Project.findAll({
+            where: { appName: query.appName }
+        });
 
         let similarAppName = findSimilarProjectName(userProjects, query.appName);
 
-        if (!userProjects) { reject(`Project with name "${query.appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`); return; }
+        if (!userProjects) {
+            ResponsePromiseReject(`Project with name "${query.appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`, HttpStatus.NotFound, reject);
+            return;
+        }
 
-        const DbProjectData: Partial<Project> = await StdToDbModal_IPutProjectsRequestBody(projectUpdateRequest, discordId);
-        userProjects[0].update(DbProjectData)
+        const guildMember = await GetGuildUser(discordId);
+        const isMod = guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").length > 0;
+        const userCanModify = userProjects.filter(proj => (proj.users && proj.users[0].discordId === discordId)).length > 0 || isMod;
+
+        if (!userCanModify) {
+            ResponsePromiseReject("Unauthorized user", HttpStatus.Unauthorized, reject);
+            return;
+        }
+
+        const currentLaunchYear = await GetLaunchYearFromId(userProjects[0].launchId);
+        const shouldUpdateLaunch: boolean = currentLaunchYear !== projectUpdateRequest.launchYear;
+
+        const DbProjectData: Partial<Project> | void = await StdToDbModal_IPutProjectsRequestBody(projectUpdateRequest, discordId, shouldUpdateLaunch).catch(reject);
+
+        if (DbProjectData) userProjects[0].update(DbProjectData)
             .then(resolve)
-            .catch(reject);
+            .catch(error => reject({ status: HttpStatus.InternalServerError, reason: `Internal server error: ${error}` }));
     });
 }
 
-export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRequestBody, discordId: string): Promise<Partial<Project>> {
+export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRequestBody, discordId: string, shouldUpdateLaunch: boolean): Promise<Partial<Project>> {
     return new Promise(async (resolve, reject) => {
         const updatedProject = projectData as IProject;
 
-        const updatedDbProjectData: Partial<Project> = {
-            appName: updatedProject.appName
-        };
-
         const user = await getUserByDiscordId(discordId).catch(reject);
         if (!user) {
-            reject("User not found");
+            ResponsePromiseReject("User not found", HttpStatus.NotFound, reject);
             return;
         };
 
+        const updatedDbProjectData: Partial<Project> = { appName: projectData.appName };
+
+        // Doing it this way allows us to only update fields that are supplied, without overwriting required fields
         if (updatedProject.description) updatedDbProjectData.description = updatedProject.description;
         if (updatedProject.category) updatedDbProjectData.category = updatedProject.category;
-        if (updatedProject.launchYear !== undefined) updatedDbProjectData.launchId = await GetLaunchIdFromYear(updatedProject.launchYear);
         if (updatedProject.isPrivate) updatedDbProjectData.isPrivate = updatedProject.isPrivate;
         if (updatedProject.downloadLink) updatedDbProjectData.downloadLink = updatedProject.downloadLink;
         if (updatedProject.githubLink) updatedDbProjectData.githubLink = updatedProject.githubLink;
         if (updatedProject.externalLink) updatedDbProjectData.externalLink = updatedProject.externalLink;
         if (updatedProject.heroImage) updatedDbProjectData.heroImage = updatedProject.heroImage;
-        if (updatedProject.awaitingLaunchApproval) updatedDbProjectData.awaitingLaunchApproval = updatedProject.awaitingLaunchApproval;
-        if (updatedProject.needsManualReview) updatedDbProjectData.needsManualReview = updatedProject.needsManualReview;
+        if (updatedProject.awaitingLaunchApproval !== undefined) updatedDbProjectData.awaitingLaunchApproval = updatedProject.awaitingLaunchApproval;
+        if (updatedProject.needsManualReview !== undefined) updatedDbProjectData.needsManualReview = updatedProject.needsManualReview;
         if (updatedProject.lookingForRoles) updatedDbProjectData.lookingForRoles = JSON.stringify(updatedProject.lookingForRoles);
+
+        const guildMember = await GetGuildUser(discordId);
+        const isLaunchCoordinator = guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "launch coordinator").length > 0;
+
+        if (shouldUpdateLaunch && updatedProject.launchYear) {
+            if (!isLaunchCoordinator) ResponsePromiseReject("User has insufficient permissions", HttpStatus.Unauthorized, reject);
+            else {
+                updatedDbProjectData.launchId = await GetLaunchIdFromYear(updatedProject.launchYear);
+            }
+        }
 
         resolve(updatedDbProjectData);
     });

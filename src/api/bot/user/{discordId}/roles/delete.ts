@@ -1,8 +1,8 @@
 import { Request, Response } from "express-serve-static-core";
-import { GetGuildUser, GetGuildRoles, GetDiscordUser } from "../../../../common/helpers/discord";
+import { GetGuildUser, GetDiscordUser } from "../../../../../common/helpers/discord";
 import { Role } from "discord.js";
-import { genericServerError, validateAuthenticationHeader } from "../../../../common/helpers/generic";
-import { BuildResponse, HttpStatus} from "../../../../common/helpers/responseHelper";
+import { genericServerError, validateAuthenticationHeader } from "../../../../../common/helpers/generic";
+import { BuildResponse, HttpStatus, } from "../../../../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const authAccess = validateAuthenticationHeader(req, res);
@@ -14,6 +14,11 @@ module.exports = async (req: Request, res: Response) => {
         return;
     }
 
+    if (req.params['discordId'] !== user.id) {
+        BuildResponse(res, HttpStatus.Unauthorized, "Authenticated user and requested ID don't match");
+        return;
+    }
+
     const guildMember = await GetGuildUser(user.id);
     if (!guildMember) {
         genericServerError("Unable to get guild details", res);
@@ -21,23 +26,18 @@ module.exports = async (req: Request, res: Response) => {
     }
 
     // Must have a role in the body (JSON)
-    if (!req.body.role) {        
-        BuildResponse(res, HttpStatus.MalformedRequest, "Missing role in body");
+    if (!req.body.name) {
+        BuildResponse(res, HttpStatus.Unauthorized, "Missing role name");
         return;
     }
 
-    let guildRoles = await GetGuildRoles();
-    if (!guildRoles) {
-        genericServerError("Unable to get guild roles", res); return;
-    }
-
-    let roles: Role[] = guildRoles.filter(role => role.name == req.body.role);
+    // Check that the user has the role
+    let roles: Role[] = guildMember.roles.array().filter(role => role.name == req.body.role);
     if (roles.length == 0) InvalidRole(res);
 
-
-    switch (req.body.role) {
+    switch (req.body.name) {
         case "Developer":
-            guildMember.addRole(roles[0]);
+            guildMember.removeRole(roles[0]);
             BuildResponse(res, HttpStatus.Success, "Success");
             break;
         default:

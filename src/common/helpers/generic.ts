@@ -62,17 +62,16 @@ export function camelCaseToSpacedString(toConvert: string): string {
 }
 
 export function genericServerError(err: any, res: Response) {
-    console.error(err);
     BuildResponse(res, HttpStatus.InternalServerError, `Internal server error: ${err}`);
 }
 
 /** @summary Checks that the authentication header contains a valid auth token */
-export function validateAuthenticationHeader(req: Request, res: Response): string | undefined {
+export function validateAuthenticationHeader(req: Request, res: Response, emitResponseOnFailure?: boolean): string | undefined {
     if (!req.headers.authorization) {
-        BuildResponse(res, HttpStatus.MalformedRequest, "Missing authorization header");
+        if (emitResponseOnFailure !== false) BuildResponse(res, HttpStatus.MalformedRequest, "Missing authorization header");
         return;
     }
     return req.headers.authorization.replace("Bearer ", "");
 }
 
-export const DEVENV: boolean = process.argv.filter(val => val == 'dev').length > 0;
+export const DEVENV: boolean = process.env.environment == "development";

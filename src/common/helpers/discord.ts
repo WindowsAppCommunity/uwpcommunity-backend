@@ -31,8 +31,12 @@ export function GetGuild(): Discord.Guild | undefined {
 export async function GetGuildUser(discordId: string): Promise<Discord.GuildMember | undefined> {
     const server = GetGuild();
     if (!server) return;
-
+    
     return (await server.members.filter(member => member.id == discordId)).first();
+}
+
+export function GetUser(discordId: string) {
+    return bot.fetchUser(discordId)
 }
 
 export async function GetGuildRoles() {
@@ -52,10 +56,10 @@ export async function GetDiscordUser(accessToken: string): Promise<IDiscordUser 
     return await Req.json();
 }
 
-export async function GetDiscordIdFromToken(accessToken: string, res: Response): Promise<string | undefined> {
+export async function GetDiscordIdFromToken(accessToken: string, res: Response, emitResponseOnFailure?: boolean): Promise<string | undefined> {
     const user = await GetDiscordUser(accessToken).catch((err) => genericServerError(err, res));
     if (!user) {
-        BuildResponse(res, HttpStatus.Unauthorized, "Invalid accessToken");
+        if (emitResponseOnFailure !== false) BuildResponse(res, HttpStatus.Unauthorized, "Invalid accessToken");
         return;
     }
     return (user as IDiscordUser).id;
