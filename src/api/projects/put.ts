@@ -1,11 +1,12 @@
 import { Request, Response } from "express";
-import { getUserByDiscordId } from "../../models/User"
-import Project, { findSimilarProjectName, getProjectsByDiscordId } from "../../models/Project";
+import User, { getUserByDiscordId } from "../../models/User"
+import Project, { findSimilarProjectName } from "../../models/Project";
 import { validateAuthenticationHeader } from '../../common/helpers/generic';
 import { IProject } from "../../models/types";
 import { GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
 import { GetLaunchIdFromYear, GetLaunchYearFromId } from "../../models/Launch";
 import { BuildResponse, HttpStatus, ResponsePromiseReject, IRequestPromiseReject } from "../../common/helpers/responseHelper";
+import { UserOwnsProject } from "../../models/UserProject";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;
@@ -52,32 +53,40 @@ function checkIProject(body: IProject): true | string {
 
 function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPutProjectRequestQuery, discordId: string): Promise<Project> {
     return new Promise<Project>(async (resolve, reject) => {
-        const userProjects = await Project.findAll({
+        const DBProjects = await Project.findAll({
             where: { appName: query.appName }
         });
 
-        let similarAppName = findSimilarProjectName(userProjects, query.appName);
+        let similarAppName = findSimilarProjectName(DBProjects, query.appName);
 
-        if (!userProjects) {
+        if (!DBProjects) {
             ResponsePromiseReject(`Project with name "${query.appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`, HttpStatus.NotFound, reject);
             return;
         }
 
         const guildMember = await GetGuildUser(discordId);
         const isMod = guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").length > 0;
-        const userCanModify = userProjects.filter(proj => (proj.users && proj.users[0].discordId === discordId)).length > 0 || isMod;
+
+
+        const user: User | null = await getUserByDiscordId(discordId);
+        if (!user) {
+            ResponsePromiseReject("User not found", HttpStatus.NotFound, reject);
+            return;
+        }
+        const userOwnsProject: boolean = await UserOwnsProject(user, DBProjects[0]);
+        const userCanModify = userOwnsProject || isMod;
 
         if (!userCanModify) {
             ResponsePromiseReject("Unauthorized user", HttpStatus.Unauthorized, reject);
             return;
         }
 
-        const currentLaunchYear = await GetLaunchYearFromId(userProjects[0].launchId);
+        const currentLaunchYear = await GetLaunchYearFromId(DBProjects[0].launchId);
         const shouldUpdateLaunch: boolean = currentLaunchYear !== projectUpdateRequest.launchYear;
 
         const DbProjectData: Partial<Project> | void = await StdToDbModal_IPutProjectsRequestBody(projectUpdateRequest, discordId, shouldUpdateLaunch).catch(reject);
 
-        if (DbProjectData) userProjects[0].update(DbProjectData)
+        if (DbProjectData) DBProjects[0].update(DbProjectData)
             .then(resolve)
             .catch(error => reject({ status: HttpStatus.InternalServerError, reason: `Internal server error: ${error}` }));
     });
