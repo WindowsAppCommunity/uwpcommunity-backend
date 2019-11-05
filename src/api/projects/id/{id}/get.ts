@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
-import User from "../../../models/User";
-import Project, { DbToStdModal_Project } from "../../../models/Project";
-import { IProject } from "../../../models/types";
-import { genericServerError, validateAuthenticationHeader } from "../../../common/helpers/generic";
-import { GetDiscordIdFromToken } from "../../../common/helpers/discord";
-import { HttpStatus, BuildResponse, ResponsePromiseReject, IRequestPromiseReject } from "../../../common/helpers/responseHelper";
+import User from "../../../../models/User";
+import Project, { DbToStdModal_Project } from "../../../../models/Project";
+import { IProject } from "../../../../models/types";
+import { genericServerError, validateAuthenticationHeader } from "../../../../common/helpers/generic";
+import { GetDiscordIdFromToken } from "../../../../common/helpers/discord";
+import { HttpStatus, BuildResponse, ResponsePromiseReject, IRequestPromiseReject } from "../../../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     let id = req.params['id'];
@@ -18,6 +18,7 @@ module.exports = async (req: Request, res: Response) => {
 
         getProjectById(id, res)
             .then(result => {
+                let project: IProject | undefined;
                 if (result) {
                     if (result.isPrivate) {
         
@@ -32,15 +33,15 @@ module.exports = async (req: Request, res: Response) => {
                         }
         
                         if (showPrivate) {
-                            BuildResponse(res, HttpStatus.Success, result);
-                        } else {
-                            BuildResponse(res, HttpStatus.Success, "");
-                        }
+                            project = result;
+                        } 
         
                     } else {
-                        BuildResponse(res, HttpStatus.Success, result);
+                        project = result;
                     }
                 }
+
+                BuildResponse(res, HttpStatus.Success, project);
             })
             .catch((err: IRequestPromiseReject) => BuildResponse(res, err.status, err.reason));
 
@@ -58,9 +59,10 @@ export function getProjectById(projectId: string, res: Response): Promise<IProje
                         let proj = await DbToStdModal_Project(result).catch(reject);
                         if(proj){
                             project = proj;
-                            resolve(project);
                         }
                     }
+                    
+                    resolve(project);
                 }
             ).catch(err => genericServerError(err, res));
 
