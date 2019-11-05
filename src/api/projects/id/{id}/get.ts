@@ -7,7 +7,7 @@ import { GetDiscordIdFromToken } from "../../../../common/helpers/discord";
 import { HttpStatus, BuildResponse, ResponsePromiseReject, IRequestPromiseReject } from "../../../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
-    let id = req.params['id'];
+    const reqQuery = req.params as IGetProjectRequestQuery;
 
     // If someone wants the projects for a specific user, they must be authorized
     const authAccess = validateAuthenticationHeader(req, res);
@@ -16,7 +16,7 @@ module.exports = async (req: Request, res: Response) => {
     const authenticatedDiscordId = await GetDiscordIdFromToken(authAccess, res);
     if (authenticatedDiscordId) {
 
-        getProjectById(id, res)
+        getProjectById(reqQuery.id as string, res)
             .then(result => {
                 let project: IProject | undefined;
                 if (result) {
@@ -64,12 +64,11 @@ export function getProjectById(projectId: string, res: Response): Promise<IProje
                     
                     resolve(project);
                 }
-            ).catch(err => genericServerError(err, res));
-
+            ).catch(err => ResponsePromiseReject("Internal server error: " + err, HttpStatus.InternalServerError, reject));
 
     });
 }
 
-interface IGetProjectsRequestQuery {
-    discordId?: string;
+interface IGetProjectRequestQuery {
+    id?: string;
 }
