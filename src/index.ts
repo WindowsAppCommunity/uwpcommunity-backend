@@ -12,8 +12,7 @@ import cors from "cors";
  * The path of the file is set up as the endpoint on the server, and is set up with the HTTP method indicated by the filename 
  * 
  * Example: 
- * The file `./myapp/bugreport/post.js` is set up at `POST https://example.com/myapp/bugreport/`
- * 
+ * The file `./src/myapp/bugreport/post.js` is set up at `POST https://example.com/myapp/bugreport/`
  */
 
 const express = require('express'), app = express();
@@ -70,7 +69,17 @@ function InitApi() {
 
             if (!filePath.includes("node_modules") && helpers.match(filePath, RegexMethods)) {
                 let serverPath = filePath.replace(RegexMethods, "").replace("/app", "").replace("/api", "").replace("/build", "");
-                serverPath = serverPath.replace('{', ':').replace('}', '');
+
+                if (helpers.match(serverPath, /{(.+)}\/?$/)) {
+                    // Check paths with route params for sibling folders  
+                    const folderPath = filePath.replace(/{.+}(.+)$/, "\/\*\/");
+                    glob(folderPath, (err: Error, siblingDir: string[]) => {
+                        if (siblingDir.length > 1) throw new Error("Folder representing a route parameter cannot have sibling folders: " + folderPath);
+                    });
+                }
+
+                // Reformat route params from folder-friendly to express spec
+                serverPath = serverPath.replace(/{([^\/]+)}/g, ":$1");
 
                 if (helpers.DEVENV) serverPath = serverPath.replace(__dirname.replace(/\\/g, `/`).replace("/build", ""), "");
 

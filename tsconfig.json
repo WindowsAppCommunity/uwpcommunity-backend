@@ -17,8 +17,6 @@
         "outDir": "./build",
         "rootDir": "./src",
         "sourceMap": true,
-        "sourceRoot": "./src",
-        "mapRoot": "./src",
         "removeComments": false
     },
     "include": [

@@ -31,8 +31,12 @@ export function GetGuild(): Discord.Guild | undefined {
 export async function GetGuildUser(discordId: string): Promise<Discord.GuildMember | undefined> {
     const server = GetGuild();
     if (!server) return;
-
+    
     return (await server.members.filter(member => member.id == discordId)).first();
+}
+
+export function GetUser(discordId: string) {
+    return bot.fetchUser(discordId)
 }
 
 export async function GetGuildRoles() {

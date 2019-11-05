@@ -1,8 +1,8 @@
 import { Request, Response } from "express-serve-static-core";
-import { GetGuildUser, GetDiscordUser } from "../../../../common/helpers/discord";
+import { GetGuildUser, GetDiscordUser } from "../../../../../common/helpers/discord";
 import { Role } from "discord.js";
-import { genericServerError, validateAuthenticationHeader } from "../../../../common/helpers/generic";
-import { BuildResponse, HttpStatus, } from "../../../../common/helpers/responseHelper";
+import { genericServerError, validateAuthenticationHeader } from "../../../../../common/helpers/generic";
+import { BuildResponse, HttpStatus, } from "../../../../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const authAccess = validateAuthenticationHeader(req, res);
@@ -11,6 +11,11 @@ module.exports = async (req: Request, res: Response) => {
     const user = await GetDiscordUser(authAccess).catch((err) => genericServerError(err, res));
     if (!user) {
         BuildResponse(res, HttpStatus.Unauthorized, "Invalid accessToken");
+        return;
+    }
+
+    if (req.params['discordId'] !== user.id) {
+        BuildResponse(res, HttpStatus.Unauthorized, "Authenticated user and requested ID don't match");
         return;
     }
 
@@ -40,6 +45,6 @@ module.exports = async (req: Request, res: Response) => {
     }
 };
 
-function InvalidRole(res: Response) {        
-    BuildResponse(res, HttpStatus.MalformedRequest, "Invalid role");     
+function InvalidRole(res: Response) {
+    BuildResponse(res, HttpStatus.MalformedRequest, "Invalid role");
 }

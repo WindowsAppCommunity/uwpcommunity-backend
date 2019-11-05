@@ -123,7 +123,7 @@ export function findSimilarProjectName(projects: Project[], appName: string): st
 
 //#region Converters
 /** @summary This converts the data model ONLY, and does not represent the actual data in the database */
-export async function StdToDbModal_Project(project: IProject): Promise<Partial<Project>> {
+export async function StdToDbModal_Project(project: Partial<IProject>): Promise<Partial<Project>> {
     const dbProject: Partial<Project> = {
         category: project.category,
         appName: project.appName,
@@ -157,6 +157,8 @@ export async function DbToStdModal_Project(project: Project): Promise<IProject> 
         collaborators: collaborators,
         launchYear: launchYear,
         category: project.category,
+        createdAt: project.createdAt,
+        updatedAt: project.updatedAt,
         awaitingLaunchApproval: project.awaitingLaunchApproval,
         needsManualReview: project.needsManualReview,
         heroImage: project.heroImage,
@@ -179,6 +181,8 @@ export async function GenerateMockProject(launch: Launch, user: User): Promise<P
         description: faker.lorem.paragraph(),
         isPrivate: false,
         launchYear: LaunchId,
+        createdAt: faker.date.past(),
+        updatedAt: faker.date.recent(),
         downloadLink: faker.internet.url(),
         githubLink: faker.internet.url(),
         externalLink: faker.internet.url(),
