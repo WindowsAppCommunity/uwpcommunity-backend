@@ -56,7 +56,7 @@ export function getProjectById(projectId: string, res: Response): Promise<IProje
             .then(
                 async result => {
                     if (result) {
-                        let proj = await DbToStdModal_Project(result).catch(reject);
+                        let proj = await DbToStdModal_Project(result).catch(err => ResponsePromiseReject("Internal server error: " + err, HttpStatus.InternalServerError, reject));
                         if(proj){
                             project = proj;
                         }
