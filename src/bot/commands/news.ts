@@ -53,7 +53,7 @@ export default (discordMessage: Message) => {
 
 async function postNewsLink(discordMessage: Message, link: string, comment: string) {
     // Get the news channel
-    const channel: TextChannel = discordMessage.guild.channels.get("642818541426573344") as TextChannel;
+    const channel: TextChannel = discordMessage.guild.channels.get("422031390150885388") as TextChannel;
     if (!channel) return;
 
     RecentPostsStore.push({ user: discordMessage.author, lastPost: new Date().getTime() });
