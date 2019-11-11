@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { InitBot } from "./common/helpers/discord";
+import { InitBot, bot } from "./common/helpers/discord";
 import { InitDb, CreateMocks } from './common/sequalize';
 import * as helpers from './common/helpers/generic';
 import cors from "cors";
@@ -47,8 +47,8 @@ InitDb().then(() => {
 });
 
 InitBot();
-InitApi();
-
+SetupAPI();
+SetupBotScripts();
 
 app.listen(PORT, (err: string) => {
     if (err) {
@@ -61,14 +61,14 @@ app.listen(PORT, (err: string) => {
 
 //#region Setup 
 
-let RegexMethods = /((?:post|get|put|patch|delete|ws)+)(?:.js)/;
+let HttpMethodsRegex = /((?:post|get|put|patch|delete|ws)+)(?:.js)/;
 
-function InitApi() {
+function SetupAPI() {
     glob(__dirname + '/api/**/*.js', function (err: Error, result: string[]) {
         for (let filePath of result) {
 
-            if (!filePath.includes("node_modules") && helpers.match(filePath, RegexMethods)) {
-                let serverPath = filePath.replace(RegexMethods, "").replace("/app", "").replace("/api", "").replace("/build", "");
+            if (!filePath.includes("node_modules") && helpers.match(filePath, HttpMethodsRegex)) {
+                let serverPath = filePath.replace(HttpMethodsRegex, "").replace("/app", "").replace("/api", "").replace("/build", "");
 
                 if (helpers.match(serverPath, /{(.+)}\/?$/)) {
                     // Check paths with route params for sibling folders  
@@ -83,7 +83,7 @@ function InitApi() {
 
                 if (helpers.DEVENV) serverPath = serverPath.replace(__dirname.replace(/\\/g, `/`).replace("/build", ""), "");
 
-                const method = helpers.match(filePath, RegexMethods);
+                const method = helpers.match(filePath, HttpMethodsRegex);
                 if (!method) continue;
 
                 console.log(`Setting up ${filePath} as ${method.toUpperCase()} ${serverPath}`);
@@ -123,5 +123,27 @@ function InitApi() {
     } catch (e) {
         console.log(e);
     }
+}
+
+async function SetupBotScripts() {
+    // Set up bot commands.
+    glob(`${__dirname}/bot/commands/*.js`, async (err: Error, result: string[]) => {
+        for (let filePath of result) {
+            const module = await import(filePath);
+            if (!module.default) return;
+
+            const commandPrefix = helpers.match(filePath, /\/bot\/commands\/(.+).js/);
+            if (!commandPrefix) return;
+
+            bot.on('message', message => {
+                if (message.content.startsWith(`!${commandPrefix}`)) { // Message must be prefixed
+                    message.content = helpers.remove(message.content, `!${commandPrefix}`); // Remove the prefix before passing it to the script
+                    module.default(message);
+                }
+            });
+        }
+    });
+
+    // Set up future non-command scripts here
 }
 //#endregion
