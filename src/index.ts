@@ -132,13 +132,18 @@ async function SetupBotScripts() {
             const module = await import(filePath);
             if (!module.default) return;
 
+            const commandPrefix = helpers.match(filePath, /\/bot\/commands\/(.+).js/);
+            if (!commandPrefix) return;
+
             bot.on('message', message => {
-                if (message.content.startsWith("<@611491369470525463>")) { // Must be prefixed with a mention of the bot 
-                    message.content = helpers.remove(message.content, "<@611491369470525463>"); // Remove the prefix
+                if (message.content.startsWith(`!${commandPrefix}`)) { // Message must be prefixed
+                    message.content = helpers.remove(message.content, `!${commandPrefix}`); // Remove the prefix before passing it to the script
                     module.default(message);
                 }
             });
         }
     });
+
+    // Set up future non-command scripts here
 }
 //#endregion
