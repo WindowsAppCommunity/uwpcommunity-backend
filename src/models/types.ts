@@ -27,6 +27,11 @@ export interface IProjectCollaborator extends IUser {
     role: "Developer" | "Translator" | "Beta Tester" | "Other";
 }
 
+export interface IProjects {
+    projects: IProject[],
+    privateCount: number
+}
+
 export interface IUser {
     id?: number;
 

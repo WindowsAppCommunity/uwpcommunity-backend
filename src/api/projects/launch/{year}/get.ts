@@ -1,53 +1,54 @@
 import { Request, Response } from "express";
-import User from "../../../../models/User";
-import Project, { DbToStdModal_Project } from "../../../../models/Project";
-import { IProject } from "../../../../models/types";
-import { genericServerError, validateAuthenticationHeader } from "../../../../common/helpers/generic";
-import { GetDiscordIdFromToken } from "../../../../common/helpers/discord";
+import { DbToStdModal_Project, getProjectaByYear } from "../../../../models/Project";
+import { IProject, IProjects } from "../../../../models/types";
 import { HttpStatus, BuildResponse, ResponsePromiseReject, IRequestPromiseReject } from "../../../../common/helpers/responseHelper";
-import Launch from "../../../../models/Launch";
 
 module.exports = async (req: Request, res: Response) => {
     const reqQuery = req.params as IGetProjectRequestQuery;
 
-    getProjectByYear(reqQuery.year as string, res)
-        .then(result => {
-            // let projects: IProject[] | undefined;
-            if (result) {
-                BuildResponse(res, HttpStatus.Success, result);
-            } else {
-                BuildResponse(res, HttpStatus.Success, "");
+    getProjectByYear(reqQuery.year as string)
+        .then(results => {
+            let projects: IProjects | undefined;
+            if (results) {
+                projects = results;
             }
+            BuildResponse(res, HttpStatus.Success, projects);
         })
         .catch((err: IRequestPromiseReject) => BuildResponse(res, err.status, err.reason));
 
 };
 
-export function getProjectByYear(year: string, res: Response): Promise<Project[]> {
+export function getProjectByYear(year: string): Promise<IProjects> {
     return new Promise(async (resolve, reject) => {
 
-        // let projects: IProject;
-        // {
-        //     projects: IProject[],
-        //     privateCount: number
-        // }
+        await getProjectaByYear(year)
+            .then(
+                async results => {
 
+                    let project: IProject[] = [];
+                    let iProjects: IProjects = {
+                        privateCount: 0,
+                        projects: project
+                    };
 
-        Project.findAll({
-            include: [{
-                model: Launch,
-                where: {
-                    year: year
+                    if (results) {
+                        let i = 0;
+                        for (let project of results) {
+                            let proj = await DbToStdModal_Project(project).catch(reject);
+
+                            // Only push a project if not private
+                            if (proj && !proj.isPrivate && !proj.needsManualReview)
+                                iProjects.projects.push(proj);
+
+                            if (proj && proj.isPrivate)
+                                i++;
+                        }
+                        iProjects.privateCount = i;
+                    }
+
+                    resolve(iProjects);
                 }
-            },{
-                model: User
-            }]
-        }).then(
-            async result => {
-                // projects = result;
-                resolve(result);
-            }
-        ).catch(err => ResponsePromiseReject("Internal server error: " + err, HttpStatus.InternalServerError, reject));
+            ).catch(err => ResponsePromiseReject("Internal server error: " + err, HttpStatus.InternalServerError, reject));
 
     });
 }
