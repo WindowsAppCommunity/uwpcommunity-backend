@@ -33,6 +33,8 @@ export default (discordMessage: Message) => {
 
     // Get just the user comment
     const comment = message
+        // Remove mentions
+        .replace(/<@\d+>/g, "")
         // Remove the link
         .replace(linkRegex, "")
         // Remove all line breaks
