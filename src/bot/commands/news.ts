@@ -2,6 +2,7 @@ import { match } from '../../common/helpers/generic';
 import { TextChannel, User, Message, Emoji, Client, GuildChannel } from 'discord.js';
 
 const linkRegex = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/;
+const directRegex = /^ *(-direct)/
 
 let RecentPostsStore: { user: User; lastPost: number; }[] = [];
 
@@ -30,11 +31,16 @@ export default (discordMessage: Message) => {
             return;
         }
     }
+    
+    // Check whether the original message should be removed
+    const direct = !!match(message, directRegex);
 
     // Get just the user comment
     const comment = message
         // Remove mentions
         .replace(/<@\d+>/g, "")
+        // Remove direct command
+        .replace(directRegex, "")
         // Remove the link
         .replace(linkRegex, "")
         // Remove all line breaks
@@ -50,10 +56,10 @@ export default (discordMessage: Message) => {
         // Trim whitespace
         .trim();
 
-    postNewsLink(discordMessage, link, comment);
+    postNewsLink(discordMessage, direct, link, comment);
 }
 
-async function postNewsLink(discordMessage: Message, link: string, comment: string) {
+async function postNewsLink(discordMessage: Message, direct: boolean, link: string, comment: string) {
     // Get the news channel
     const channel: TextChannel = discordMessage.guild.channels.get("422031390150885388") as TextChannel;
     if (!channel) return;
@@ -67,6 +73,8 @@ async function postNewsLink(discordMessage: Message, link: string, comment: stri
         await channel.send(`<@${discordMessage.author.id}> shared:\n${link}`);
     }
 
+    // Delete the original message if requested
+    if (direct) discordMessage.delete();
 }
 
 function cleanupRecentPostsStore() {
