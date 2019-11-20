@@ -137,6 +137,7 @@ async function SetupBotScripts() {
 
             bot.on('message', message => {
                 if (message.content.startsWith(`!${commandPrefix}`)) { // Message must be prefixed
+                    if(message.mentions.everyone) return; // Don't allow mentioning everyone
                     message.content = helpers.remove(message.content, `!${commandPrefix}`); // Remove the prefix before passing it to the script
                     module.default(message);
                 }
