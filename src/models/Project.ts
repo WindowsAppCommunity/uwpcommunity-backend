@@ -90,7 +90,7 @@ export function getProjectsByDiscordId(discordId: string): Promise<Project[]> {
     });
 }
 
-export function getProjectaByYear(year: string): Promise<Project[]> {
+export function getProjectByLaunchYear(year: string): Promise<Project[]> {
     return new Promise((resolve, reject) => {
         Project.findAll({
             include: [{

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { DbToStdModal_Project, getProjectaByYear } from "../../../../models/Project";
+import { DbToStdModal_Project, getProjectByLaunchYear } from "../../../../models/Project";
 import { IProject, IProjects } from "../../../../models/types";
 import { HttpStatus, BuildResponse, ResponsePromiseReject, IRequestPromiseReject } from "../../../../common/helpers/responseHelper";
 
@@ -21,7 +21,7 @@ module.exports = async (req: Request, res: Response) => {
 export function getProjectByYear(year: string): Promise<IProjects> {
     return new Promise(async (resolve, reject) => {
 
-        await getProjectaByYear(year)
+        await getProjectByLaunchYear(year)
             .then(
                 async results => {
 
@@ -34,8 +34,8 @@ export function getProjectByYear(year: string): Promise<IProjects> {
                     if (results) {
                         let i = 0;
                         for (let project of results) {
-                            let proj = await DbToStdModal_Project(project).catch(reject);
-
+                            let proj = await DbToStdModal_Project(project);
+                            
                             // Only push a project if not private
                             if (proj && !proj.isPrivate && !proj.needsManualReview)
                                 iProjects.projects.push(proj);
