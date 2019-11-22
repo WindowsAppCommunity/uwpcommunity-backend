@@ -31,11 +31,11 @@ export function getProjectByYear(year: string): Promise<IProjects> {
                         projects: project
                     };
 
-                    if (results) {
+                    if (results.length > 0) {
                         let i = 0;
                         for (let project of results) {
                             let proj = await DbToStdModal_Project(project);
-                            
+
                             // Only push a project if not private
                             if (proj && !proj.isPrivate && !proj.needsManualReview)
                                 iProjects.projects.push(proj);
@@ -44,6 +44,9 @@ export function getProjectByYear(year: string): Promise<IProjects> {
                                 i++;
                         }
                         iProjects.privateCount = i;
+                    } else {
+                        ResponsePromiseReject("Year not found", HttpStatus.NotFound, reject);
+                        return;
                     }
 
                     resolve(iProjects);
