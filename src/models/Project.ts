@@ -65,6 +65,7 @@ export default class Project extends Model<Project> {
     @Column
     updatedAt!: Date;
 }
+
 export function isExistingProject(appName: string): Promise<boolean> {
     return new Promise<boolean>((resolve, reject) => {
         Project.findAll({
@@ -84,6 +85,24 @@ export function getProjectsByDiscordId(discordId: string): Promise<Project[]> {
             }]
         }).then(projects => {
             if (!projects) { reject("User not found"); return; }
+            resolve(projects);
+        }).catch(reject);
+    });
+}
+
+export function getProjectByLaunchYear(year: string): Promise<Project[]> {
+    return new Promise((resolve, reject) => {
+        Project.findAll({
+            include: [{
+                model: Launch,
+                where: {
+                    year: year
+                }
+            },{
+                model: User
+            }]
+        }).then(projects => {
+            if (!projects) { reject("Year not found"); return; }
             resolve(projects);
         }).catch(reject);
     });
