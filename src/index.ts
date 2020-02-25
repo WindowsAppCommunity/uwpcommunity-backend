@@ -126,11 +126,15 @@ function SetupAPI() {
 }
 
 async function SetupBotScripts() {
-    // Set up bot commands.
+    await SetupBotCommands();
+    await SetupBotEvents();
+}
+
+async function SetupBotCommands() {
     glob(`${__dirname}/bot/commands/*.js`, async (err: Error, result: string[]) => {
         for (let filePath of result) {
             const module = await import(filePath);
-            if (!module.default) return;
+            if (!module.default) throw "No default export was defined in " + filePath;
 
             const commandPrefix = helpers.match(filePath, /\/bot\/commands\/(.+).js/);
             if (!commandPrefix) return;
@@ -144,7 +148,18 @@ async function SetupBotScripts() {
             });
         }
     });
+}
 
-    // Set up future non-command scripts here
+async function SetupBotEvents() {
+    glob(`${__dirname}/bot/events/*.js`, async (err: Error, result: string[]) => {
+        for (let filePath of result) {
+            const module = await import(filePath);
+            if (!module.default) throw "No default export was defined in " + filePath;
+
+            const eventName = helpers.match(filePath, /\/bot\/events\/(.+).js/);
+            if (!eventName) throw `Could not get event name from path (${filePath})`;
+            bot.on(eventName, module.default);
+        }
+    });
 }
 //#endregion
