@@ -13,7 +13,7 @@ module.exports = async (req: Request, res: Response) => {
         return;
     }
 
-    BuildResponse(res, HttpStatus.Success, JSON.stringify(user));
+    BuildResponse(res, HttpStatus.Success, user);
 };
 
 function GetUser(discordId: string): Promise<IUser | undefined> {

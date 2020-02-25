@@ -1,7 +1,7 @@
 import { Request, Response } from "express-serve-static-core";
-import { GetGuildUser, GetGuildRoles, GetDiscordUser } from "../../../../../common/helpers/discord";
+import { GetGuildUser, GetGuildRoles, GetDiscordUser, GetUser } from "../../../../../common/helpers/discord";
 import { Role } from "discord.js";
-import { genericServerError, validateAuthenticationHeader, DEVENV } from "../../../../../common/helpers/generic";
+import { genericServerError, validateAuthenticationHeader } from "../../../../../common/helpers/generic";
 import { BuildResponse, HttpStatus } from "../../../../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
@@ -14,45 +14,49 @@ module.exports = async (req: Request, res: Response) => {
         return;
     }
 
-    if (req.params['discordId'] !== user.id) {
-        BuildResponse(res, HttpStatus.Unauthorized, "Authenticated user and requested ID don't match");
+    const guildMember = await GetGuildUser(user.id);
+    if (!guildMember) {
+        genericServerError("Unable to get guild member details", res);
         return;
     }
 
-    if (!DEVENV) {
-        const guildMember = await GetGuildUser(user.id);
-        if (!guildMember) {
-            genericServerError("Unable to get guild details", res);
-            return;
-        }
 
-        // Must have a role in the body (JSON)
-        if (!req.body.role) {
-            BuildResponse(res, HttpStatus.MalformedRequest, "Missing role in body");
-            return;
-        }
-
-        let guildRoles = await GetGuildRoles();
-        if (!guildRoles) {
-            genericServerError("Unable to get guild roles", res); return;
-        }
-
-        let roles: Role[] = guildRoles.filter(role => role.name == req.body.role);
-        if (roles.length == 0) InvalidRole(res);
-
-
-        switch (req.body.role) {
-            case "Developer":
-                guildMember.addRole(roles[0]);
-                BuildResponse(res, HttpStatus.Success, "Success");
-                break;
-            default:
-                InvalidRole(res);
+    if (req.params['discordId'] !== user.id) {
+        // If these are mismatched but the user has permission to edit roles, allow it
+        if (!guildMember.permissions.hasPermission(268435456)) {
+            // If the user is a launch coordinator and is try to assign a launch participant, allow it
+            if (!(guildMember.roles.find(r => r.name == "Launch Coordinator") && req.body.role == "Launch Participant")) {
+                BuildResponse(res, HttpStatus.Unauthorized, "Authenticated user and requested ID don't match");
+                return;
+            }
         }
     }
-    else {
-        BuildResponse(res, HttpStatus.Success, "Success");
+
+    // Must have a role in the body (JSON)
+    if (!req.body.role) {
+        BuildResponse(res, HttpStatus.MalformedRequest, "Missing role in body");
+        return;
     }
+
+    let guildRoles = await GetGuildRoles();
+    if (!guildRoles) {
+        genericServerError("Unable to get guild roles", res); return;
+    }
+
+    let roles: Role[] = guildRoles.filter(role => role.name == req.body.role);
+    if (roles.length == 0) InvalidRole(res);
+
+
+    switch (req.body.role) {
+        case "Developer":
+        case "Launch Participant":
+            guildMember.addRole(roles[0]);
+            BuildResponse(res, HttpStatus.Success, "Success");
+            break;
+        default:
+            InvalidRole(res);
+    }
+
 };
 
 function InvalidRole(res: Response) {
