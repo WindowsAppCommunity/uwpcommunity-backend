@@ -6,7 +6,7 @@ import { genericServerError } from "./generic";
 import { BuildResponse, HttpStatus } from "./responseHelper";
 
 export let bot: Discord.Client;
-export const uwpCommunityGuildId = "372137812037730304";
+export const uwpCommunityGuildId: string = process.env.guildId || "667491687639023636";
 
 export let InitBot = function () {
     bot = new Discord.Client();
@@ -31,7 +31,7 @@ export function GetGuild(): Discord.Guild | undefined {
 export async function GetGuildUser(discordId: string): Promise<Discord.GuildMember | undefined> {
     const server = GetGuild();
     if (!server) return;
-    
+
     return (await server.members.filter(member => member.id == discordId)).first();
 }
 
