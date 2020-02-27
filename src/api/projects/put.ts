@@ -84,7 +84,9 @@ function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPu
         const currentLaunchYear = await GetLaunchYearFromId(DBProjects[0].launchId);
         const shouldUpdateLaunch: boolean = currentLaunchYear !== projectUpdateRequest.launchYear;
 
-        const DbProjectData: Partial<Project> | void = await StdToDbModal_IPutProjectsRequestBody(projectUpdateRequest, discordId, shouldUpdateLaunch).catch(reject);
+        const shouldUpdateManualReview: boolean = DBProjects[0].needsManualReview !== projectUpdateRequest.needsManualReview;
+
+        const DbProjectData: Partial<Project> | void = await StdToDbModal_IPutProjectsRequestBody(projectUpdateRequest, discordId, shouldUpdateLaunch, shouldUpdateManualReview).catch(reject);
 
         if (DbProjectData) DBProjects[0].update(DbProjectData)
             .then(resolve)
@@ -92,7 +94,7 @@ function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPu
     });
 }
 
-export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRequestBody, discordId: string, shouldUpdateLaunch: boolean): Promise<Partial<Project>> {
+export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRequestBody, discordId: string, shouldUpdateLaunch: boolean, shouldUpdateManualReview: boolean): Promise<Partial<Project>> {
     return new Promise(async (resolve, reject) => {
         const updatedProject = projectData as IProject;
 
@@ -123,6 +125,14 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
             if (!isLaunchCoordinator) ResponsePromiseReject("User has insufficient permissions", HttpStatus.Unauthorized, reject);
             else {
                 updatedDbProjectData.launchId = await GetLaunchIdFromYear(updatedProject.launchYear);
+            }
+        }
+
+        const isMod = guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "mod").length > 0;
+        if (shouldUpdateManualReview) {
+            if (!isMod) {
+                ResponsePromiseReject("User has insufficient permissions", HttpStatus.Unauthorized, reject);
+                return;
             }
         }
 
