@@ -86,7 +86,9 @@ function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPu
 
         const shouldUpdateManualReview: boolean = DBProjects[0].needsManualReview !== projectUpdateRequest.needsManualReview;
 
-        const DbProjectData: Partial<Project> | void = await StdToDbModal_IPutProjectsRequestBody(projectUpdateRequest, discordId, shouldUpdateLaunch, shouldUpdateManualReview).catch(reject);
+        const shouldUpdateAwaitingLaunch: boolean = DBProjects[0].awaitingLaunchApproval !== projectUpdateRequest.awaitingLaunchApproval;
+
+        const DbProjectData: Partial<Project> | void = await StdToDbModal_IPutProjectsRequestBody(projectUpdateRequest, discordId, shouldUpdateLaunch, shouldUpdateManualReview, shouldUpdateAwaitingLaunch).catch(reject);
 
         if (DbProjectData) DBProjects[0].update(DbProjectData)
             .then(resolve)
@@ -94,7 +96,7 @@ function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPu
     });
 }
 
-export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRequestBody, discordId: string, shouldUpdateLaunch: boolean, shouldUpdateManualReview: boolean): Promise<Partial<Project>> {
+export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRequestBody, discordId: string, shouldUpdateLaunch: boolean, shouldUpdateManualReview: boolean, shouldUpdateAwaitingLaunch: boolean): Promise<Partial<Project>> {
     return new Promise(async (resolve, reject) => {
         const updatedProject = projectData as IProject;
 
@@ -125,6 +127,13 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
             if (!isLaunchCoordinator) ResponsePromiseReject("User has insufficient permissions", HttpStatus.Unauthorized, reject);
             else {
                 updatedDbProjectData.launchId = await GetLaunchIdFromYear(updatedProject.launchYear);
+            }
+        }
+
+        if (shouldUpdateAwaitingLaunch) {
+            if (!isLaunchCoordinator) {
+                ResponsePromiseReject("User has insufficient permissions", HttpStatus.Unauthorized, reject);
+                return;
             }
         }
 
