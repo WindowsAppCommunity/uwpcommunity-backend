@@ -3,6 +3,7 @@ import Project, { findSimilarProjectName } from "../../models/Project";
 import { validateAuthenticationHeader } from "../../common/helpers/generic";
 import { GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
 import { HttpStatus, BuildResponse, ResponsePromiseReject, IRequestPromiseReject } from "../../common/helpers/responseHelper";
+import { GetProjectCollaborators } from "../../models/UserProject";
 
 module.exports = async (req: Request, res: Response) => {
     const bodyCheck = checkBody(req.body);
@@ -36,7 +37,9 @@ function deleteProject(projectRequestData: IDeleteProjectsRequestBody, discordId
         }).then(async (projects) => {
             const guildMember = await GetGuildUser(discordId);
             const isMod = guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").length > 0;
-            const userCanModify = projects.filter(proj => (proj.users && proj.users[0].discordId === discordId)).length > 0 || isMod;
+
+            const collaborators = await GetProjectCollaborators(projects[0].id);
+            const userCanModify = collaborators.filter(user => user.isOwner && user.discordId == discordId).length > 0 || isMod;
 
             if (!userCanModify) {
                 ResponsePromiseReject("Unauthorized user", HttpStatus.Unauthorized, reject);
