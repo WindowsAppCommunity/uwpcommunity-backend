@@ -111,7 +111,7 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
         // Doing it this way allows us to only update fields that are supplied, without overwriting required fields
         if (updatedProject.description) updatedDbProjectData.description = updatedProject.description;
         if (updatedProject.category) updatedDbProjectData.category = updatedProject.category;
-        if (updatedProject.isPrivate) updatedDbProjectData.isPrivate = updatedProject.isPrivate;
+        if (updatedProject.isPrivate !== undefined) updatedDbProjectData.isPrivate = updatedProject.isPrivate;
         if (updatedProject.downloadLink) updatedDbProjectData.downloadLink = updatedProject.downloadLink;
         if (updatedProject.githubLink) updatedDbProjectData.githubLink = updatedProject.githubLink;
         if (updatedProject.externalLink) updatedDbProjectData.externalLink = updatedProject.externalLink;
