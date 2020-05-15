@@ -149,7 +149,7 @@ async function SetupBotCommands() {
                     const argsMatch = Array.from(message.content.matchAll(/ ((?:\/|-)[a-z1-9]+)/gm));
                     let args = argsMatch.map(i=> i[1]);
 
-                    message.content = helpers.remove(message.content, `!${commandPrefix}`); // Remove the prefix before passing it to the script
+                    message.content = helpers.remove(message.content, `!${commandPrefix}`).trim(); // Remove the prefix before passing it to the script
                     module.default(message, args);
                 }
             });
