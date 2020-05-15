@@ -3,6 +3,7 @@ import { InitBot, bot } from "./common/helpers/discord";
 import { InitDb, CreateMocks } from './common/sequalize';
 import * as helpers from './common/helpers/generic';
 import cors from "cors";
+import { IBotCommandArgument } from "./models/types";
 
 /**
  * This file sets up API endpoints based on the current folder tree in Heroku.
@@ -146,8 +147,9 @@ async function SetupBotCommands() {
                     if (message.mentions.everyone)
                         return; // Don't allow mentioning everyone
 
-                    const argsMatch = Array.from(message.content.matchAll(/ ((?:\/|-)[a-z1-9]+)/gm));
-                    let args = argsMatch.map(i=> i[1]);
+                    const argsRegexMatch = message.content.matchAll(/ (?:\/|-)([a-zA-Z1-9]+) (?:(\w+)|\"([\w\s]+)\")/gm);
+                    const argsMatch = Array.from(argsRegexMatch);
+                    let args : IBotCommandArgument[] = argsMatch.map(i => { return { name: i[1], value: i[2] || i[3] } });
 
                     message.content = helpers.remove(message.content, `!${commandPrefix}`).trim(); // Remove the prefix before passing it to the script
                     module.default(message, args);
