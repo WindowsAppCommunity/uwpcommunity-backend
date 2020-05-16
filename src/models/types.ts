@@ -84,3 +84,9 @@ export interface IDiscordAuthResponse {
     "refresh_token": string,
     "scope": string;
 }
+
+
+export interface IBotCommandArgument {
+    name: string;
+    value: string;
+}

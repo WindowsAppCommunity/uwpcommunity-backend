@@ -3,6 +3,7 @@ import { InitBot, bot } from "./common/helpers/discord";
 import { InitDb, CreateMocks } from './common/sequalize';
 import * as helpers from './common/helpers/generic';
 import cors from "cors";
+import { IBotCommandArgument } from "./models/types";
 
 /**
  * This file sets up API endpoints based on the current folder tree in Heroku.
@@ -48,7 +49,7 @@ InitDb().then(() => {
 
 InitBot();
 SetupAPI();
-if (!helpers.DEVENV) SetupBotScripts();
+SetupBotScripts();
 
 app.listen(PORT, (err: string) => {
     if (err) {
@@ -140,10 +141,18 @@ async function SetupBotCommands() {
             if (!commandPrefix) return;
 
             bot.on('message', message => {
-                if (message.content.startsWith(`!${commandPrefix}`)) { // Message must be prefixed
-                    if (message.mentions.everyone) return; // Don't allow mentioning everyone
-                    message.content = helpers.remove(message.content, `!${commandPrefix}`); // Remove the prefix before passing it to the script
-                    module.default(message);
+                // Message must be prefixed
+                if (message.content.startsWith(`!${commandPrefix}`)) {
+
+                    if (message.mentions.everyone)
+                        return; // Don't allow mentioning everyone
+
+                    const argsRegexMatch = message.content.matchAll(/ (?:\/|-)([a-zA-Z1-9]+) (?:([\w#]+)|\"([\w\s#]+)\")/gm);
+                    const argsMatch = Array.from(argsRegexMatch);
+                    let args : IBotCommandArgument[] = argsMatch.map(i => { return { name: i[1], value: i[2] || i[3] } });
+
+                    message.content = helpers.remove(message.content, `!${commandPrefix}`).trim(); // Remove the prefix before passing it to the script
+                    module.default(message, args);
                 }
             });
         }
