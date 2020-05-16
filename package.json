@@ -4,7 +4,7 @@
   "description": "Backend for the UWP Community website",
   "main": "./build/index.js",
   "engines": {
-    "node": "10.x"
+    "node": "12.6.x"
   },
   "dependencies": {
     "@sendgrid/mail": "^6.4.0",

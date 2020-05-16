@@ -46,6 +46,19 @@ export async function GetGuildRoles() {
     return server.roles.array();
 }
 
+export function GetChannelByName(channelName: string): Discord.GuildChannel | null {
+    const server = GetGuild();
+    if (!server) return null;
+
+    let requestedChannel = server.channels.find(i => i.name == channelName);
+    if (!requestedChannel) {
+        requestedChannel = server.channels.find(i => i.name == "mod-chat");
+        (requestedChannel as Discord.TextChannel).sendMessage(`Bot tried to find channel ${channelName} but failed.`);
+    }
+
+    return requestedChannel;
+}
+
 export async function GetDiscordUser(accessToken: string): Promise<IDiscordUser | undefined> {
     const Req = await fetch("https://discordapp.com/api/v6/users/@me", {
         headers: {
