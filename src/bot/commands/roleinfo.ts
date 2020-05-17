@@ -11,7 +11,10 @@ export default async (discordMessage: Message, args: string[]) => {
     const roles = server.roles.array();
     const role = roles.find(i => i.name.toLowerCase() == message);
 
-    if (!role) return;
+    if (!role) {
+        discordMessage.channel.sendMessage(`Role not found`);
+        return;
+    }
 
     const numberOfMembers = role.members.size;
     const dateRoleCreated = role.createdAt.toUTCString();
