@@ -37,7 +37,7 @@ export default async (discordMessage: Message, args: IBotCommandArgument[]) => {
     const existingChannel = await server.channels.find(i => i.name == "build-" + sessionNameArg.value);
     const newChannel = existingChannel || await server.createChannel("build-" + sessionNameArg.value, { type: "voice" });
 
-    let category = server.channels.find(c => c.name == "Build" && c.type == "category");
+    let category = server.channels.find(c => c.name == "🛠   Build" && c.type == "category");
     newChannel.setParent(category);
 
 
