@@ -64,7 +64,7 @@ function findByUsername(discordMessage: Message, server: Guild, username: string
         sendFormattedUserInfo(discordMessage.channel as TextChannel, member);
 }
 
-async function sendFormattedUserInfo(channel: TextChannel, member: GuildMember) {
+export async function sendFormattedUserInfo(channel: TextChannel, member: GuildMember) {
     let formattedUserInfo =
         `Discord Id: \`${member.id}\`
 Current username: \`${member.user.username}#${member.user.discriminator}\`
