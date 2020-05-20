@@ -1,7 +1,7 @@
 import { Message, TextChannel, DMChannel } from "discord.js";
 import { GetGuild } from "../../../common/helpers/discord";
 
-export const swearRegex: RegExp = new RegExp(/fuck|\sass\s|dick|shit|pussy|cunt|whore|bastard|bitch|faggot|penis|slut/);
+export const swearRegex: RegExp = new RegExp(/fuck|\sass\s|dick|shit|pussy|cunt|whore|bastard|bitch|faggot|penis|thurrott|slut/);
 
 export async function handleSwearFilter(discordMessage: Message) {
     const message = discordMessage.content.toLowerCase();
