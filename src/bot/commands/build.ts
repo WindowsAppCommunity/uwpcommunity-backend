@@ -4,6 +4,9 @@ import { IBotCommandArgument } from "../../models/types";
 import { swearRegex } from "../events/messageHandlers/swearFilter";
 
 export default async (discordMessage: Message, args: IBotCommandArgument[]) => {
+    // Command disabled post-build 2020
+    return;
+/* 
     const message = discordMessage.content.toLowerCase();
 
     if (message.match(swearRegex))
@@ -58,5 +61,5 @@ export default async (discordMessage: Message, args: IBotCommandArgument[]) => {
     if (existingChannel) {
         discordMessage.channel.send(`<@${discordMessage.author.id}> this channel already exists.`);
     } else
-        discordMessage.channel.send("Channel created. It will be automatically deleted when no one is using it for 5 minutes.")
+        discordMessage.channel.send("Channel created. It will be automatically deleted when no one is using it for 5 minutes.") */
 };
