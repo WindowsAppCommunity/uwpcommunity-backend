@@ -147,12 +147,21 @@ async function SetupBotCommands() {
                     if (message.mentions.everyone)
                         return; // Don't allow mentioning everyone
 
-                    const argsRegexMatch = message.content.matchAll(/ (?:\/|-)([a-zA-Z1-9]+) (?:([\w#]+)|\"([\w\s#]+)\")/gm);
+                    const argsRegexMatch = message.content.matchAll(/ (?:\/|-)([a-zA-Z1-9]+) (?:([\w\/\,\.:#]+)|\"([\w\s\/\,\.:#]+)\")/gm);
                     const argsMatch = Array.from(argsRegexMatch);
-                    let args : IBotCommandArgument[] = argsMatch.map(i => { return { name: i[1], value: i[2] || i[3] } });
+                    let args: IBotCommandArgument[] = argsMatch.map(i => { return { name: i[1], value: i[2] || i[3] } });
 
-                    message.content = helpers.remove(message.content, `!${commandPrefix}`).trim(); // Remove the prefix before passing it to the script
-                    module.default(message, args);
+                    let noArgsCommand = message.content;
+
+                    // In order to easily get the command parts, we first remove the arguments
+                    for (const argMatch of argsMatch)
+                        noArgsCommand = noArgsCommand.replace(argMatch[0], "");
+
+                    const commandPartsRegexMatch = noArgsCommand.matchAll(/ \"(.+?)\"| (\S+)/g);
+                    const commandPartsMatch = Array.from(commandPartsRegexMatch);
+                    let commandParts: string[] = commandPartsMatch.map(i => i[1] || i[2]);
+
+                    module.default(message, commandParts, args);
                 }
             });
         }

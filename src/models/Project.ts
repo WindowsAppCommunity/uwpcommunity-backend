@@ -119,7 +119,7 @@ export interface ISimilarProjectMatch {
  * @param appName App name to match against
  * @returns Closest suitable match if found, otherwise undefined
  */
-export function findSimilarProjectName(projects: Project[], appName: string): string | undefined {
+export function findSimilarProjectName(projects: Project[], appName: string, maxDistance: number = 7): string | undefined {
     let matches: ISimilarProjectMatch[] = [];
 
     // Calculate and store the distances of each possible match
@@ -132,7 +132,7 @@ export function findSimilarProjectName(projects: Project[], appName: string): st
     matches = matches.sort((first, second) => first.distance - second.distance);
 
     // If the difference is less than X characters, return a possible match.
-    if (matches[0].distance <= 7) return returnData; // 7 characters is just enough for a " (Beta)" label
+    if (matches[0].distance <= maxDistance) return returnData; // 7 characters is just enough for a " (Beta)" label
 
     // If the difference is greater than 1/3 of the entire string, don't return as a similar app name
     if ((appName.length / 3) < matches[0].distance) return;

@@ -1,5 +1,6 @@
 import { match } from '../../common/helpers/generic';
-import { TextChannel, User, Message, Emoji, Client, GuildChannel } from 'discord.js';
+import { TextChannel, User, Message, Emoji, Client } from 'discord.js';
+import { IBotCommandArgument } from '../../models/types';
 
 const linkRegex = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/;
 
@@ -15,10 +16,10 @@ function getDiscordEmoji(client: Client, emojiText: string): Emoji | null {
     return client.emojis.find(emoji => emoji.name == emojiText);
 }
 
-export default (discordMessage: Message) => {
+export default async (discordMessage: Message, commandParts: string[], args: IBotCommandArgument[]) => {
     cleanupRecentPostsStore();
 
-    const message = discordMessage.content;
+    const message = commandParts[0];
     const link = match(message, linkRegex);
     if (!link) return; // Must have a link
 

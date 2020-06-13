@@ -1,9 +1,10 @@
 import { Message } from "discord.js";
 import { GetGuild } from "../../common/helpers/discord";
 import { capitalizeFirstLetter } from "../../common/helpers/generic";
+import { IBotCommandArgument } from "../../models/types";
 
-export default async (discordMessage: Message, args: string[]) => {
-    const message = discordMessage.content.toLowerCase();
+export default async (discordMessage: Message, commandParts: string[], args: IBotCommandArgument[]) => {
+    const message = commandParts[0].toLowerCase();
 
     const server = GetGuild();
     if (!server) return;
