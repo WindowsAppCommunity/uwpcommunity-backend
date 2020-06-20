@@ -201,7 +201,7 @@ export async function GenerateMockProject(launch: Launch, user: User): Promise<P
         appIcon: faker.image.imageUrl(),
         collaborators: [],
         id: faker.random.number({ min: 0, max: 1000 }),
-        category: "Other", // TODO: Update this when we get more than one category
+        category: "Other", // TODO: Update this when we start using mock data again
         appName: faker.commerce.product(),
         description: faker.lorem.paragraph(),
         isPrivate: false,

@@ -25,8 +25,9 @@ export default class Role extends Model<Role> {
 }
 
 export async function GetRoleByName(roleName: string) {
-    return Role.findOne({ where: { name: roleName } });
+    return Role.findOne({ where: { name: roleName } }).catch(Promise.reject);
 }
-export async function GetRoleById(roleName: string) {
-    return Role.findOne({ where: { name: roleName } });
+
+export async function GetRoleById(roleId: number) {
+    return Role.findOne({ where: { id: roleId } }).catch(Promise.reject);
 }

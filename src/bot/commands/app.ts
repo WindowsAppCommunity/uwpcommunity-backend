@@ -2,69 +2,50 @@ import { IBotCommandArgument, IProject } from "../../models/types";
 import { Message, TextChannel, Role, User, GuildMember } from "discord.js";
 import Project, { findSimilarProjectName, DbToStdModal_Project } from "../../models/Project";
 import { GetUser, GetGuildRoles, GetDiscordUser, GetGuild } from "../../common/helpers/discord";
+import UserProject, { GetUsersByProjectId, GetProjectsByUserId, GetProjectCollaborators } from "../../models/UserProject";
+import { GetRoleByName } from "../../models/Role";
 
-const greencheckEmojiId = "721171548534341652";
+import { getUserByDiscordId } from "../../models/User";
 
 // This architecture here works a bit different than other places. 
 // Instead of validating all arguments at the start of the command in the default function, then having to do the rest in thise scope
 // We validate the required parameters first, then move to handleProjectCommand and pass the project, original message, and command arguments in
 // This way, each command variation has its own function and argument scope, and things are kept clean 
 
-export default async (discordMessage: Message, commandParts: string[], args: IBotCommandArgument[]) => {
+export default async (message: Message, commandParts: string[], args: IBotCommandArgument[]) => {
 
-    const projectName = commandParts[0].toLowerCase();
+    const projectName = commandParts[0]?.toLowerCase();
     if (!projectName) {
-        discordMessage.channel.send(`No project name provided`);
+        message.channel.send(`No project name provided`);
         return;
     }
 
-    const project = await findProject(projectName, discordMessage.channel as TextChannel);
+    const project = await findProject(projectName, message.channel as TextChannel);
     if (!project)
         return;
 
-    await handleProjectCommand(project, discordMessage, commandParts, args);
-
-    // TODO:
-    // List projects for a user (!getuser apps)
-    // Give other users roles
-
-
-};
-
-async function handleProjectCommand(project: IProject, message: Message, commandParts: string[], args: IBotCommandArgument[]) {
     if (!commandParts[1]) {
-        // Todo: List out possible commands
-        message.channel.send(`What about it?`);
+        message.channel.send(`Please supply app command. Valid commands are\`details\` or \`user\``);
         return;
     }
 
     switch (commandParts[1]) {
         case "details":
-            await (getProjectDetails as any)(...arguments);
+            await getProjectDetails(project, message);
             break;
         case "user":
-            await (handleUserCommand as any)(...arguments);
+            await handleUserCommand(project, message, commandParts, args);
             break;
         default:
             message.channel.send(`Unknown command "${commandParts[1]}"`);
     }
-}
+    // TODO:
+    // List projects for a user (!getuser apps)
+    // Give other users roles
+};
+
 
 async function handleUserCommand(project: IProject, message: Message, commandParts: string[], args: IBotCommandArgument[]) {
-
-    switch (commandParts[2]) {
-        case "add":
-            await (handleAddUserCommand as any)(...arguments);
-            break;
-        case "remove":
-            await (handleRemoveUserCommand as any)(...arguments);
-            break;
-        default:
-            message.channel.send(`Unknown command. Valid commands for managing users are "add" and "remove"`);
-    }
-}
-
-async function handleAddUserCommand(project: IProject, message: Message, commandParts: string[], args: IBotCommandArgument[]) {
     // User type
     //    - Beta tester
     //    - Translator 
@@ -77,13 +58,18 @@ async function handleAddUserCommand(project: IProject, message: Message, command
     const isCollaborator = project.collaborators.find(collaborator => collaborator.discordId == message.author.id);
     const isMod = message.member.roles.find(i => i.name.toLowerCase() == "mod" || i.name.toLowerCase() == "admin");
     const userCanModify = isOwner || isCollaborator || isMod;
-
+    const userCanModifyDevs = isOwner || isMod;
 
     // Need to add existing users to database
     // And remove the roles for users that aren't registered on the website
 
     if (!userCanModify) {
-        message.channel.send(`Only devs or the project owner can add new users`);
+        message.channel.send(`Only devs or the project owner can manage users`);
+        return;
+    }
+
+    if (commandParts[2] != "add" && commandParts[2] != "remove") {
+        message.channel.send(`Please specify a user command. Valid values are \`add\` and \`remove\``);
         return;
     }
 
@@ -93,7 +79,7 @@ async function handleAddUserCommand(project: IProject, message: Message, command
         return;
     }
 
-    if (!isOwner && typeArg.value == "dev") {
+    if (!userCanModifyDevs && typeArg.value == "dev") {
         message.channel.send(`Only the project owner can manage devs on this project.`);
         return;
     }
@@ -104,108 +90,172 @@ async function handleAddUserCommand(project: IProject, message: Message, command
         return;
     }
 
-    const desiredRole: Role | undefined = await (getRoleForProject as any)(...arguments);
-    if (!desiredRole) {
-        message.channel.send(`No ${typeArg.value} role found for ${project.appName}`);
-        return;
+    switch (commandParts[2]) {
+        case "add":
+            await handleAddUserCommand(project, message, commandParts, args).catch(message.channel.send);
+            break;
+        case "remove":
+            await handleRemoveUserCommand(project, message, commandParts, args).catch(message.channel.send);
+            break;
+        default:
+            message.channel.send(`Unknown command. Valid commands for managing users are "add" and "remove"`);
     }
+}
 
-    let user: GuildMember | undefined;
+async function handleAddUserCommand(project: IProject, message: Message, commandParts: string[], args: IBotCommandArgument[]) {
+    const desiredRole: Role | undefined = await getRoleForProject(project, message, commandParts, args);
+
+    let discordUser: GuildMember | undefined;
     const guild = GetGuild();
+    const userArg = args.find(arg => arg.name == "username" || arg.name == "discordId");
 
     // Get target user
-    switch (userArg.name) {
+    switch (userArg?.name) {
         case "username":
-            user = guild?.members.find(m => `${m.user.username}#${m.user.discriminator}` === userArg.value)
+            discordUser = guild?.members.find(m => `${m.user.username}#${m.user.discriminator}` === userArg.value);
             break;
         case "discordId":
-            user = guild?.members.find(m => m.user.id === userArg.value)
+            discordUser = guild?.members.find(m => m.user.id === userArg.value);
             break;
         default:
             message.channel.send(`Unknown user identifier. (You shouldn't be seeing this)`);
             return;
     }
 
-    if (user) {
-        user.addRole(desiredRole)
-            .then(() => {
-                const greencheckEmojiId = guild?.emojis.find(i => i.name == "greencheck").id;
-                if (greencheckEmojiId)
-                    message.react(greencheckEmojiId);
-            })
-            .catch((err) => {
-                const reactionId = guild?.emojis.find(i => i.name == "bug").id;
-                if (reactionId)
-                    message.react(reactionId);
-            });
+    if (!discordUser) return;
+
+    const roleType = args?.find(i => i.name == "type")?.value;
+    if (!roleType) return;
+
+    const user = await getUserByDiscordId(discordUser.id);
+    if (!user) {
+        message.channel.send(`User isn't registered on the community website\nRegister at https://uwpcommunity.com/`);
+        return;
     }
+
+    const contributorRole = await GetRoleByName(InputtedUserTypeToDBRoleType(roleType));
+
+    if (!contributorRole) return;
+    if (!project.id) return;
+
+    // Check for existing identical UserProject
+    const existing = await UserProject.findOne({ where: { roleId: contributorRole.id, userId: user.id, projectId: project.id } });
+    if (existing) {
+        message.channel.send(`User is already a ${roleType} on this project`);
+        return;
+    }
+
+    safeAddRole(desiredRole, discordUser);
+
+
+    // Create UserProject
+    await ReactWithPromiseStatus(UserProject.create(
+        {
+            userId: user.id,
+            projectId: project.id,
+            isOwner: false, // Only the project owner can create the project
+            roleId: contributorRole.id
+        }), message)
+        .catch(err => message.channel.send(err));
 }
 
 
 async function handleRemoveUserCommand(project: IProject, message: Message, commandParts: string[], args: IBotCommandArgument[]) {
-    // User type
-    //    - Beta tester
-    //    - Translator 
-    //    - Collaborator
-    // User identifier
-    //    - discordId
-    //    - username
+    const desiredRole: Role | undefined = await getRoleForProject(project, message, commandParts, args).catch(Promise.reject);
 
-    const isOwner = project.collaborators.find(collaborator => collaborator.isOwner)?.discordId == message.author.id;
-    const isCollaborator = project.collaborators.find(collaborator => collaborator.discordId == message.author.id);
-    const isMod = message.member.roles.find(i => i.name.toLowerCase() == "mod" || i.name.toLowerCase() == "admin");
-    const userCanModify = isOwner || isCollaborator || isMod;
+    const guild = GetGuild();
+    const userArg = args.find(arg => arg.name == "username" || arg.name == "discordId");
+    let discordUser: GuildMember | undefined;
 
+    // Get target user
+    switch (userArg?.name) {
+        case "username":
+            discordUser = guild?.members.find(m => `${m.user.username}#${m.user.discriminator}` === userArg.value)
+            break;
+        case "discordId":
+            discordUser = guild?.members.find(m => m.user.id === userArg.value)
+            break;
+        default:
+            message.channel.send(`Unknown user identifier. (You shouldn't be seeing this)`);
+            return;
+    }
 
-    if (!userCanModify) {
-        message.channel.send(`Only devs or the project owner can remove users`);
+    if (!discordUser) return;
+
+    const RelevantUser = await getUserByDiscordId(discordUser.id);
+    if (!RelevantUser) {
+        message.channel.send(`User not found. Please register at https://uwpcommunity.com/`);
+        return;
+    }
+
+    const projects = await GetProjectsByUserId(RelevantUser.id);
+    if (!project || projects.length === 0) {
+        message.channel.send(`User isn't registered as a ${args.find(arg => arg.name == "type")?.value} on this project`);
+        return;
+    }
+
+    const relevantProjects = projects.filter(i => project.id == i.id);
+    if (relevantProjects.length === 0) {
+        message.channel.send(`No relevant projects found for user`);
+        return;
+    }
+
+    const roleType = args?.find(i => i.name == "type")?.value;
+    if (!roleType) return;
+
+    const contributorRole = await GetRoleByName(InputtedUserTypeToDBRoleType(roleType));
+    if (!contributorRole) return;
+
+    const user = await getUserByDiscordId(discordUser.id);
+    if (!user) {
+        message.channel.send(`User isn't registered on the community website\nRegister at https://uwpcommunity.com/`);
+        return;
+    }
+
+    const RelevantUserProjects = await UserProject.findAll({ where: { projectId: relevantProjects[0].id, userId: user.id, roleId: contributorRole.id } }).catch(Promise.reject);
+
+    if (RelevantUserProjects.length == 0) {
+        message.channel.send(`User isn't registered for this role on this project`);
         return;
     }
 
     const typeArg = args.find(arg => arg.name == "type");
     if (!typeArg) {
-        message.channel.send(`Please specify a user type argument. Valid values are \`tester\`, \`translator\`, and \`dev\`\nExample: \`/type translator\``);
+        message.channel.send(`Please specify a role type argument. Valid values are \`tester\`, \`translator\`, and \`dev\`\nExample: \`/type translator\``);
         return;
     }
 
-    if (!isOwner && typeArg.value == "dev") {
-        message.channel.send(`Only the project owner can manage devs on this project. `);
-        return;
-    }
+    const existingUserProject = RelevantUserProjects.filter(async (i) => i.roleId == (await GetRoleByName(InputtedUserTypeToDBRoleType(typeArg.value)))?.id)[0];
 
-    const userArg = args.find(arg => arg.name == "username" || arg.name == "discordId");
-    if (!userArg) {
-        message.channel.send(`Please specify a username or discordId\nExample: \`/discordId 714896135382368340\` or \`/username Panos#0309\``);
-        return;
-    }
+    const dataActionsPromise = Promise.all([
+        safeRemoveRole(desiredRole, discordUser),
+        existingUserProject.destroy()
+    ]);
 
-    const desiredRole: Role | undefined = await (getRoleForProject as any)(...arguments);
-    if (!desiredRole) {
-        message.channel.send(`No ${typeArg.value} role found for ${project.appName}`);
-        return;
-    }
+    await ReactWithPromiseStatus(dataActionsPromise, message)
+        .catch(message.channel.send);
+}
 
-    let user: GuildMember | undefined;
-    const guild = GetGuild();
+function safeRemoveRole(role: Role | undefined, discordUser: GuildMember) {
+    if (role)
+        discordUser.removeRole(role);
+}
 
-    // Get target user
-    switch (userArg.name) {
-        case "username":
-            user = guild?.members.find(m => `${m.user.username}#${m.user.discriminator}` === userArg.value)
-            break;
-        case "discordId":
-            user = guild?.members.find(m => m.user.id === userArg.value)
-            break;
+function safeAddRole(role: Role | undefined, discordUser: GuildMember) {
+    if (role)
+        discordUser.addRole(role);
+}
+
+function InputtedUserTypeToDBRoleType(inputtedRole: string): string {
+    switch (inputtedRole) {
+        case "tester":
+            return "Beta Tester";
+        case "translator":
+            return "Translator";
+        case "dev":
+            return "Developer";
         default:
-            message.channel.send(`Unknown user identifier. (You shouldn't be seeing this)`);
-            return;
-    }
-
-    if (user) {
-        await user.removeRole(desiredRole);
-        const greencheckEmojiId = guild?.emojis.find(i => i.name == "greencheck").id;
-        if (greencheckEmojiId)
-            message.react(greencheckEmojiId);
+            return "Other";
     }
 }
 
@@ -214,7 +264,7 @@ async function getRoleForProject(project: IProject, message: Message, commandPar
 
     const typeArg = args.find(arg => arg.name == "type");
     if (!typeArg) {
-        message.channel.send(`Please specify a user type argument. Valid values are \`tester\`, \`translator\`, and \`dev\`\nExample: \`/type translator\``);
+        message.channel.send(`Please specify a role type argument. Valid values are \`tester\`, \`translator\`, and \`dev\`\nExample: \`/type translator\``);
         return;
     }
 
@@ -232,16 +282,27 @@ async function getRoleForProject(project: IProject, message: Message, commandPar
             appNameInRoleRegex = /(.+) Dev/;
             break;
         default:
-            return undefined;
+            message.channel.send(`${typeArg.value} is not a valid role type. Expected \`tester\`, \`translator\` or \`dev\``);
+            return;
     }
 
-    return roles?.find(role => {
+    const matchedRoles = roles?.filter(role => {
         const matchingRoles = Array.from(role.name.matchAll(appNameInRoleRegex));
-        if (!matchingRoles || matchingRoles.length === 0) return false;
+        if (!matchingRoles || matchingRoles.length === 0) {
+            return;
+        }
 
         const appName = matchingRoles[0][1]?.toLowerCase();
         return project.appName.toLowerCase().includes(appName);
-    });
+    })
+
+    if (!matchedRoles || matchedRoles.length == 0) {
+        message.author.send(`Your request was processed, but no ${typeArg.value} role was found for ${project.appName}.\nIf you are in need of a role for your app, please ask a Moderator to assist. (User will need to be re-added or given the role manually)`);
+        return;
+    }
+
+
+    return matchedRoles?.shift();
 }
 
 
@@ -270,23 +331,29 @@ async function getProjectDetails(project: IProject, message: Message) {
     if (project.externalLink)
         messageEmbedFields.push({ name: "External Link", value: project.externalLink });
 
+    if (!project || !project.id) return;
 
+    const collaborators = await GetProjectCollaborators(project.id);
+    const devs = collaborators.filter(i => i.role == "Developer");
+    const devIds = devs.map(i => `<@${i.discordId}>`).join(" ");
 
-    const messageEmbed = {
+    const sanitizedDesc = project.description.replace("*", "\\*").replace("_", "\\_").replace("\\", "\\\\").replace("~", "\\~");
+
+    const messageEmbed: any = {
         title: project.appName,
-        author: {
-            name: ownerUsername
-        },
         image: { url: project.heroImage },
-        description: project.description.replace("*", "\\*").replace("_", "\\_").replace("\\", "\\\\").replace("~", "\\~"),
+        description: sanitizedDesc + "\n" + "Developers: " + devIds,
         fields: messageEmbedFields,
         timestamp: new Date()
-    }
+    };
+
+
+    if (project.appIcon)
+        messageEmbed.thumbnail = { url: project.appIcon };
 
     // TODO: include the app channel if present
     message.channel.send({ embed: messageEmbed });
 }
-
 
 async function findProject(projectName: string, srcChannel: TextChannel): Promise<IProject | undefined> {
     const allProjects = await Project.findAll();
@@ -312,7 +379,6 @@ async function findProject(projectName: string, srcChannel: TextChannel): Promis
     return DbToStdModal_Project(matchedProjects[0]);
 }
 
-
 async function GetProjectOwnerFormattedDiscordUsername(project: IProject): Promise<string | undefined> {
     let ownerUsername;
 
@@ -320,9 +386,29 @@ async function GetProjectOwnerFormattedDiscordUsername(project: IProject): Promi
 
     if (ownerId) {
         const ownerUser = await GetUser(ownerId);
-        if (ownerUser)
+        if (ownerUser) {
             ownerUsername = `${ownerUser.username}#${ownerUser.discriminator}`;
+            ownerUsername = `<@${ownerUser.id}>`;
+        }
     }
 
     return ownerUsername;
+}
+
+
+async function ReactWithPromiseStatus<T>(promise: Promise<T>, message: Message) {
+    const guild = GetGuild();
+
+    await promise
+        .then(() => {
+            const greencheckEmojiId = guild?.emojis.find(i => i.name == "greencheck").id;
+            if (greencheckEmojiId)
+                message.react(greencheckEmojiId);
+        })
+        .catch(err => {
+            const reactionId = guild?.emojis.find(i => i.name == "bug").id;
+            if (reactionId) message.react(reactionId);
+
+            message.channel.send(err);
+        });
 }
