@@ -14,6 +14,8 @@ export interface IProject {
     awaitingLaunchApproval: boolean;
     needsManualReview: boolean;
 
+    lookingForRoles?: string[];
+
     collaborators: IProjectCollaborator[];
 
     createdAt: Date;
