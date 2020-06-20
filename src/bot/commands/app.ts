@@ -106,8 +106,9 @@ async function handleAddUserCommand(project: IProject, message: Message, command
     const desiredRole: Role | undefined = await getRoleForProject(project, message, commandParts, args);
 
     let discordUser: GuildMember | undefined;
-    const guild = GetGuild();
+    const guild = await GetGuild()?.fetchMembers();
     const userArg = args.find(arg => arg.name == "username" || arg.name == "discordId");
+
 
     // Get target user
     switch (userArg?.name) {
