@@ -9,6 +9,7 @@ let mutedRole: Role;
 
 
 export default async (discordMessage: Message, commandParts: string[], args: IBotCommandArgument[]) => {
+/*     
     const server = GetGuild();
     if (!server) return;
 
@@ -137,7 +138,7 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
     const removeArg = args.find(i => i.name == "remove");
     if (removeArg) {
         discordMessage.delete();
-    }
+    } */
 };
 
 function handleInfractionRemoval(botChannel: TextChannel) {
