@@ -61,12 +61,12 @@ export async function InitDb() {
 }
 
 export async function CreateMocks() {
-    const fakeUser = await GenerateMockUser().save()
+/*     const fakeUser = await GenerateMockUser().save()
     const launches = await Launch.findAll()
 
     for (const launch of launches) {
         await Promise.all(Array(5).fill(undefined).map(
             async () => (await GenerateMockProject(launch, fakeUser)).save()
         ))
-    }
+    } */
 }
