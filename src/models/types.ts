@@ -9,9 +9,11 @@ export interface IProject {
     externalLink?: string;
 
     heroImage: string;
+    appIcon?: string;
 
     awaitingLaunchApproval: boolean;
     needsManualReview: boolean;
+
     lookingForRoles?: string[];
 
     collaborators: IProjectCollaborator[];

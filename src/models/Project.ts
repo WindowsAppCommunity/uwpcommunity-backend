@@ -44,6 +44,9 @@ export default class Project extends Model<Project> {
 
     @Column
     heroImage!: string;
+    
+    @Column
+    appIcon!: string;
 
     @BelongsToMany(() => User, () => UserProject)
     users?: User[];
@@ -155,6 +158,7 @@ export async function StdToDbModal_Project(project: Partial<IProject>): Promise<
         awaitingLaunchApproval: project.awaitingLaunchApproval,
         needsManualReview: project.needsManualReview,
         heroImage: project.heroImage,
+        appIcon: project.appIcon,
         lookingForRoles: JSON.stringify(project.lookingForRoles)
     };
     return (dbProject);
@@ -181,6 +185,7 @@ export async function DbToStdModal_Project(project: Project): Promise<IProject> 
         awaitingLaunchApproval: project.awaitingLaunchApproval,
         needsManualReview: project.needsManualReview,
         heroImage: project.heroImage,
+        appIcon: project.appIcon,
         lookingForRoles: JSON.parse(project.lookingForRoles)
     };
     return (stdProject);
@@ -193,6 +198,7 @@ export async function GenerateMockProject(launch: Launch, user: User): Promise<P
 
     const mockProject: IProject = {
         heroImage: faker.image.imageUrl(),
+        appIcon: faker.image.imageUrl(),
         collaborators: [],
         id: faker.random.number({ min: 0, max: 1000 }),
         category: "Other", // TODO: Update this when we get more than one category
