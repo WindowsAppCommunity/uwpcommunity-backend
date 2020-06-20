@@ -103,7 +103,8 @@ async function handleUserCommand(project: IProject, message: Message, commandPar
 }
 
 async function handleAddUserCommand(project: IProject, message: Message, commandParts: string[], args: IBotCommandArgument[]) {
-    const desiredRole: Role | undefined = await getRoleForProject(project, message, commandParts, args);
+    const desiredRole: Role | undefined | null = await getRoleForProject(project, message, commandParts, args);
+    if(desiredRole == null) return;
 
     let discordUser: GuildMember | undefined;
     const guild = await GetGuild()?.fetchMembers();
@@ -162,7 +163,8 @@ async function handleAddUserCommand(project: IProject, message: Message, command
 
 
 async function handleRemoveUserCommand(project: IProject, message: Message, commandParts: string[], args: IBotCommandArgument[]) {
-    const desiredRole: Role | undefined = await getRoleForProject(project, message, commandParts, args).catch(Promise.reject);
+    const desiredRole: Role | undefined | null= await getRoleForProject(project, message, commandParts, args).catch(Promise.reject);
+    if(desiredRole == null) return;
 
     const guild = GetGuild();
     const userArg = args.find(arg => arg.name == "username" || arg.name == "discordId");
@@ -260,13 +262,17 @@ function InputtedUserTypeToDBRoleType(inputtedRole: string): string {
     }
 }
 
-async function getRoleForProject(project: IProject, message: Message, commandParts: string[], args: IBotCommandArgument[]): Promise<Role | undefined> {
+
+/**
+ * @returns Role if a discord role is found. Undefined if no matching discord role is found. Null if the role was never searched for (usually because of some handled error).
+ */
+async function getRoleForProject(project: IProject, message: Message, commandParts: string[], args: IBotCommandArgument[]): Promise<Role | undefined | null> {
     const roles = await GetGuildRoles();
 
     const typeArg = args.find(arg => arg.name == "type");
     if (!typeArg) {
         message.channel.send(`Please specify a role type argument. Valid values are \`tester\`, \`translator\`, and \`dev\`\nExample: \`/type translator\``);
-        return;
+        return null;
     }
 
     // Should be a regex that captures one group (the app name)
@@ -284,7 +290,7 @@ async function getRoleForProject(project: IProject, message: Message, commandPar
             break;
         default:
             message.channel.send(`${typeArg.value} is not a valid role type. Expected \`tester\`, \`translator\` or \`dev\``);
-            return;
+            return null;
     }
 
     const matchedRoles = roles?.filter(role => {
