@@ -120,6 +120,12 @@ function ProjectFieldsAreValid(project: IPostProjectsRequestBody, res: Response)
         return false;
     }
 
+    // Make sure hero image is an image URL or a microsoft store image
+    if (project.appIcon && !match(project.appIcon, /(?:(?:https?:\/\/))[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&\/=].+(\.jpe?g|\.png|\.gif))|(store-images.s-microsoft.com\/image\/apps)/)) {
+        BuildResponse(res, HttpStatus.MalformedRequest, "Invalid appIcon");
+        return false;
+    }
+
     // Make sure the user isn't trying to spoof the launch status
     if ((project as any).launchYear) {
         BuildResponse(res, HttpStatus.MalformedRequest, "launchYear cannot be set when registering");
@@ -129,7 +135,7 @@ function ProjectFieldsAreValid(project: IPostProjectsRequestBody, res: Response)
     return true;
 }
 interface IPostProjectsRequestBody {
-    role: "Developer" | "Other"; // Only a developer or "Other" (manager, etc) can create a new project
+    role: "Developer"; // Only a developer  can create a new project
     appName: string;
     category: string;
     description: string;
@@ -140,5 +146,6 @@ interface IPostProjectsRequestBody {
     awaitingLaunchApproval: boolean;
     needsManualReview: boolean;
     heroImage: string;
+    appIcon?: string;
     lookingForRoles: string[];
 }

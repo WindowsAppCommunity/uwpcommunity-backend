@@ -116,6 +116,7 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
         if (updatedProject.githubLink) updatedDbProjectData.githubLink = updatedProject.githubLink;
         if (updatedProject.externalLink) updatedDbProjectData.externalLink = updatedProject.externalLink;
         if (updatedProject.heroImage) updatedDbProjectData.heroImage = updatedProject.heroImage;
+        if (updatedProject.appIcon) updatedDbProjectData.appIcon = updatedProject.appIcon;
         if (updatedProject.awaitingLaunchApproval !== undefined) updatedDbProjectData.awaitingLaunchApproval = updatedProject.awaitingLaunchApproval;
         if (updatedProject.needsManualReview !== undefined) updatedDbProjectData.needsManualReview = updatedProject.needsManualReview;
         if (updatedProject.lookingForRoles) updatedDbProjectData.lookingForRoles = JSON.stringify(updatedProject.lookingForRoles);
@@ -160,6 +161,7 @@ interface IPutProjectsRequestBody {
     externalLink?: string;
 
     heroImage: string;
+    appIcon?: string;
     awaitingLaunchApproval: boolean;
     needsManualReview: boolean;
     lookingForRoles?: string[];
