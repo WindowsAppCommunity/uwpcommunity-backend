@@ -15,7 +15,7 @@ module.exports = async (req: Request, res: Response) => {
 
     let bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
-        BuildResponse(res, HttpStatus.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`); 
+        BuildResponse(res, HttpStatus.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`);
         return;
     }
 
@@ -31,6 +31,11 @@ function checkBody(body: IPutUserRequestBody): true | string {
     return true;
 }
 
+
+function whitelistBody(body: IPutUserRequestBody) {
+    
+}
+
 function updateUser(userData: IPutUserRequestBody, discordId: string): Promise<User> {
     return new Promise<User>(async (resolve, reject) => {
         let user = await getUserByDiscordId(discordId);
@@ -40,6 +45,8 @@ function updateUser(userData: IPutUserRequestBody, discordId: string): Promise<U
             return;
         }
 
+        user.discordId = discordId;
+
         user.update(userData)
             .then(resolve)
             .catch(reject);
@@ -47,6 +54,6 @@ function updateUser(userData: IPutUserRequestBody, discordId: string): Promise<U
 }
 
 interface IPutUserRequestBody {
-    name?: string;
+    name: string;
     email?: string;
 }
