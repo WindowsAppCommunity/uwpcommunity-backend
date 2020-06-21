@@ -318,8 +318,10 @@ async function getProjectDetails(project: IProject, message: Message) {
     if (project.isPrivate) {
         const channelName: string = (message.channel as TextChannel).name.replace("-", " ");
 
-        if (!channelName.includes(project.appName.toLowerCase()))
+        if (!channelName.includes(project.appName.toLowerCase())) {
+            message.channel.send(`Project is private or not found`);
             return;
+        }
     }
 
     let ownerUsername = await GetProjectOwnerFormattedDiscordUsername(project);
@@ -368,13 +370,7 @@ async function findProject(projectName: string, srcChannel: TextChannel): Promis
     const matchedProjects = allProjects.filter(i => i.appName.toLowerCase().includes(projectName) || i.appName.toLowerCase() == projectName || projectName.includes(i.appName.toLowerCase()));
 
     if (!matchedProjects || matchedProjects.length == 0) {
-        const similarAppName = findSimilarProjectName(allProjects, projectName, 2);
-
-        let notFoundMsg = `Project not found.`;
-        if (similarAppName)
-            notFoundMsg += `Did you mean ${similarAppName}?`;
-
-        srcChannel.send(notFoundMsg);
+        srcChannel.send(`Project is private or not found.`);
         return;
     }
 
