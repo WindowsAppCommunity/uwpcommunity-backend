@@ -133,7 +133,7 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
         infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 4 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\nOriginal message:\n> ${relevantMessage.content}`);
     }
 
-    else if(memberInfraction.worstOffense.label == "Strike 4") {
+    else if (memberInfraction.worstOffense.label == "Strike 4") {
         discordMessage.channel.send(`<@${member.id}>, you have been re-issued Strike 4 and a 30 day mute. Please remember to follow the rules in the future. \nThis strike will last for 2 months. There is no greater punishment. Shame on you.`);
 
         infractionChannel.send(`${discordMessage.member.displayName} has re-issued Strike 4 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\nOriginal message:\n> ${relevantMessage.content}`);
@@ -154,7 +154,13 @@ function handleInfractionRemoval(botChannel: TextChannel, mutedRole: Role) {
     for (let infrac of infractions) {
         // These should never be undefined in the actual infractions data
         if (infrac.assignedAt == undefined || infrac.worstOffense == undefined)
-            return;
+            continue;
+
+        // If the user no longer has the role, we can assume it was manually removed.
+        if (!infrac.member.roles.find(role => infrac.worstOffense?.role.id == role.id)) {
+            botChannel.send(`User <@${infrac.member.id}> is recorded as having ${infrac.worstOffense.label}, but doesn't have the corresponding role. Assuming manual removal, cleaning up data.`);
+            continue;
+        }
 
         if (infrac.worstOffense.unmuteAfterDays && infrac.assignedAt > xDaysAgo(infrac.worstOffense.unmuteAfterDays)) {
             infrac.member.send(`You have been unmuted in the UWP Community Discord server.`);
@@ -165,10 +171,11 @@ function handleInfractionRemoval(botChannel: TextChannel, mutedRole: Role) {
         if (infrac.assignedAt > xDaysAgo(infrac.worstOffense.expiresAfterDays)) {
             infrac.member.send(`Your infraction in the UWP Community Discord server has been removed.`);
             infrac.member.removeRole(infrac.worstOffense.role);
+
             infractions.splice(infractions.indexOf(infrac), 1);
             botChannel.send(`<@${infrac.member.id}>'s infraction has been removed`);
         }
-    } 
+    }
 }
 
 async function initExistingInfractionData(server: Guild) {
@@ -280,9 +287,9 @@ function findInfractionFor(member: GuildMember): IInfraction {
 }
 
 function removeInfractionDataFor(member: GuildMember) {
-    let index : number;
+    let index: number;
 
-    while((index = infractions.findIndex(x => x.member.id == member.id)) != -1) {
+    while ((index = infractions.findIndex(x => x.member.id == member.id)) != -1) {
         infractions.splice(index, 1);
     }
 }
