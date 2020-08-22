@@ -5,23 +5,22 @@ import { setInterval } from "timers";
 
 let infractions: IInfraction[];
 let infractionData: IInfractionData[] = [];
-let mutedRole: Role;
-
+let infractionRemovalTask: NodeJS.Timeout;
 
 export default async (discordMessage: Message, commandParts: string[], args: IBotCommandArgument[]) => {
-/*     
     const server = GetGuild();
     if (!server) return;
 
     if (!discordMessage.member.roles.find(i => i.name.toLowerCase() == "mod")) {
-        discordMessage.channel.send("Go away, Matthew");
+        return;
     }
 
     if (infractions == undefined) {
         await initExistingInfractionData(server);
     }
-    setupMutedChannelSettings(server);
-    mutedRole = server.roles.find(i => i.name.toLowerCase() == "muted");
+
+    var mutedRole = server.roles.find(i => i.name.toLowerCase() == "muted");
+    setupMutedChannelSettings(server, mutedRole);
 
     const messageLinkArg = args.find(i => i.name == "messageLink"),
         messageLink = messageLinkArg ? messageLinkArg.value : null;
@@ -78,7 +77,9 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
     // Get previous recent infractions
     const member = relevantMessage.member;
 
-    setInterval(() => handleInfractionRemoval(botChannel), 60 * 60 * 1000);
+    if (infractionRemovalTask == undefined) {
+        infractionRemovalTask = setInterval(() => handleInfractionRemoval(botChannel, mutedRole), 15 * 1000);
+    }
 
     const memberInfraction: IInfraction = findInfractionFor(member);
 
@@ -89,7 +90,7 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
     infractions.push({
         member: member,
         worstOffense: memberInfraction.nextInfraction,
-        nextInfraction: findNextInfraction(memberInfraction.worstOffense),
+        nextInfraction: findNextInfraction(memberInfraction.nextInfraction),
         assignedAt: new Date()
     });
 
@@ -101,47 +102,55 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
     if (memberInfraction.worstOffense == undefined) {
         discordMessage.channel.send(`<@${member.id}>, you have been issued a warning. Please remember to follow the rules in the future.\nThis is just a warning and will wear off in 3 days, but further rule violations will result in action`);
 
-
-        infractionChannel.send(`${discordMessage.member.displayName} has issued a warning for <@${member.id}>for the following reason:\n> ${reasonArg.value}\nOriginal message:\n> ${relevantMessage.content}`); return;
+        infractionChannel.send(`${discordMessage.member.displayName} has issued a warning for <@${member.id}> for the following reason:\n> ${reasonArg.value}\nOriginal message:\n> ${relevantMessage.content}`); return;
     }
 
     // If user has a warning and no strikes
-    if (memberInfraction.worstOffense.label == "Warned") {
+    else if (memberInfraction.worstOffense.label == "Warned") {
         discordMessage.channel.send(`<@${member.id}>, you have been issued a strike and a 1 day mute. Please remember to follow the rules in the future. \nThis strike will last for 1 week, and a second strike will result in a 3 day mute.`);
 
-
-        infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 1 for <@${member.id}>for the following reason:\n> ${reasonArg.value}\nOriginal message:\n> ${relevantMessage.content}`); return;
+        infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 1 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\nOriginal message:\n> ${relevantMessage.content}`); return;
     }
 
     // If user has 1 strike, and needs a 2nd
-    if (memberInfraction.worstOffense.label == "Strike 1") {
+    else if (memberInfraction.worstOffense.label == "Strike 1") {
         discordMessage.channel.send(`<@${member.id}>, you have been issued Strike 2 and a 3 day mute. Please remember to follow the rules in the future. \nThis strike will last for 2 weeks. The next strike will result in a 10 day mute and a 30 day Strike 3`);
 
-        infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 2 for <@${member.id}>for the following reason:\n> ${reasonArg.value}\nOriginal message:\n> ${relevantMessage.content}`);
+        infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 2 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\nOriginal message:\n> ${relevantMessage.content}`);
     }
 
     // If user has 2 strikes, and needs a 3rd
-    if (memberInfraction.worstOffense.label == "Strike 2") {
+    else if (memberInfraction.worstOffense.label == "Strike 2") {
         discordMessage.channel.send(`<@${member.id}>, you have been issued Strike 3 and a 10 day mute. Please remember to follow the rules in the future. \nThis strike will last for 30 days. The next strike will result in a 30 day mute and 60 day strike 4`);
 
-
-        infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 3 for <@${member.id}>for the following reason:\n> ${reasonArg.value}\nOriginal message:\n> ${relevantMessage.content}`);
+        infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 3 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\nOriginal message:\n> ${relevantMessage.content}`);
     }
 
     // If user has 3 strikes, needs a 4th    
-    if (memberInfraction.worstOffense.label == "Strike 3") {
+    else if (memberInfraction.worstOffense.label == "Strike 3") {
         discordMessage.channel.send(`<@${member.id}>, you have been issued Strike 4 and a 30 day mute. Please remember to follow the rules in the future. \nThis strike will last for 2 months. There is no greater punishment. Shame on you.`);
 
-
-        infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 4 for <@${member.id}>for the following reason:\n> ${reasonArg.value}\nOriginal message:\n> ${relevantMessage.content}`);
+        infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 4 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\nOriginal message:\n> ${relevantMessage.content}`);
     }
+
+    else if(memberInfraction.worstOffense.label == "Strike 4") {
+        discordMessage.channel.send(`<@${member.id}>, you have been re-issued Strike 4 and a 30 day mute. Please remember to follow the rules in the future. \nThis strike will last for 2 months. There is no greater punishment. Shame on you.`);
+
+        infractionChannel.send(`${discordMessage.member.displayName} has re-issued Strike 4 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\nOriginal message:\n> ${relevantMessage.content}`);
+    }
+
     const removeArg = args.find(i => i.name == "remove");
     if (removeArg) {
         discordMessage.delete();
-    } */
+    }
 };
 
-function handleInfractionRemoval(botChannel: TextChannel) {
+function handleInfractionRemoval(botChannel: TextChannel, mutedRole: Role) {
+    const server = GetGuild();
+
+    const botstuff = server?.channels.find(i => i.name == "bot-stuff") as TextChannel;
+    botstuff?.sendMessage(`Handling infraction removal.\nInfraction data:\n${JSON.stringify(infractions)}`);
+
     for (let infrac of infractions) {
         // These should never be undefined in the actual infractions data
         if (infrac.assignedAt == undefined || infrac.worstOffense == undefined)
@@ -156,9 +165,10 @@ function handleInfractionRemoval(botChannel: TextChannel) {
         if (infrac.assignedAt > xDaysAgo(infrac.worstOffense.expiresAfterDays)) {
             infrac.member.send(`Your infraction in the UWP Community Discord server has been removed.`);
             infrac.member.removeRole(infrac.worstOffense.role);
+            infractions.splice(infractions.indexOf(infrac), 1);
             botChannel.send(`<@${infrac.member.id}>'s infraction has been removed`);
         }
-    }
+    } 
 }
 
 async function initExistingInfractionData(server: Guild) {
@@ -206,8 +216,9 @@ async function initExistingInfractionData(server: Guild) {
     // These must stay in order for findHighestInfractionRole to work properly
     const infractionRoles = [strike4Role, strike3Role, strike2Role, strike1Role, warnedRole];
 
-    // build a list of users' current infractions
+    // Build a list of all users' current infractions. We're using the infraction channel as a makeshift database.
     for (let message of (await infractionChannel.fetchMessages({ limit: 100 }))) {
+
         // If we already found an infraction for this user
         if (infractions.find(i => i.member.id == message[1].mentions.members.first().id) != undefined)
             continue;
@@ -232,9 +243,11 @@ async function initExistingInfractionData(server: Guild) {
     }
 }
 
-function setupMutedChannelSettings(server: Guild) {
+function setupMutedChannelSettings(server: Guild, mutedRole: Role) {
     server.channels.forEach(channel => {
-        (channel as TextChannel).overwritePermissions(mutedRole, { "SEND_MESSAGES": false });
+        if (channel.type === "text") {
+            (channel as TextChannel).overwritePermissions(mutedRole, { "SEND_MESSAGES": false });
+        }
     });
 }
 
@@ -267,13 +280,23 @@ function findInfractionFor(member: GuildMember): IInfraction {
 }
 
 function removeInfractionDataFor(member: GuildMember) {
-    infractions = infractions.filter(i => i.member.id != member.id);
+    let index : number;
+
+    while((index = infractions.findIndex(x => x.member.id == member.id)) != -1) {
+        infractions.splice(index, 1);
+    }
 }
 
 
 function xDaysAgo(days: number) {
+    // Days
+    /*     var b = new Date();
+        b.setDate(b.getDate() - days);
+        return b; */
+
+    // Minutes (for testing only)
     var b = new Date();
-    b.setDate(b.getDate() - days);
+    b.setMinutes(b.getMinutes() - (days));
     return b;
 }
 
