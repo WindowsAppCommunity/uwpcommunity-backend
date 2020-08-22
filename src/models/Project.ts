@@ -119,6 +119,25 @@ export interface ISimilarProjectMatch {
     appName: string;
 }
 
+export function getAllProjects(): Promise<IProject[]> {
+    return new Promise(async (resolve, reject) => {
+
+        const DbProjects = await Project.findAll().catch(reject);
+        let projects: IProject[] = [];
+
+        if (DbProjects) {
+            for (let project of DbProjects) {
+                let proj = await DbToStdModal_Project(project).catch(reject);
+                if (proj) {
+                    projects.push(proj);
+                }
+            }
+        }
+
+        resolve(projects);
+    });
+}
+
 /**
  * @summary Looks through a list of projects to find the closest matching app name
  * @param projects Array of projects to look through 

@@ -400,7 +400,7 @@ async function GetProjectOwnerFormattedDiscordUsername(project: IProject): Promi
 
 async function ReactWithPromiseStatus<T>(promise: Promise<T>, message: Message) {
     const guild = GetGuild();
-
+    
     await promise
         .then(() => {
             const greencheckEmojiId = guild?.emojis.find(i => i.name == "greencheck").id;

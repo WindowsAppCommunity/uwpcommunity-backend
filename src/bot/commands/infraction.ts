@@ -1,6 +1,6 @@
 import { Message, TextChannel, Role, Guild, GuildMember, VoiceChannel } from "discord.js";
 import { IBotCommandArgument } from "../../models/types";
-import { GetGuild } from "../../common/helpers/discord";
+import { GetGuild, GetChannelByName } from "../../common/helpers/discord";
 import { setInterval } from "timers";
 
 let infractions: IInfraction[];
@@ -9,7 +9,7 @@ let infractionData: IInfractionData[] = [];
 export async function Initialize() {
     const server = GetGuild();
     if (server) {
-        const botChannel = server.channels.find(i => i.name == "bot-stuff") as TextChannel;
+        const botChannel = GetChannelByName("bot-stuff") as TextChannel;
         var mutedRole = server.roles.find(i => i.name.toLowerCase() == "muted");
 
         await initExistingInfractionData(server);
@@ -23,8 +23,7 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
     const server = GetGuild();
     if (!server) return;
 
-    const botChannel = server.channels.find(i => i.name == "bot-stuff") as TextChannel;
-    const infractionChannel = server.channels.find(i => i.name == "infraction-log") as TextChannel;
+    const infractionChannel = GetChannelByName("infraction-log") as TextChannel;
 
     if (!discordMessage.member.roles.find(i => i.name.toLowerCase() == "mod")) {
         return;
@@ -198,7 +197,7 @@ function handleInfractionRemoval(botChannel: TextChannel, mutedRole: Role) {
 }
 
 async function initExistingInfractionData(server: Guild) {
-    const infractionChannel = server.channels.find(i => i.name == "infraction-log") as TextChannel;
+    const infractionChannel = GetChannelByName("infraction-log") as TextChannel;
 
     const warnedRole = server.roles.find(i => i.name.toLowerCase() == "warned");
     const strike1Role = server.roles.find(i => i.name.toLowerCase() == "strike 1");
