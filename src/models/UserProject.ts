@@ -1,8 +1,10 @@
 import { Column, Model, Table, ForeignKey, PrimaryKey, AutoIncrement, DataType, BelongsTo } from 'sequelize-typescript';
 import User, { DbToStdModal_User } from './User';
 import Project from './Project';
-import Role from './Role';
+import Role, { GetRoleById } from './Role';
 import { IProjectCollaborator } from './types';
+
+
 @Table
 export default class UserProject extends Model<UserProject> {
     @PrimaryKey
@@ -21,12 +23,12 @@ export default class UserProject extends Model<UserProject> {
     @Column
     projectId!: number;
 
-
     @ForeignKey(() => Role)
+    @Column
     roleId!: number;
 
     @BelongsTo(() => Role, 'roleId')
-    role!: Role
+    role!: Role;
 }
 
 export async function GetUsersByProjectId(ProjectId: number) {
@@ -47,8 +49,10 @@ export async function GetProjectCollaborators(ProjectId: number): Promise<IProje
     let users: IProjectCollaborator[] = [];
     for (let userProject of RelevantUserProjects) {
         const RelevantUser = await User.findOne({ where: { id: userProject.userId } });
+        const role = await GetRoleById(userProject.roleId);
+
         if (RelevantUser) {
-            users.push({ ...(await DbToStdModal_User(RelevantUser)), role: userProject.role ? userProject.role.name : "Other", isOwner: userProject.isOwner });
+            users.push({ ...(await DbToStdModal_User(RelevantUser)), role: role?.name ?? "Other", isOwner: userProject.isOwner });
         }
     }
 

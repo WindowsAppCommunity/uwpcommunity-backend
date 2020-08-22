@@ -10,6 +10,7 @@ export interface IProject {
 
     heroImage: string;
     appIcon?: string;
+    accentColor?: string;
 
     awaitingLaunchApproval: boolean;
     needsManualReview: boolean;

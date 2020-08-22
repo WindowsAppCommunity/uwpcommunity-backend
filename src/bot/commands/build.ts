@@ -3,11 +3,11 @@ import { GetGuild } from "../../common/helpers/discord";
 import { IBotCommandArgument } from "../../models/types";
 import { swearRegex } from "../events/messageHandlers/swearFilter";
 
-export default async (discordMessage: Message, args: IBotCommandArgument[]) => {
+export default async (discordMessage: Message, commandParts: string[], args: IBotCommandArgument[]) => {
     // Command disabled post-build 2020
     return;
 /* 
-    const message = discordMessage.content.toLowerCase();
+    const message = commandParts[0].toLowerCase();
 
     if (message.match(swearRegex))
         return;
