@@ -52,8 +52,6 @@ async function CreateMissingUserProjectsForDiscordRoles(message: Message) {
             const usersWithRole = (await guild.fetchMembers()).members.filter((member) => member.roles.has(role.id)).array();
 
             for (const discordUser of usersWithRole) {
-                await EditMultiMessages(`Registering missing collaborators based on Discord roles\nSyncing project ${project.appName}\nChecking role ${role.name}\nUpdating backend \`UserProject\` for user ${discordUser.displayName}`, ...messages);
-
                 // For each user found, create a new UserProject with the proper roleId
                 let dbRole: Role | null = null;
 
@@ -79,18 +77,23 @@ async function CreateMissingUserProjectsForDiscordRoles(message: Message) {
                     discordUser.sendMessage(`Hello 👋. We attempted to sync your role "${role.name}" for the project "${project.appName}", but it looks like your account isn't registered with us.\n\nThis role has been removed. You'll need to register on the community website and have a Developer on the project re-add you as a ${dbRole.name}.`);
                     discordUser.removeRole(role);
                     resultMessage.edit(`${discordUser.displayName}#${discordUser.user.discriminator} had role "${role.name}" on the project "${project.appName}", but isn't registered. Removed role and sent DM.`);
-
                 } else {
-                    const resultMessage = await botChannel.send(`Creating a new \`UserProject\` for ${discordUser.displayName}'s ${role.name} role on the project ${project.appName}`) as Message;
+                    if (!project.id) continue;
+                    const existing = await UserProject.findOne({ where: { userId: user.id, roleId: dbRole.id, projectId: project.id } });
 
-                    UserProject.create({
-                        userId: user.id,
-                        projectId: project.id,
-                        isOwner: false,
-                        roleId: dbRole.id
-                    });
+                    if (!existing) {
+                        await EditMultiMessages(`Registering missing collaborators based on Discord roles\nSyncing project ${project.appName}\nChecking role ${role.name}\nRegistering ${discordUser.displayName}#${discordUser.user.discriminator} as a ${role.name}`, ...messages);
+                        const resultMessage = await botChannel.send(`Registering ${discordUser.displayName}#${discordUser.user.discriminator} as a ${role.name}`) as Message;
 
-                    resultMessage.edit(`Created a new \`UserProject\` for ${discordUser.displayName}'s "${role.name}" role on the project "${project.appName}"`);
+                        UserProject.create({
+                            userId: user.id,
+                            projectId: project.id,
+                            isOwner: false,
+                            roleId: dbRole.id
+                        });
+
+                        resultMessage.edit(`Created a new \`UserProject\` for ${discordUser.displayName}'s "${role.name}" role on the project "${project.appName}"`);
+                    }
                 }
             }
         }

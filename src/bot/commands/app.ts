@@ -355,7 +355,6 @@ async function getProjectDetails(project: IProject, message: Message) {
         timestamp: new Date()
     };
 
-
     if (project.appIcon)
         messageEmbed.thumbnail = { url: project.appIcon };
 
