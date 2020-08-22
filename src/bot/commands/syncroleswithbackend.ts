@@ -17,13 +17,13 @@ export default async (message: Message, commandParts: string[], args: IBotComman
 
     await CreateMissingUserProjectsForDiscordRoles(message);
 
-    await RemoveDiscordRolesForUnregisteredProjects(message);
+ /*    await RemoveDiscordRolesForUnregisteredProjects(message);
 
     const missingRoleData = await GetRoleDataIfCreatingMissingRolesDoesntExceedRoleLimit(message);
 
     if (missingRoleData) {
         await CreateMissingDiscordRolesForUserProjects(message, missingRoleData);
-    }
+    } */
 
     SendMultiMessages(`Finished syncing discord roles and backend database.`, botChannel, message.channel);
 }
