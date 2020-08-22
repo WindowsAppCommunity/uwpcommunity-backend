@@ -105,7 +105,7 @@ async function CreateMissingUserProjectsForDiscordRoles(message: Message) {
 /**
  * @summary Check if creating all the missing roles using registered UserProjects in the Database will exceed Discord's role limit
 */
-async function GetRoleDataIfCreatingMissingRolesDoesntExceedRoleLimit(message: Message, limit: number = 250): Promise<IDiscordRoleData[]> {
+async function GetRoleDataIfCreatingMissingRolesDoesntExceedRoleLimit(message: Message, limit: number = 240): Promise<IDiscordRoleData[]> {
     const botChannel = GetChannelByName("bot-stuff") as TextChannel;
     if (!botChannel) return [];
 
