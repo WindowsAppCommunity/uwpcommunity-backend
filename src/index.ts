@@ -64,6 +64,11 @@ app.listen(PORT, (err: string) => {
 
 let HttpMethodsRegex = /((?:post|get|put|patch|delete|ws)+)(?:.js)/;
 
+function initModuleOnBotReady(module: any) {
+    if (module.Initialize)
+        bot.once('ready', module.Initialize);
+}
+
 function SetupAPI() {
     glob(__dirname + '/api/**/*.js', function (err: Error, result: string[]) {
         for (let filePath of result) {
@@ -136,6 +141,7 @@ async function SetupBotCommands() {
         for (let filePath of result) {
             const module = await import(filePath);
             if (!module.default) throw "No default export was defined in " + filePath;
+            initModuleOnBotReady(module);
 
             const commandPrefix = helpers.match(filePath, /\/bot\/commands\/(.+).js/);
             if (!commandPrefix) return;
@@ -173,6 +179,7 @@ async function SetupBotEvents() {
         for (let filePath of result) {
             const module = await import(filePath);
             if (!module.default) throw "No default export was defined in " + filePath;
+            initModuleOnBotReady(module);
 
             const eventName = helpers.match(filePath, /\/bot\/events\/(.+).js/);
             if (!eventName) throw `Could not get event name from path (${filePath})`;

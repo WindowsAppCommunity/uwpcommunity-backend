@@ -1,15 +1,30 @@
-import { Message, TextChannel, Role, Guild, GuildMember, GuildChannel, Collection } from "discord.js";
+import { Message, TextChannel, Role, Guild, GuildMember, VoiceChannel } from "discord.js";
 import { IBotCommandArgument } from "../../models/types";
-import { GetGuild, bot } from "../../common/helpers/discord";
+import { GetGuild } from "../../common/helpers/discord";
 import { setInterval } from "timers";
 
 let infractions: IInfraction[];
 let infractionData: IInfractionData[] = [];
-let infractionRemovalTask: NodeJS.Timeout;
+
+export async function Initialize() {
+    const server = GetGuild();
+    if (server) {
+        const botChannel = server.channels.find(i => i.name == "bot-stuff") as TextChannel;
+        var mutedRole = server.roles.find(i => i.name.toLowerCase() == "muted");
+
+        await initExistingInfractionData(server);
+        setInterval(handleInfractionRemoval, 15 * 1000, botChannel, mutedRole);
+        handleInfractionRemoval(botChannel, mutedRole);
+    }
+}
+
 
 export default async (discordMessage: Message, commandParts: string[], args: IBotCommandArgument[]) => {
     const server = GetGuild();
     if (!server) return;
+
+    const botChannel = server.channels.find(i => i.name == "bot-stuff") as TextChannel;
+    const infractionChannel = server.channels.find(i => i.name == "infraction-log") as TextChannel;
 
     if (!discordMessage.member.roles.find(i => i.name.toLowerCase() == "mod")) {
         return;
@@ -71,15 +86,8 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
 
     relevantMessage.attachments.forEach(att => relevantMessage.content += "\n" + att.url);
 
-    const botChannel = server.channels.find(i => i.name == "bot-stuff") as TextChannel;
-    const infractionChannel = server.channels.find(i => i.name == "infraction-log") as TextChannel;
-
     // Get previous recent infractions
     const member = relevantMessage.member;
-
-    if (infractionRemovalTask == undefined) {
-        infractionRemovalTask = setInterval(() => handleInfractionRemoval(botChannel, mutedRole), 15 * 1000);
-    }
 
     const memberInfraction: IInfraction = findInfractionFor(member);
 
@@ -146,34 +154,45 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
 };
 
 function handleInfractionRemoval(botChannel: TextChannel, mutedRole: Role) {
-    const server = GetGuild();
-
-    const botstuff = server?.channels.find(i => i.name == "bot-stuff") as TextChannel;
-    botstuff?.sendMessage(`Handling infraction removal.\nInfraction data:\n${JSON.stringify(infractions)}`);
+    const warnedRole = infractionData.find(x => x.label == "Warned")?.role;
+    const guild = GetGuild();
+    if (!guild) return;
 
     for (let infrac of infractions) {
+        if (!warnedRole)
+            return;
+
         // These should never be undefined in the actual infractions data
         if (infrac.assignedAt == undefined || infrac.worstOffense == undefined)
             continue;
 
         // If the user no longer has the role, we can assume it was manually removed.
         if (!infrac.member.roles.find(role => infrac.worstOffense?.role.id == role.id)) {
-            botChannel.send(`User <@${infrac.member.id}> is recorded as having ${infrac.worstOffense.label}, but doesn't have the corresponding role. Assuming manual removal, cleaning up data.`);
+            botChannel.send(`User <@${infrac.member.id}> is internally recorded as having ${infrac.worstOffense.label}, but doesn't have the corresponding role. Assuming manual role removal, cleaning up data.`);
             continue;
         }
 
-        if (infrac.worstOffense.unmuteAfterDays && infrac.assignedAt > xDaysAgo(infrac.worstOffense.unmuteAfterDays)) {
-            infrac.member.send(`You have been unmuted in the UWP Community Discord server.`);
-            infrac.member.removeRole(mutedRole);
-            botChannel.send(`<@${infrac.member.id}> has been unmuted`);
+        // Unmute if needed.
+        if (infrac.worstOffense.unmuteAfterDays && infrac.assignedAt < xDaysAgo(infrac.worstOffense.unmuteAfterDays)) {
+            // Only unmute and send messages if the user is muted.
+            if (infrac.member.roles.find(x => x.id == mutedRole.id)) {
+                infrac.member.send(`You have been unmuted in the ${guild.name} Discord server.`);
+                infrac.member.removeRole(mutedRole);
+
+                botChannel.send(`<@${infrac.member.id}> has been unmuted`);
+            }
         }
 
-        if (infrac.assignedAt > xDaysAgo(infrac.worstOffense.expiresAfterDays)) {
-            infrac.member.send(`Your infraction in the UWP Community Discord server has been removed.`);
-            infrac.member.removeRole(infrac.worstOffense.role);
+        // Remove infraction if needed.
+        if (infrac.assignedAt < xDaysAgo(infrac.worstOffense.expiresAfterDays)) {
+            const infractionTypeLabel = infrac.worstOffense.label == "Warned" ? "warning" : "infraction";
 
-            infractions.splice(infractions.indexOf(infrac), 1);
-            botChannel.send(`<@${infrac.member.id}>'s infraction has been removed`);
+            infrac.member.send(`Your ${infractionTypeLabel} in the ${guild.name} Discord server has been removed.`);
+            infrac.member.removeRole(infrac.worstOffense.role);
+            infrac.member.removeRole(warnedRole);
+
+            infractions.splice(infractions.findIndex(x => x.member.id == infrac.member.id), 1);
+            botChannel.send(`<@${infrac.member.id}>'s ${infractionTypeLabel} has been removed`);
         }
     }
 }
@@ -255,6 +274,10 @@ function setupMutedChannelSettings(server: Guild, mutedRole: Role) {
         if (channel.type === "text") {
             (channel as TextChannel).overwritePermissions(mutedRole, { "SEND_MESSAGES": false });
         }
+
+        if (channel.type == "voice") {
+            (channel as VoiceChannel).overwritePermissions(mutedRole, { "SPEAK": false });
+        }
     });
 }
 
@@ -296,14 +319,8 @@ function removeInfractionDataFor(member: GuildMember) {
 
 
 function xDaysAgo(days: number) {
-    // Days
-    /*     var b = new Date();
-        b.setDate(b.getDate() - days);
-        return b; */
-
-    // Minutes (for testing only)
     var b = new Date();
-    b.setMinutes(b.getMinutes() - (days));
+    b.setDate(b.getDate() - days);
     return b;
 }
 
