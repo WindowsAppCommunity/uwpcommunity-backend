@@ -29,9 +29,8 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
         return;
     }
 
-    if (infractions == undefined) {
-        await initExistingInfractionData(server);
-    }
+    if (infractions == undefined)
+        return;
 
     var mutedRole = server.roles.find(i => i.name.toLowerCase() == "muted");
     setupMutedChannelSettings(server, mutedRole);
