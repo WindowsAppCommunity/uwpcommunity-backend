@@ -64,6 +64,11 @@ app.listen(PORT, (err: string) => {
 
 let HttpMethodsRegex = /((?:post|get|put|patch|delete|ws)+)(?:.js)/;
 
+function initModuleOnBotReady(module: any) {
+    if (module.Initialize)
+        bot.once('ready', module.Initialize);
+}
+
 function SetupAPI() {
     glob(__dirname + '/api/**/*.js', function (err: Error, result: string[]) {
         for (let filePath of result) {
@@ -136,6 +141,7 @@ async function SetupBotCommands() {
         for (let filePath of result) {
             const module = await import(filePath);
             if (!module.default) throw "No default export was defined in " + filePath;
+            initModuleOnBotReady(module);
 
             const commandPrefix = helpers.match(filePath, /\/bot\/commands\/(.+).js/);
             if (!commandPrefix) return;
@@ -149,12 +155,21 @@ async function SetupBotCommands() {
                     if (message.mentions.everyone)
                         return; // Don't allow mentioning everyone
 
-                    const argsRegexMatch = message.content.matchAll(/ (?:\/|-)([a-zA-Z1-9]+) (?:([\w#]+)|\"([\w\s#]+)\")/gm);
+                    const argsRegexMatch = message.content.matchAll(/ (?:\/|-)([a-zA-Z1-9]+) (?:([\w\/\,\.:#]+)|\"([\w\s\/\,\.:#]+)\")/gm);
                     const argsMatch = Array.from(argsRegexMatch);
                     let args: IBotCommandArgument[] = argsMatch.map(i => { return { name: i[1], value: i[2] || i[3] } });
 
-                    message.content = helpers.remove(message.content, `!${commandPrefix}`).trim(); // Remove the prefix before passing it to the script
-                    module.default(message, args);
+                    let noArgsCommand = message.content;
+
+                    // In order to easily get the command parts, we first remove the arguments
+                    for (const argMatch of argsMatch)
+                        noArgsCommand = noArgsCommand.replace(argMatch[0], "");
+
+                    const commandPartsRegexMatch = noArgsCommand.matchAll(/ \"(.+?)\"| (\S+)/g);
+                    const commandPartsMatch = Array.from(commandPartsRegexMatch);
+                    let commandParts: string[] = commandPartsMatch.map(i => i[1] || i[2]);
+
+                    module.default(message, commandParts, args);
                 }
             });
         }
@@ -166,6 +181,7 @@ async function SetupBotEvents() {
         for (let filePath of result) {
             const module = await import(filePath);
             if (!module.default) throw "No default export was defined in " + filePath;
+            initModuleOnBotReady(module);
 
             const eventName = helpers.match(filePath, /\/bot\/events\/(.+).js/);
             if (!eventName) throw `Could not get event name from path (${filePath})`;

@@ -27,24 +27,22 @@ async function isMod(req: Request, res: Response): Promise<boolean> {
     return false;
 }
 
-export function getAllProjects(all?: boolean): Promise<IProject[]> {
-    return new Promise((resolve, reject) => {
-        Project.findAll()
-            .then(async results => {
-                if (results) {
-                    let projects: IProject[] = [];
+export async function getAllProjects(all?: boolean): Promise<IProject[]> {
+    const DbProjects = await Project.findAll().catch(err => ResponsePromiseReject("Internal server error: " + err, HttpStatus.InternalServerError, Promise.reject));
+    let projects: IProject[] = [];
 
-                    for (let project of results) {
-                        let proj = await DbToStdModal_Project(project).catch(reject);
-                        // Only push a project if not private
-                        if (proj && (!proj.isPrivate && !proj.needsManualReview || all)) projects.push(proj);
-                    }
+    if (DbProjects) {
 
-                    resolve(projects);
-                }
-            }).catch(err => ResponsePromiseReject("Internal server error: " + err, HttpStatus.InternalServerError, reject));
-    });
+        for (let project of DbProjects) {
+            let proj = await DbToStdModal_Project(project).catch(Promise.reject);
+            // Only push a project if not private
+            if (proj && (!proj.isPrivate && !proj.needsManualReview || all)) projects.push(proj);
+        }
+    }
+
+    return projects;
 }
+
 interface IGetProjectsRequestQuery {
     /** @summary Only useable if user is a mod or admin */
     all?: boolean;

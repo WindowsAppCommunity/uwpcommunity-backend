@@ -59,6 +59,25 @@ export function GetChannelByName(channelName: string): Discord.GuildChannel | nu
     return requestedChannel;
 }
 
+export async function EditMultiMessages(content: string, ...params: Discord.Message[]): Promise<void> {
+    for (const message of params) {
+        await message.edit(content);
+    }
+}
+
+export async function SendMultiMessages(content: string, ...params: (Discord.GuildChannel | Discord.TextChannel | Discord.DMChannel | Discord.GroupDMChannel)[]): Promise<Discord.Message[]> {
+    const results : Discord.Message[] = [];
+    
+    for (const channel of params) {
+        if (channel.type === "text") {
+            const sentMessage = await (channel as Discord.TextChannel).send(content);
+            results.push(sentMessage as Discord.Message);
+        }
+    }
+
+    return results;
+}
+
 export async function GetDiscordUser(accessToken: string): Promise<IDiscordUser | undefined> {
     const Req = await fetch("https://discordapp.com/api/v6/users/@me", {
         headers: {

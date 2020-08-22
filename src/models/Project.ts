@@ -48,6 +48,9 @@ export default class Project extends Model<Project> {
     @Column
     appIcon!: string;
 
+    @Column
+    accentColor!: string;
+
     @BelongsToMany(() => User, () => UserProject)
     users?: User[];
 
@@ -101,7 +104,7 @@ export function getProjectByLaunchYear(year: string): Promise<Project[]> {
                 where: {
                     year: year
                 }
-            },{
+            }, {
                 model: User
             }]
         }).then(projects => {
@@ -116,13 +119,32 @@ export interface ISimilarProjectMatch {
     appName: string;
 }
 
+export function getAllProjects(): Promise<IProject[]> {
+    return new Promise(async (resolve, reject) => {
+
+        const DbProjects = await Project.findAll().catch(reject);
+        let projects: IProject[] = [];
+
+        if (DbProjects) {
+            for (let project of DbProjects) {
+                let proj = await DbToStdModal_Project(project).catch(reject);
+                if (proj) {
+                    projects.push(proj);
+                }
+            }
+        }
+
+        resolve(projects);
+    });
+}
+
 /**
  * @summary Looks through a list of projects to find the closest matching app name
  * @param projects Array of projects to look through 
  * @param appName App name to match against
  * @returns Closest suitable match if found, otherwise undefined
  */
-export function findSimilarProjectName(projects: Project[], appName: string): string | undefined {
+export function findSimilarProjectName(projects: Project[], appName: string, maxDistance: number = 7): string | undefined {
     let matches: ISimilarProjectMatch[] = [];
 
     // Calculate and store the distances of each possible match
@@ -135,7 +157,7 @@ export function findSimilarProjectName(projects: Project[], appName: string): st
     matches = matches.sort((first, second) => first.distance - second.distance);
 
     // If the difference is less than X characters, return a possible match.
-    if (matches[0].distance <= 7) return returnData; // 7 characters is just enough for a " (Beta)" label
+    if (matches[0].distance <= maxDistance) return returnData; // 7 characters is just enough for a " (Beta)" label
 
     // If the difference is greater than 1/3 of the entire string, don't return as a similar app name
     if ((appName.length / 3) < matches[0].distance) return;
@@ -159,6 +181,7 @@ export async function StdToDbModal_Project(project: Partial<IProject>): Promise<
         needsManualReview: project.needsManualReview,
         heroImage: project.heroImage,
         appIcon: project.appIcon,
+        accentColor: project.accentColor,
         lookingForRoles: JSON.stringify(project.lookingForRoles)
     };
     return (dbProject);
@@ -186,6 +209,7 @@ export async function DbToStdModal_Project(project: Project): Promise<IProject> 
         needsManualReview: project.needsManualReview,
         heroImage: project.heroImage,
         appIcon: project.appIcon,
+        accentColor: project.accentColor,
         lookingForRoles: JSON.parse(project.lookingForRoles)
     };
     return (stdProject);
@@ -199,9 +223,10 @@ export async function GenerateMockProject(launch: Launch, user: User): Promise<P
     const mockProject: IProject = {
         heroImage: faker.image.imageUrl(),
         appIcon: faker.image.imageUrl(),
+        accentColor: faker.commerce.color(),
         collaborators: [],
         id: faker.random.number({ min: 0, max: 1000 }),
-        category: "Other", // TODO: Update this when we get more than one category
+        category: "Other", // TODO: Update this when we start using mock data again
         appName: faker.commerce.product(),
         description: faker.lorem.paragraph(),
         isPrivate: false,

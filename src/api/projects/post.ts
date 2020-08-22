@@ -75,7 +75,7 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
 
         // Create the project
         Project.create(await StdToDbModal_Project({ ...projectRequestData }))
-            .then((project) => {
+            .then((project: Project) => {
                 // Create the userproject
                 UserProject.create(
                     {
@@ -135,7 +135,7 @@ function ProjectFieldsAreValid(project: IPostProjectsRequestBody, res: Response)
     return true;
 }
 interface IPostProjectsRequestBody {
-    role: "Developer"; // Only a developer  can create a new project
+    role: "Developer"; // Only a developer can create a new project
     appName: string;
     category: string;
     description: string;
@@ -147,5 +147,6 @@ interface IPostProjectsRequestBody {
     needsManualReview: boolean;
     heroImage: string;
     appIcon?: string;
+    accentColor?: string;
     lookingForRoles: string[];
 }
