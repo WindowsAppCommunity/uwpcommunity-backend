@@ -13,7 +13,7 @@ export default class Role extends Model<Role> {
     name!: "Developer" | "Translator" | "Beta Tester" | "Other";
 
     @HasMany(() => UserProject, 'roleId')
-    userProject?: UserProject[];
+    userProject!: UserProject[];
 
     @CreatedAt
     @Column

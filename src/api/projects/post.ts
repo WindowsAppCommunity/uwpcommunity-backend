@@ -75,7 +75,7 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
 
         // Create the project
         Project.create(await StdToDbModal_Project({ ...projectRequestData }))
-            .then((project) => {
+            .then((project : Project) => {
                 // Create the userproject
                 UserProject.create(
                     {

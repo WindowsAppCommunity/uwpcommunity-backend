@@ -1,6 +1,6 @@
 import { Sequelize } from 'sequelize-typescript';
 import Launch from '../models/Launch';
-import Projects, { GenerateMockProject } from '../models/Project';
+import Project, { GenerateMockProject } from '../models/Project';
 import User, { GenerateMockUser } from '../models/User';
 import UserProject from '../models/UserProject';
 import Role from '../models/Role';
@@ -19,13 +19,13 @@ export const sequelize = new Sequelize(db_url, {
     dialectOptions: {
         ssl: true
     },
-    models: [Launch, Projects, User, UserProject, Role]
+    models: [Launch, Project, User, Role, UserProject]
 });
 
 export async function InitDb() {
     await sequelize
         .authenticate()
-        .catch(err => {
+        .catch((err : string) => {
             throw new Error('Unable to connect to the database: ' + err); // Throwing prevents the rest of the code below from running
         });
 
@@ -45,7 +45,7 @@ export async function InitDb() {
             .catch(console.error);
 
         Role.count()
-            .then(c => {
+            .then((c) => {
                 if (c < 1) {
                     Role.bulkCreate([
                         { name: "Developer" },

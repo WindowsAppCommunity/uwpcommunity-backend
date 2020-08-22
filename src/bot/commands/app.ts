@@ -5,7 +5,7 @@ import { GetUser, GetGuildRoles, GetDiscordUser, GetGuild } from "../../common/h
 import UserProject, { GetUsersByProjectId, GetProjectsByUserId, GetProjectCollaborators } from "../../models/UserProject";
 import { GetRoleByName } from "../../models/Role";
 
-import { getUserByDiscordId } from "../../models/User";
+import DbUser, { getUserByDiscordId } from "../../models/User";
 
 // This architecture here works a bit different than other places. 
 // Instead of validating all arguments at the start of the command in the default function, then having to do the rest in thise scope
@@ -104,12 +104,11 @@ async function handleUserCommand(project: IProject, message: Message, commandPar
 
 async function handleAddUserCommand(project: IProject, message: Message, commandParts: string[], args: IBotCommandArgument[]) {
     const desiredRole: Role | undefined | null = await getRoleForProject(project, message, commandParts, args);
-    if(desiredRole == null) return;
+    if (desiredRole == null) return;
 
     let discordUser: GuildMember | undefined;
     const guild = await GetGuild()?.fetchMembers();
     const userArg = args.find(arg => arg.name == "username" || arg.name == "discordId");
-
 
     // Get target user
     switch (userArg?.name) {
@@ -163,8 +162,8 @@ async function handleAddUserCommand(project: IProject, message: Message, command
 
 
 async function handleRemoveUserCommand(project: IProject, message: Message, commandParts: string[], args: IBotCommandArgument[]) {
-    const desiredRole: Role | undefined | null= await getRoleForProject(project, message, commandParts, args).catch(Promise.reject);
-    if(desiredRole == null) return;
+    const desiredRole: Role | undefined | null = await getRoleForProject(project, message, commandParts, args).catch(Promise.reject);
+    if (desiredRole == null) return;
 
     const guild = GetGuild();
     const userArg = args.find(arg => arg.name == "username" || arg.name == "discordId");
@@ -228,7 +227,7 @@ async function handleRemoveUserCommand(project: IProject, message: Message, comm
         return;
     }
 
-    const existingUserProject = RelevantUserProjects.filter(async (i) => i.roleId == (await GetRoleByName(InputtedUserTypeToDBRoleType(typeArg.value)))?.id)[0];
+    const existingUserProject = RelevantUserProjects.filter(async (i: UserProject) => i.roleId == (await GetRoleByName(InputtedUserTypeToDBRoleType(typeArg.value)))?.id)[0];
 
     const dataActionsPromise = Promise.all([
         safeRemoveRole(desiredRole, discordUser),
@@ -367,7 +366,7 @@ async function getProjectDetails(project: IProject, message: Message) {
 async function findProject(projectName: string, srcChannel: TextChannel): Promise<IProject | undefined> {
     const allProjects = await Project.findAll();
 
-    const matchedProjects = allProjects.filter(i => i.appName.toLowerCase().includes(projectName) || i.appName.toLowerCase() == projectName || projectName.includes(i.appName.toLowerCase()));
+    const matchedProjects = allProjects.filter((i: Project) => i.appName.toLowerCase().includes(projectName) || i.appName.toLowerCase() == projectName || projectName.includes(i.appName.toLowerCase()));
 
     if (!matchedProjects || matchedProjects.length == 0) {
         srcChannel.send(`Project is private or not found.`);

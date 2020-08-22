@@ -23,12 +23,12 @@ export default class UserProject extends Model<UserProject> {
     @Column
     projectId!: number;
 
-
     @ForeignKey(() => Role)
+    @Column
     roleId!: number;
 
     @BelongsTo(() => Role, 'roleId')
-    role!: Role
+    role!: Role;
 }
 
 export async function GetUsersByProjectId(ProjectId: number) {

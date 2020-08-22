@@ -11,6 +11,7 @@
         "skipLibCheck": true,
         "strict": true,
         "forceConsistentCasingInFileNames": false,
+        "strictPropertyInitialization": false,
         "module": "commonjs",
         "moduleResolution": "node",
         "resolveJsonModule": true,

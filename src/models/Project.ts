@@ -44,9 +44,12 @@ export default class Project extends Model<Project> {
 
     @Column
     heroImage!: string;
-    
+
     @Column
     appIcon!: string;
+
+    @Column
+    accentColor!: string;
 
     @BelongsToMany(() => User, () => UserProject)
     users?: User[];
@@ -101,7 +104,7 @@ export function getProjectByLaunchYear(year: string): Promise<Project[]> {
                 where: {
                     year: year
                 }
-            },{
+            }, {
                 model: User
             }]
         }).then(projects => {
@@ -159,6 +162,7 @@ export async function StdToDbModal_Project(project: Partial<IProject>): Promise<
         needsManualReview: project.needsManualReview,
         heroImage: project.heroImage,
         appIcon: project.appIcon,
+        accentColor: project.accentColor,
         lookingForRoles: JSON.stringify(project.lookingForRoles)
     };
     return (dbProject);
@@ -186,6 +190,7 @@ export async function DbToStdModal_Project(project: Project): Promise<IProject> 
         needsManualReview: project.needsManualReview,
         heroImage: project.heroImage,
         appIcon: project.appIcon,
+        accentColor: project.accentColor,
         lookingForRoles: JSON.parse(project.lookingForRoles)
     };
     return (stdProject);
@@ -199,6 +204,7 @@ export async function GenerateMockProject(launch: Launch, user: User): Promise<P
     const mockProject: IProject = {
         heroImage: faker.image.imageUrl(),
         appIcon: faker.image.imageUrl(),
+        accentColor: faker.commerce.color(),
         collaborators: [],
         id: faker.random.number({ min: 0, max: 1000 }),
         category: "Other", // TODO: Update this when we start using mock data again
