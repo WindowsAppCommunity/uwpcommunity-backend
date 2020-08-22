@@ -162,6 +162,7 @@ interface IPutProjectsRequestBody {
 
     heroImage: string;
     appIcon?: string;
+    accentColor?: string;
     awaitingLaunchApproval: boolean;
     needsManualReview: boolean;
     lookingForRoles?: string[];
