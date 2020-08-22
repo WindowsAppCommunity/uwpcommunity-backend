@@ -7,7 +7,9 @@ import { getUserByDiscordId } from "../../models/User";
 import Project, { DbToStdModal_Project, getAllProjects } from "../../models/Project";
 
 export default async (message: Message, commandParts: string[], args: IBotCommandArgument[]) => {
-    // Todo: don't forget to add project's new accentColor field to the backend project API
+    const isAdmin = message.member.roles.array().filter(role => role.name.toLowerCase() === "admin").length > 0;
+    if (!isAdmin) return;
+
     const botChannel = GetChannelByName("bot-stuff") as TextChannel;
     if (!botChannel) return;
 
@@ -74,7 +76,7 @@ async function CreateMissingUserProjectsForDiscordRoles(message: Message) {
                     // If the user isn't registered with the community website, remove the role.
                     // send them a DM asking them to register, and then tell them to ask the dev to add them back to the project
 
-                    discordUser.sendMessage(`Hello 👋. We attempted to sync your role "${role.name}" for the project "${project.appName}", but it looks like your account isn't registered with us.\n\nThis role has been removed. You'll need to register on the community website and have a Developer on the project re-add you as a ${dbRole.name}.`);
+                    discordUser.sendMessage(`Hello 👋. We attempted to sync your role "${role.name}" for the project "${project.appName}", but it looks like you don't have an account registered with us.\n\nThis role has been removed. You'll need to register on the community website and have a Developer on the project re-add you as a ${dbRole.name}.`);
                     discordUser.removeRole(role);
                     resultMessage.edit(`${discordUser.displayName}#${discordUser.user.discriminator} had role "${role.name}" on the project "${project.appName}", but isn't registered. Removed role and sent DM.`);
                 } else {
