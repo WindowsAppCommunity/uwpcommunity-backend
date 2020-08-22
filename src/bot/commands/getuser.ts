@@ -5,7 +5,7 @@ import { getUserByDiscordId } from "../../models/User";
 
 const validFindByMethod = ["discordId", "username"];
 
-export default async (discordMessage: Message, args: IBotCommandArgument[]) => {
+export default async (discordMessage: Message, commandParts: string[], args: IBotCommandArgument[]) => {
     const sentFromChannel = discordMessage.channel as TextChannel;
 
     if (args.length == 0) {

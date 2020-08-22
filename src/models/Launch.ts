@@ -9,14 +9,11 @@ export default class Launch extends Model<Launch> {
     @Column(DataType.INTEGER)
     id!: number;
 
-
     @Column
     year!: number;
 
-
     @HasMany(() => Project, 'launchId')
     projects?: Project[];
-
 
     @CreatedAt
     @Column
