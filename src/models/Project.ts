@@ -44,6 +44,9 @@ export default class Project extends Model<Project> {
 
     @Column
     heroImage!: string;
+    
+    @Column
+    appIcon!: string;
 
     @Column
     appIcon!: string;
