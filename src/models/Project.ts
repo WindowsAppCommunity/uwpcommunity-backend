@@ -49,9 +49,6 @@ export default class Project extends Model<Project> {
     appIcon!: string;
 
     @Column
-    appIcon!: string;
-
-    @Column
     accentColor!: string;
 
     @BelongsToMany(() => User, () => UserProject)
