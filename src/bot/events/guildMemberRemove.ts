@@ -1,6 +1,6 @@
 import { GuildMember, TextChannel } from "discord.js";
 import { getUserByDiscordId } from "../../models/User";
-import { getProjectsByDiscordId } from "../../models/Project";
+import { getOwnedProjectsByDiscordId } from "../../models/Project";
 
 export default async (guildMember: GuildMember) => {
     let user = await getUserByDiscordId(guildMember.id);
@@ -37,7 +37,7 @@ function sendMessageWithBackups(guildMember: GuildMember, message: string) {
 async function removeUserProjectsFromDb(discordId: string) {
     return new Promise(async (resolve, reject) => {
         // Find the projects
-        const projects = await getProjectsByDiscordId(discordId).catch(reject);
+        const projects = await getOwnedProjectsByDiscordId(discordId).catch(reject);
         if (!projects) return;
 
         // Delete all associated projects with this user
