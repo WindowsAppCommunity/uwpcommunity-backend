@@ -1,5 +1,5 @@
 import { Column, CreatedAt, Model, Table, UpdatedAt, ForeignKey, BelongsTo, PrimaryKey, AutoIncrement, DataType, BelongsToMany } from 'sequelize-typescript';
-import User from './User';
+import User, { getUserByDiscordId } from './User';
 import Launch, { GetLaunchIdFromYear, GetLaunchYearFromId } from './Launch';
 import * as faker from 'faker'
 import UserProject, { GetProjectCollaborators } from './UserProject';
@@ -44,7 +44,7 @@ export default class Project extends Model<Project> {
 
     @Column
     heroImage!: string;
-    
+
     @Column
     appIcon!: string;
 
@@ -93,6 +93,31 @@ export function getProjectsByDiscordId(discordId: string): Promise<Project[]> {
             if (!projects) { reject("User not found"); return; }
             resolve(projects);
         }).catch(reject);
+    });
+}
+
+export function getOwnedProjectsByDiscordId(discordId: string): Promise<Project[]> {
+    return new Promise(async (resolve, reject) => {
+        // Get user by id
+        const user = await getUserByDiscordId(discordId).catch(reject);
+        if (!user)
+            return;
+
+        // Get user projects with this id
+        const userProjects = await UserProject.findAll({ where: { userId: user.id, isOwner: true } }).catch(reject);
+        if (!userProjects)
+            return;
+
+        const results: Project[] = [];
+        // Get projects
+        for (let userProject of userProjects) {
+            const project = await Project.findOne({ where: { id: userProject.projectId } }).catch(reject);
+            if (project) {
+                results.push(project);
+            }
+        }
+
+        resolve(results);
     });
 }
 
