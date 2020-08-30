@@ -1,6 +1,7 @@
 import { match } from '../../common/helpers/generic';
 import { TextChannel, User, Message, Emoji, Client } from 'discord.js';
 import { IBotCommandArgument } from '../../models/types';
+import { GetChannelByName } from '../../common/helpers/discord';
 
 const linkRegex = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/;
 
@@ -19,8 +20,7 @@ function getDiscordEmoji(client: Client, emojiText: string): Emoji | null {
 export default async (discordMessage: Message, commandParts: string[], args: IBotCommandArgument[]) => {
     cleanupRecentPostsStore();
 
-    const message = commandParts[0];
-    const link = match(message, linkRegex);
+    const link = match(commandParts[0], linkRegex);
     if (!link) return; // Must have a link
 
     // Can only post every 3 minutes
@@ -32,8 +32,10 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
         }
     }
 
+    const commentArgs = args.find(arg => arg.name == "comment");
+
     // Get just the user comment
-    const comment = message
+    const comment = commentArgs?.value
         // Remove mentions
         .replace(/<@\d+>/g, "")
         // Remove the link
@@ -54,15 +56,15 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
     postNewsLink(discordMessage, link, comment);
 }
 
-async function postNewsLink(discordMessage: Message, link: string, comment: string) {
+async function postNewsLink(discordMessage: Message, link: string, comment?: string) {
     // Get the news channel
-    const channel: TextChannel = discordMessage.guild.channels.get("422031390150885388") as TextChannel;
+    const channel: TextChannel = GetChannelByName("news") as TextChannel;
     if (!channel) return;
 
     RecentPostsStore.push({ user: discordMessage.author, lastPost: new Date().getTime() });
 
     // Special formatting if the sender included a comment other than the link
-    if (comment.length > 0) {
+    if (comment && comment.length > 0) {
         await channel.send(`<@${discordMessage.author.id}> shared, and says:\n> ${comment}\n${link}`);
     } else {
         await channel.send(`<@${discordMessage.author.id}> shared:\n${link}`);
