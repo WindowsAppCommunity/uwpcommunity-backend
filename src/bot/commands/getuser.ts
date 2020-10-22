@@ -48,7 +48,9 @@ function handleFind(arg: IBotCommandArgument, discordMessage: Message) {
     }
 }
 
-function findByDiscordId(discordMessage: Message, server: Guild, discordId: string) {
+async function findByDiscordId(discordMessage: Message, server: Guild, discordId: string) {
+    server = await server.fetchMembers(); // this probably works
+
     const member = server.members.find(i => i.id == discordId);
     if (!member)
         discordMessage.channel.sendMessage("Could not find a user with that ID");
