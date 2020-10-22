@@ -18,12 +18,13 @@ export async function Initialize() {
     }
 }
 
-
 export default async (discordMessage: Message, commandParts: string[], args: IBotCommandArgument[]) => {
     const server = GetGuild();
     if (!server) return;
 
     const infractionChannel = GetChannelByName("infraction-log") as TextChannel;
+    const botChannel = GetChannelByName("bot-stuff") as TextChannel;
+    const metaChannel = GetChannelByName("meta") as TextChannel;
 
     if (!discordMessage.member.roles.find(i => i.name.toLowerCase() == "mod")) {
         return;
@@ -38,8 +39,11 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
     const messageLinkArg = args.find(i => i.name == "messageLink"),
         messageLink = messageLinkArg ? messageLinkArg.value : null;
 
-    if (!messageLink) {
-        discordMessage.channel.send("A valid \`messageLink\` was not provided");
+    const discordIdArg = args.find(i => i.name == "discordId"),
+        offenderDiscordId = discordIdArg ? discordIdArg.value : null;
+
+    if (!messageLink && !offenderDiscordId) {
+        discordMessage.channel.send("A valid \`messageLink\` or \`discordId\` was not provided");
         return;
     }
 
@@ -49,43 +53,62 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
         return;
     }
 
-    const messageParts = messageLink.split("/");
+    let originalMessage = "";
+    let member;
 
-    if (!messageParts) {
-        discordMessage.channel.send(`Invalid link format`);
-        return;
+    if (offenderDiscordId) {
+
+        member = await server.fetchMember(offenderDiscordId)
+
+    } else if (messageLink) {
+
+        const messageParts = messageLink.split("/");
+
+        if (!messageParts) {
+            discordMessage.channel.send(`Invalid link format`);
+            return;
+        }
+
+        const serverId = messageParts[4];
+        const channelId = messageParts[5];
+        const messageId = messageParts[6];
+
+        if (!serverId || !channelId || !messageId) {
+            discordMessage.channel.send(`Missing data from link`);
+            return;
+        }
+
+        if (serverId != server.id) {
+            discordMessage.channel.send("Link is from a different server");
+            return;
+        }
+
+        const relevantChannel = server.channels.find(i => i.id == channelId) as TextChannel;
+        if (!relevantChannel) {
+            discordMessage.channel.send("Channel not found");
+            return;
+        }
+
+        const relevantMessage = await relevantChannel.fetchMessage(messageId);
+        if (!relevantMessage) {
+            discordMessage.channel.send("Message not found");
+            return;
+        }
+
+        relevantMessage.attachments.forEach(att => relevantMessage.content += "\n" + att.url);
+
+        if (relevantMessage) {
+            originalMessage = `Original message:\n> ${relevantMessage.content}`;
+        }
+
+        // Get previous recent infractions
+        member = await server.fetchMember(relevantMessage.member);
     }
 
-    const serverId = messageParts[4];
-    const channelId = messageParts[5];
-    const messageId = messageParts[6];
-
-    if (!serverId || !channelId || !messageId) {
-        discordMessage.channel.send(`Missing data from link`);
+    if (member == null) {
+        botChannel.send(`Something went wrong. member was somehow null.`);
         return;
     }
-
-    if (serverId != server.id) {
-        discordMessage.channel.send("Link is from a different server");
-        return;
-    }
-
-    const relevantChannel = server.channels.find(i => i.id == channelId) as TextChannel;
-    if (!relevantChannel) {
-        discordMessage.channel.send("Channel not found");
-        return;
-    }
-
-    const relevantMessage = await relevantChannel.fetchMessage(messageId);
-    if (!relevantMessage) {
-        discordMessage.channel.send("Message not found");
-        return;
-    }
-
-    relevantMessage.attachments.forEach(att => relevantMessage.content += "\n" + att.url);
-
-    // Get previous recent infractions
-    const member = relevantMessage.member;
 
     const memberInfraction: IInfraction = findInfractionFor(member);
 
@@ -106,46 +129,46 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
 
     // User has no infractions
     if (memberInfraction.worstOffense == undefined) {
-        discordMessage.channel.send(`<@${member.id}>, you have been issued a warning. Please remember to follow the rules in the future.\nThis is just a warning and will wear off in 3 days, but further rule violations will result in action`);
+        metaChannel.send(`<@${member.id}>, you have been issued a warning. Please remember to follow the rules in the future.\nThis is just a warning and will wear off in 3 days, but further rule violations will result in action`);
 
-        infractionChannel.send(`${discordMessage.member.displayName} has issued a warning for <@${member.id}> for the following reason:\n> ${reasonArg.value}\nOriginal message:\n> ${relevantMessage.content}`); return;
+        infractionChannel.send(`${discordMessage.member.displayName} has issued a warning for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`); return;
     }
 
     // If user has a warning and no strikes
     else if (memberInfraction.worstOffense.label == "Warned") {
-        discordMessage.channel.send(`<@${member.id}>, you have been issued a strike and a 1 day mute. Please remember to follow the rules in the future. \nThis strike will last for 1 week, and a second strike will result in a 3 day mute.`);
+        metaChannel.send(`<@${member.id}>, you have been issued a strike and a 1 day mute. Please remember to follow the rules in the future. \nThis strike will last for 1 week, and a second strike will result in a 3 day mute.`);
 
-        infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 1 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\nOriginal message:\n> ${relevantMessage.content}`); return;
+        infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 1 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`); return;
     }
 
     // If user has 1 strike, and needs a 2nd
     else if (memberInfraction.worstOffense.label == "Strike 1") {
-        discordMessage.channel.send(`<@${member.id}>, you have been issued Strike 2 and a 3 day mute. Please remember to follow the rules in the future. \nThis strike will last for 2 weeks. The next strike will result in a 10 day mute and a 30 day Strike 3`);
+        metaChannel.send(`<@${member.id}>, you have been issued Strike 2 and a 3 day mute. Please remember to follow the rules in the future. \nThis strike will last for 2 weeks. The next strike will result in a 10 day mute and a 30 day Strike 3`);
 
-        infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 2 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\nOriginal message:\n> ${relevantMessage.content}`);
+        infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 2 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`);
     }
 
     // If user has 2 strikes, and needs a 3rd
     else if (memberInfraction.worstOffense.label == "Strike 2") {
-        discordMessage.channel.send(`<@${member.id}>, you have been issued Strike 3 and a 10 day mute. Please remember to follow the rules in the future. \nThis strike will last for 30 days. The next strike will result in a 30 day mute and 60 day strike 4`);
+        metaChannel.send(`<@${member.id}>, you have been issued Strike 3 and a 10 day mute. Please remember to follow the rules in the future. \nThis strike will last for 30 days. The next strike will result in a 30 day mute and 60 day strike 4`);
 
-        infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 3 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\nOriginal message:\n> ${relevantMessage.content}`);
+        infractionChannel.send(`${discordMessage.member.id} has issued Strike 3 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`);
     }
 
     // If user has 3 strikes, needs a 4th    
     else if (memberInfraction.worstOffense.label == "Strike 3") {
-        discordMessage.channel.send(`<@${member.id}>, you have been issued Strike 4 and a 30 day mute. Please remember to follow the rules in the future. \nThis strike will last for 2 months. There is no greater punishment. Shame on you.`);
+        metaChannel.send(`<@${member.id}>, you have been issued Strike 4 and a 30 day mute. Please remember to follow the rules in the future. \nThis strike will last for 2 months. There is no greater punishment. Shame on you.`);
 
-        infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 4 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\nOriginal message:\n> ${relevantMessage.content}`);
+        infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 4 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`);
     }
 
     else if (memberInfraction.worstOffense.label == "Strike 4") {
-        discordMessage.channel.send(`<@${member.id}>, you have been re-issued Strike 4 and a 30 day mute. Please remember to follow the rules in the future. \nThis strike will last for 2 months. There is no greater punishment. Shame on you.`);
+        metaChannel.send(`<@${member.id}>, you have been re-issued Strike 4 and a 30 day mute. Please remember to follow the rules in the future. \nThis strike will last for 2 months. There is no greater punishment. Shame on you.`);
 
-        infractionChannel.send(`${discordMessage.member.displayName} has re-issued Strike 4 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\nOriginal message:\n> ${relevantMessage.content}`);
+        infractionChannel.send(`${discordMessage.member.displayName} has re-issued Strike 4 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`);
     }
 
-    const removeArg = args.find(i => i.name == "remove");
+    const removeArg = args.find(i => i.name == "rmself");
     if (removeArg) {
         discordMessage.delete();
     }
@@ -251,6 +274,10 @@ async function initExistingInfractionData(server: Guild) {
         // The newer the offense is, the higher and more up to date it should be (if checking messages in the channel)
 
         const relevantMember = message[1].mentions.members.first();
+
+        if (relevantMember == null)
+            continue;
+
         const worstOffense = findHighestInfractionRole(relevantMember, infractionRoles);
 
         if (worstOffense != undefined) {
@@ -270,11 +297,11 @@ async function initExistingInfractionData(server: Guild) {
 function setupMutedChannelSettings(server: Guild, mutedRole: Role) {
     server.channels.forEach(channel => {
         if (channel.type === "text") {
-            (channel as TextChannel).overwritePermissions(mutedRole, { "SEND_MESSAGES": false });
+            (channel as TextChannel).overwritePermissions(mutedRole, { "SEND_MESSAGES": false, "ADD_REACTIONS": false });
         }
 
         if (channel.type == "voice") {
-            (channel as VoiceChannel).overwritePermissions(mutedRole, { "SPEAK": false });
+            (channel as VoiceChannel).overwritePermissions(mutedRole, { "SPEAK": false, "STREAM": false });
         }
     });
 }
