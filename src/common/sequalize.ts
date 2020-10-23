@@ -5,6 +5,7 @@ import User, { GenerateMockUser } from '../models/User';
 import UserProject from '../models/UserProject';
 import Role from '../models/Role';
 import * as helpers from './helpers/generic';
+import ProjectImage from '../models/ProjectImage';
 
 const db_url = process.env.DATABASE_URL;
 
@@ -19,13 +20,13 @@ export const sequelize = new Sequelize(db_url, {
     dialectOptions: {
         ssl: true
     },
-    models: [Launch, Project, User, Role, UserProject]
+    models: [ProjectImage, Launch, Project, User, Role, UserProject]
 });
 
 export async function InitDb() {
     await sequelize
         .authenticate()
-        .catch((err : string) => {
+        .catch((err: string) => {
             throw new Error('Unable to connect to the database: ' + err); // Throwing prevents the rest of the code below from running
         });
 
@@ -56,17 +57,17 @@ export async function InitDb() {
                 }
             })
             .catch(console.error);
-            
+
     }
 }
 
 export async function CreateMocks() {
-/*     const fakeUser = await GenerateMockUser().save()
-    const launches = await Launch.findAll()
-
-    for (const launch of launches) {
-        await Promise.all(Array(5).fill(undefined).map(
-            async () => (await GenerateMockProject(launch, fakeUser)).save()
-        ))
-    } */
+    /*     const fakeUser = await GenerateMockUser().save()
+        const launches = await Launch.findAll()
+    
+        for (const launch of launches) {
+            await Promise.all(Array(5).fill(undefined).map(
+                async () => (await GenerateMockProject(launch, fakeUser)).save()
+            ))
+        } */
 }

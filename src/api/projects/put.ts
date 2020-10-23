@@ -3,10 +3,11 @@ import User, { getUserByDiscordId } from "../../models/User"
 import Project, { findSimilarProjectName } from "../../models/Project";
 import { validateAuthenticationHeader } from '../../common/helpers/generic';
 import { IProject } from "../../models/types";
-import { GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
+import { EditMultiMessages, GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
 import { GetLaunchIdFromYear, GetLaunchYearFromId } from "../../models/Launch";
 import { BuildResponse, HttpStatus, ResponsePromiseReject, IRequestPromiseReject } from "../../common/helpers/responseHelper";
 import { UserOwnsProject } from "../../models/UserProject";
+import ProjectImage, { getImagesForProject } from "../../models/ProjectImage";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;
@@ -57,22 +58,20 @@ function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPu
             where: { appName: query.appName }
         });
 
-        let similarAppName = findSimilarProjectName(DBProjects, query.appName);
-
         if (!DBProjects) {
-            ResponsePromiseReject(`Project with name "${query.appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`, HttpStatus.NotFound, reject);
+            ResponsePromiseReject(`Project with name "${query.appName}" could not be found.`, HttpStatus.NotFound, reject);
             return;
         }
 
         const guildMember = await GetGuildUser(discordId);
         const isMod = guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").length > 0;
 
-
         const user: User | null = await getUserByDiscordId(discordId);
         if (!user) {
             ResponsePromiseReject("User not found", HttpStatus.NotFound, reject);
             return;
         }
+
         const userOwnsProject: boolean = await UserOwnsProject(user, DBProjects[0]);
         const userCanModify = userOwnsProject || isMod;
 
@@ -90,9 +89,38 @@ function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPu
 
         const DbProjectData: Partial<Project> | void = await StdToDbModal_IPutProjectsRequestBody(projectUpdateRequest, discordId, shouldUpdateLaunch, shouldUpdateManualReview, shouldUpdateAwaitingLaunch).catch(reject);
 
-        if (DbProjectData) DBProjects[0].update(DbProjectData)
-            .then(resolve)
-            .catch(error => reject({ status: HttpStatus.InternalServerError, reason: `Internal server error: ${error}` }));
+        if (DbProjectData) {
+            await DBProjects[0].update(DbProjectData)
+                .catch(error => reject({ status: HttpStatus.InternalServerError, reason: `Internal server error: ${error}` }));
+
+            // The images in the DB should match those sent in this request
+            const existingDbImages = await ProjectImage.findAll({ where: { projectId: DBProjects[0].id } });
+
+            // Remove images from DB that exist in DB but don't exist in req
+            for (let image of existingDbImages) {
+                if (projectUpdateRequest.images.includes(image.imageUrl) == false) {
+                    image.destroy();
+                }
+            }
+
+            var existingDbImageUrls = existingDbImages.map(x => x.imageUrl);
+
+            // Create images in the DB that exist in req but not DB
+            for (let url of projectUpdateRequest.images) {
+                if (existingDbImageUrls.includes(url) === false) {
+                    await ProjectImage.create(
+                        {
+                            projectId: DBProjects[0].id,
+                            imageUrl: url
+                        }).catch(err => {
+                            console.log(err);
+                            reject(err);
+                        });
+                }
+            }
+        }
+
+        resolve();
     });
 }
 
@@ -161,6 +189,7 @@ interface IPutProjectsRequestBody {
     externalLink?: string;
 
     heroImage: string;
+    images: string[];
     appIcon?: string;
     accentColor?: string;
     awaitingLaunchApproval: boolean;

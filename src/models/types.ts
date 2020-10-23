@@ -9,6 +9,7 @@ export interface IProject {
     externalLink?: string;
 
     heroImage: string;
+    images: string[];
     appIcon?: string;
     accentColor?: string;
 

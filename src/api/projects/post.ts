@@ -6,6 +6,7 @@ import { GetRoleByName } from "../../models/Role";
 import { getUserByDiscordId } from "../../models/User";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 import { BuildResponse, HttpStatus, } from "../../common/helpers/responseHelper";
+import ProjectImage from "../../models/ProjectImage";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;
@@ -37,10 +38,10 @@ function checkBody(body: IPostProjectsRequestBody): true | string {
     if (!body.role) return "role";
     if (!body.category) return "category";
     if (!body.heroImage) return "heroImage";
+    if (!body.images) return "images";
     if (body.isPrivate == undefined) return "isPrivate";
     return true;
 }
-
 
 function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: any): Promise<Project> {
     return new Promise<Project>(async (resolve, reject) => {
@@ -73,27 +74,37 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
         // If review status is unspecified, default to true
         if (projectRequestData.needsManualReview == undefined) projectRequestData.needsManualReview = true;
 
-        // Create the project
-        Project.create(await StdToDbModal_Project({ ...projectRequestData }))
-            .then((project: Project) => {
-                // Create the userproject
-                UserProject.create(
-                    {
-                        userId: user.id,
-                        projectId: project.id,
-                        isOwner: true, // Only the project owner can create the project
-                        roleId: role.id
-                    })
-                    .then(() => {
-                        resolve(project)
-                    })
-                    .catch(reject);
+        var projectData = await StdToDbModal_Project({ ...projectRequestData });
 
-            })
-            .catch(reject);
+        // Create the project
+        await Project.create(projectData).catch(reject);
+
+        var project = await Project.findAll({ where: { appName: projectData.appName ?? "" } }) as Project[];
+
+        if (!project || project.length === 0)
+        return;
+
+        // Create the userproject
+        await UserProject.create(
+            {
+                userId: user.id,
+                projectId: project[0].id,
+                isOwner: true, // Only the project owner can create the project
+                roleId: role.id
+            }).catch(reject);
+
+        for (let url of projectRequestData.images) {
+            await ProjectImage.create(
+                {
+                    projectId: project[0].id,
+                    imageUrl: url
+                }).catch(reject);
+        }
+
+        resolve();
+
     });
 }
-
 
 function ProjectFieldsAreValid(project: IPostProjectsRequestBody, res: Response): boolean {
     // Make sure download link is a valid URL
@@ -115,12 +126,22 @@ function ProjectFieldsAreValid(project: IPostProjectsRequestBody, res: Response)
     }
 
     // Make sure hero image is an image URL or a microsoft store image
-    if (project.heroImage && !match(project.heroImage, /(?:(?:https?:\/\/))[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&\/=].+(\.jpe?g|\.png|\.gif))|(store-images.s-microsoft.com\/image\/apps)/)) {
+    if (project.heroImage && !match(project.heroImage, /(?:(?:https?:\/\/))[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&\/=].+(\.jpe?g|\.png|\.gif))|(store-images.s-microsoft.com\/image\/apps)/)) { 
         BuildResponse(res, HttpStatus.MalformedRequest, "Invalid heroImage");
         return false;
     }
 
-    // Make sure hero image is an image URL or a microsoft store image
+    // Make sure images given are an image URL or a microsoft store image
+    if (project.images) {
+        for (let image of project.images) {
+            if (!match(image, /(?:(?:https?:\/\/))[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&\/=].+(\.jpe?g|\.png|\.gif))|(store-images.s-microsoft.com\/image\/apps)/)) {
+                BuildResponse(res, HttpStatus.MalformedRequest, "Invalid image in images");
+                return false;
+            }
+        }
+    }
+
+    // Make sure app icon is an image URL or a microsoft store image
     if (project.appIcon && !match(project.appIcon, /(?:(?:https?:\/\/))[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&\/=].+(\.jpe?g|\.png|\.gif))|(store-images.s-microsoft.com\/image\/apps)/)) {
         BuildResponse(res, HttpStatus.MalformedRequest, "Invalid appIcon");
         return false;
@@ -134,6 +155,7 @@ function ProjectFieldsAreValid(project: IPostProjectsRequestBody, res: Response)
 
     return true;
 }
+
 interface IPostProjectsRequestBody {
     role: "Developer"; // Only a developer can create a new project
     appName: string;
@@ -145,6 +167,7 @@ interface IPostProjectsRequestBody {
     externalLink?: string;
     awaitingLaunchApproval: boolean;
     needsManualReview: boolean;
+    images: string[];
     heroImage: string;
     appIcon?: string;
     accentColor?: string;

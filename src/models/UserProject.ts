@@ -4,7 +4,6 @@ import Project from './Project';
 import Role, { GetRoleById } from './Role';
 import { IProjectCollaborator } from './types';
 
-
 @Table
 export default class UserProject extends Model<UserProject> {
     @PrimaryKey
