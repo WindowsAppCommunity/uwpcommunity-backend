@@ -36,7 +36,7 @@ function deleteProject(projectRequestData: IDeleteProjectsRequestBody, discordId
             where: { appName: projectRequestData.appName }
         }).then(async (projects) => {
             const guildMember = await GetGuildUser(discordId);
-            const isMod = guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").length > 0;
+            const isMod = guildMember && guildMember.roles.cache.filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").array.length > 0;
 
             const collaborators = await GetProjectCollaborators(projects[0].id);
             const userCanModify = collaborators.filter(user => user.isOwner && user.discordId == discordId).length > 0 || isMod;

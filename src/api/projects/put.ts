@@ -65,7 +65,7 @@ function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPu
         }
 
         const guildMember = await GetGuildUser(discordId);
-        const isMod = guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").length > 0;
+        const isMod = guildMember && guildMember.roles.cache.filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").array.length > 0;
 
 
         const user: User | null = await getUserByDiscordId(discordId);
@@ -122,7 +122,7 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
         if (updatedProject.lookingForRoles) updatedDbProjectData.lookingForRoles = JSON.stringify(updatedProject.lookingForRoles);
 
         const guildMember = await GetGuildUser(discordId);
-        const isLaunchCoordinator = guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "launch coordinator").length > 0;
+        const isLaunchCoordinator = guildMember && guildMember.roles.cache.filter(role => role.name.toLowerCase() === "launch coordinator").array.length > 0;
 
         if (shouldUpdateLaunch && updatedProject.launchYear) {
             if (!isLaunchCoordinator) ResponsePromiseReject("User has insufficient permissions", HttpStatus.Unauthorized, reject);
@@ -138,7 +138,7 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
             }
         }
 
-        const isMod = guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "mod").length > 0;
+        const isMod = guildMember && guildMember.roles.cache.filter(role => role.name.toLowerCase() === "mod").array.length > 0;
         if (shouldUpdateManualReview) {
             if (!isMod) {
                 ResponsePromiseReject("User has insufficient permissions", HttpStatus.Unauthorized, reject);

@@ -1,19 +1,19 @@
 import { Message } from "discord.js";
-import { GetGuild } from "../../common/helpers/discord";
+import { GetGuild, GetRoles } from "../../common/helpers/discord";
 import { capitalizeFirstLetter } from "../../common/helpers/generic";
 import { IBotCommandArgument } from "../../models/types";
 
 export default async (discordMessage: Message, commandParts: string[], args: IBotCommandArgument[]) => {
     const message = commandParts[0].toLowerCase();
 
-    const server = GetGuild();
-    if (!server) return;
+    const roles = await GetRoles();
+    if (!roles)
+        return;
 
-    const roles = server.roles.array();
     const role = roles.find(i => i.name.toLowerCase() == message);
 
     if (!role) {
-        discordMessage.channel.sendMessage(`Role not found`);
+        discordMessage.channel.send(`Role not found`);
         return;
     }
 
@@ -21,7 +21,7 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
     const dateRoleCreated = role.createdAt.toUTCString();
     const mentionable = role.mentionable;
 
-    await discordMessage.channel.sendMessage(
+    await discordMessage.channel.send(
         `__**${capitalizeFirstLetter(discordMessage.content)}\ role info**__:
 Member count: ${numberOfMembers}
 Date created: ${dateRoleCreated}

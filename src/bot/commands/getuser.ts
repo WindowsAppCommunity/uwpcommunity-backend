@@ -1,5 +1,5 @@
 import { Message, TextChannel, Guild, GuildMember } from "discord.js";
-import { GetGuild } from "../../common/helpers/discord";
+import { GetGuild, GetGuildMembers } from "../../common/helpers/discord";
 import { IBotCommandArgument } from "../../models/types";
 import { getUserByDiscordId } from "../../models/User";
 
@@ -9,19 +9,19 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
     const sentFromChannel = discordMessage.channel as TextChannel;
 
     if (args.length == 0) {
-        sentFromChannel.sendMessage(`No parameters provided. Provide one of: \`${validFindByMethod.join(', ')}\``);
+        sentFromChannel.send(`No parameters provided. Provide one of: \`${validFindByMethod.join(', ')}\``);
         return;
     }
 
     const arg = args[0];
 
     if (args.length > 1) {
-        sentFromChannel.sendMessage(`Too many parameters. Provide one of: \`${validFindByMethod.join(', ')}\``);
+        sentFromChannel.send(`Too many parameters. Provide one of: \`${validFindByMethod.join(', ')}\``);
         return;
     }
 
     if (!validFindByMethod.includes(arg.name)) {
-        sentFromChannel.sendMessage(`Invalid parameter. Provide one of: \`${validFindByMethod.join(', ')}\``);
+        sentFromChannel.send(`Invalid parameter. Provide one of: \`${validFindByMethod.join(', ')}\``);
         return;
     }
 
@@ -29,39 +29,49 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
         if (method != arg.name)
             continue;
         else
-            handleFind(arg, discordMessage);
+            await handleFind(arg, discordMessage);
     }
 };
 
 
-function handleFind(arg: IBotCommandArgument, discordMessage: Message) {
-    const server = GetGuild();
+async function handleFind(arg: IBotCommandArgument, discordMessage: Message) {
+    const server = await GetGuild();
     if (!server) return;
 
     switch (arg.name) {
         case "discordId":
-            findByDiscordId(discordMessage, server, arg.value);
+            await findByDiscordId(discordMessage, server, arg.value);
             break;
         case "username":
-            findByUsername(discordMessage, server, arg.value);
+            await findByUsername(discordMessage, server, arg.value);
             break;
     }
 }
 
 async function findByDiscordId(discordMessage: Message, server: Guild, discordId: string) {
-    server = await server.fetchMembers(); // this probably works
+    const members = await GetGuildMembers();
+    if (!members) {
+        discordMessage.channel.send("error: couldn't get members list");
+        return;
+    }
 
-    const member = server.members.find(i => i.id == discordId);
+    const member = members.find(i => i.id == discordId);
     if (!member)
-        discordMessage.channel.sendMessage("Could not find a user with that ID");
+        discordMessage.channel.send("Could not find a user with that ID");
     else
         sendFormattedUserInfo(discordMessage.channel as TextChannel, member);
 }
 
-function findByUsername(discordMessage: Message, server: Guild, username: string) {
-    const member = server.members.find(i => `${i.user.username}#${i.user.discriminator}` == username);
+async function findByUsername(discordMessage: Message, server: Guild, username: string) {
+    const members = await GetGuildMembers();
+    if (!members) {
+        discordMessage.channel.send("error: couldn't get members list");
+        return;
+    }
+
+    const member = members.find(i => `${i.user.username}#${i.user.discriminator}` == username);
     if (!member)
-        discordMessage.channel.sendMessage("Could not find a user with that ID");
+        discordMessage.channel.send("Could not find a user with that ID");
     else
         sendFormattedUserInfo(discordMessage.channel as TextChannel, member);
 }
@@ -71,7 +81,7 @@ export async function sendFormattedUserInfo(channel: TextChannel, member: GuildM
         `Discord Id: \`${member.id}\`
 Current username: \`${member.user.username}#${member.user.discriminator}\`
 Nickname: \`${member.nickname}\`
-Joined: \`${member.joinedAt.toUTCString()}\``;
+Joined: \`${member.joinedAt?.toUTCString()}\``;
 
     const userData = await getUserByDiscordId(member.id);
     if (userData) {
@@ -80,5 +90,5 @@ Registered name: \`${userData.name}\`
 Registered Email: \`${userData.email}\``;
     }
 
-    channel.sendMessage(formattedUserInfo);
+    channel.send(formattedUserInfo);
 }

@@ -1,5 +1,5 @@
 import { Message, TextChannel, GuildMember } from "discord.js";
-import { GetChannelByName } from "../../../common/helpers/discord";
+import { GetChannelByName, GetGuildChannels } from "../../../common/helpers/discord";
 
 const bannableMessageKeywords = ["bit.ly", "grades", "essay"];
 
@@ -12,24 +12,29 @@ export async function handlePossibleBan(discordMessage: Message) {
         if (!discordMessage.content.includes(keyword))
             return;
 
-    const limitReached = userMessageCounter(discordMessage.member, 4);
+    if (!discordMessage.member)
+        return;
+
+    const limitReached = await userMessageCounter(discordMessage.member, 4);
 
     if (limitReached) {
-        const botchannel = GetChannelByName("bot-stuff") as TextChannel;
+        const botchannel = await GetChannelByName("bot-stuff") as TextChannel;
         if (!botchannel) return;
 
-        botchannel.sendMessage(`${discordMessage.author.username}#${discordMessage.author.discriminator} (Discord ID ${discordMessage.author.id}) has triggered our spam detection system, and has been automatically banned from the UWP Community Discord server. \n> ${discordMessage.content}`)
+        botchannel.send(`${discordMessage.author.username}#${discordMessage.author.discriminator} (Discord ID ${discordMessage.author.id}) has triggered our spam detection system, and has been automatically banned from the UWP Community Discord server. \n> ${discordMessage.content}`)
 
-        discordMessage.author.sendMessage("You have triggered our spam detection system, and have been automatically banned from the UWP Community Discord server. ");
+        discordMessage.author.send("You have triggered our spam detection system, and have been automatically banned from the UWP Community Discord server. ");
 
-        discordMessage.guild.ban(discordMessage.author);
+        discordMessage.guild?.members.ban(discordMessage.author);
     }
 }
 
-function userMessageCounter(member: GuildMember, limit: number): boolean {
+async function userMessageCounter(member: GuildMember, limit: number): Promise<boolean> {
     let messageCount = 0;
 
-    const channels = member.guild.channels.array();
+    const channels = await GetGuildChannels();
+    if (!channels)
+        return false;
 
     var lastYear = new Date();
     lastYear.setFullYear(lastYear.getFullYear() - 1);
@@ -38,13 +43,16 @@ function userMessageCounter(member: GuildMember, limit: number): boolean {
         if (channel.type == "text") {
             const textChannel = channel as TextChannel;
 
-            if (member.permissionsIn(textChannel).hasPermission("SEND_MESSAGES"))
+            if (member.permissionsIn(textChannel).has("SEND_MESSAGES"))
                 continue;
 
-            const messages = textChannel.messages.array();
+            const messages = textChannel.messages.cache.array();
             for (let message of messages) {
                 if (message.author.id == member.id)
                     messageCount++;
+
+                if (!member.joinedAt)
+                    continue;
 
                 if (message.createdAt < member.joinedAt)
                     return messageCount > limit;
