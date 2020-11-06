@@ -1,7 +1,7 @@
 import { IBotCommandArgument, IProject } from "../../models/types";
 import { Message, TextChannel, Role, User, GuildMember } from "discord.js";
 import Project, { findSimilarProjectName, DbToStdModal_Project } from "../../models/Project";
-import { GetUser, GetGuildRoles, GetDiscordUser, GetGuild } from "../../common/helpers/discord";
+import { GetUser, GetRoles, GetDiscordUser, GetGuild, GetGuildMembers } from "../../common/helpers/discord";
 import UserProject, { GetUsersByProjectId, GetProjectsByUserId, GetProjectCollaborators } from "../../models/UserProject";
 import { GetRoleByName } from "../../models/Role";
 
@@ -56,7 +56,7 @@ async function handleUserCommand(project: IProject, message: Message, commandPar
 
     const isOwner = project.collaborators.find(collaborator => collaborator.isOwner)?.discordId == message.author.id;
     const isCollaborator = project.collaborators.find(collaborator => collaborator.discordId == message.author.id);
-    const isMod = message.member.roles.find(i => i.name.toLowerCase() == "mod" || i.name.toLowerCase() == "admin");
+    const isMod = message.member?.roles.cache.find(i => i.name.toLowerCase() == "mod" || i.name.toLowerCase() == "admin");
     const userCanModify = isOwner || isCollaborator || isMod;
     const userCanModifyDevs = isOwner || isMod;
 
@@ -107,16 +107,16 @@ async function handleAddUserCommand(project: IProject, message: Message, command
     if (desiredRole == null) return;
 
     let discordUser: GuildMember | undefined;
-    const guild = await GetGuild()?.fetchMembers();
+    const guildMembers = await GetGuildMembers();
     const userArg = args.find(arg => arg.name == "username" || arg.name == "discordId");
 
     // Get target user
     switch (userArg?.name) {
         case "username":
-            discordUser = guild?.members.find(m => `${m.user.username}#${m.user.discriminator}` === userArg.value);
+            discordUser = guildMembers?.find(m => `${m.user.username}#${m.user.discriminator}` === userArg.value);
             break;
         case "discordId":
-            discordUser = guild?.members.find(m => m.user.id === userArg.value);
+            discordUser = guildMembers?.find(m => m.user.id === userArg.value);
             break;
         default:
             message.channel.send(`Unknown user identifier. (You shouldn't be seeing this)`);
@@ -165,17 +165,18 @@ async function handleRemoveUserCommand(project: IProject, message: Message, comm
     const desiredRole: Role | undefined | null = await getRoleForProject(project, message, commandParts, args).catch(Promise.reject);
     if (desiredRole == null) return;
 
-    const guild = GetGuild();
     const userArg = args.find(arg => arg.name == "username" || arg.name == "discordId");
     let discordUser: GuildMember | undefined;
+
+    const guildMembers = await GetGuildMembers();
 
     // Get target user
     switch (userArg?.name) {
         case "username":
-            discordUser = guild?.members.find(m => `${m.user.username}#${m.user.discriminator}` === userArg.value)
+            discordUser = guildMembers?.find(m => `${m.user.username}#${m.user.discriminator}` === userArg.value)
             break;
         case "discordId":
-            discordUser = guild?.members.find(m => m.user.id === userArg.value)
+            discordUser = guildMembers?.find(m => m.user.id === userArg.value)
             break;
         default:
             message.channel.send(`Unknown user identifier. (You shouldn't be seeing this)`);
@@ -240,12 +241,12 @@ async function handleRemoveUserCommand(project: IProject, message: Message, comm
 
 function safeRemoveRole(role: Role | undefined, discordUser: GuildMember) {
     if (role)
-        discordUser.removeRole(role);
+        discordUser.roles.remove(role);
 }
 
 function safeAddRole(role: Role | undefined, discordUser: GuildMember) {
     if (role)
-        discordUser.addRole(role);
+        discordUser.roles.remove(role);
 }
 
 function InputtedUserTypeToDBRoleType(inputtedRole: string): string {
@@ -266,7 +267,7 @@ function InputtedUserTypeToDBRoleType(inputtedRole: string): string {
  * @returns Role if a discord role is found. Undefined if no matching discord role is found. Null if the role was never searched for (usually because of some handled error).
  */
 async function getRoleForProject(project: IProject, message: Message, commandParts: string[], args: IBotCommandArgument[]): Promise<Role | undefined | null> {
-    const roles = await GetGuildRoles();
+    const roles = await GetRoles();
 
     const typeArg = args.find(arg => arg.name == "type");
     if (!typeArg) {
@@ -398,16 +399,18 @@ async function GetProjectOwnerFormattedDiscordUsername(project: IProject): Promi
 
 
 async function ReactWithPromiseStatus<T>(promise: Promise<T>, message: Message) {
-    const guild = GetGuild();
-    
+    const guild = await GetGuild();
+    if (!guild)
+        return;
+
     await promise
         .then(() => {
-            const greencheckEmojiId = guild?.emojis.find(i => i.name == "greencheck").id;
+            const greencheckEmojiId = guild.emojis.cache.find(i => i.name == "greencheck")?.id;
             if (greencheckEmojiId)
                 message.react(greencheckEmojiId);
         })
         .catch(err => {
-            const reactionId = guild?.emojis.find(i => i.name == "bug").id;
+            const reactionId = guild.emojis.cache.find(i => i.name == "bug")?.id;
             if (reactionId) message.react(reactionId);
 
             message.channel.send(err);

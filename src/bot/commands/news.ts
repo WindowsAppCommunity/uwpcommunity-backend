@@ -12,9 +12,9 @@ let RecentPostsStore: { user: User; lastPost: number; }[] = [];
  * @param client Client object that has access to a users' emoji list
  * @param emojiText Name of emoji, without surrounding `:` characters
  */
-function getDiscordEmoji(client: Client, emojiText: string): Emoji | null {
+function getDiscordEmoji(client: Client, emojiText: string): Emoji | undefined {
     emojiText = emojiText.split(":").join("");
-    return client.emojis.find(emoji => emoji.name == emojiText);
+    return client.emojis.cache.find(emoji => emoji.name == emojiText);
 }
 
 export default async (discordMessage: Message, commandParts: string[], args: IBotCommandArgument[]) => {
@@ -44,8 +44,8 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
         .replace(/\n/g, "")
         // Recreate server emojis
         .replace(/[^<]+[^a-z]+(?:\:(.*?)\:)/g, (toReplace: string) => {
-            const emoji: Emoji | null = getDiscordEmoji(discordMessage.client, toReplace);
-            if (emoji != null) return `:${emoji.id}:`;
+            const emoji: Emoji | undefined = getDiscordEmoji(discordMessage.client, toReplace);
+            if (emoji != undefined) return `:${emoji.id}:`;
             return "";
         })
         // Remove unsupported emojis
@@ -58,7 +58,7 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
 
 async function postNewsLink(discordMessage: Message, link: string, comment?: string) {
     // Get the news channel
-    const channel: TextChannel = GetChannelByName("news") as TextChannel;
+    const channel: TextChannel = await GetChannelByName("news") as TextChannel;
     if (!channel) return;
 
     RecentPostsStore.push({ user: discordMessage.author, lastPost: new Date().getTime() });

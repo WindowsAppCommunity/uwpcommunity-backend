@@ -15,7 +15,6 @@ module.exports = async (req: Request, res: Response) => {
             BuildResponse(res, HttpStatus.Success, projects);
         })
         .catch((err: IRequestPromiseReject) => BuildResponse(res, err.status, err.reason));
-
 };
 
 export function getProjectByYear(year: string): Promise<IProjects> {
