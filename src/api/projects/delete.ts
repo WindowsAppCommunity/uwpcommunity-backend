@@ -40,8 +40,7 @@ function deleteProject(projectRequestData: IDeleteProjectsRequestBody, discordId
             if (projects.length > 1) { ResponsePromiseReject("More than one project with that name found. Contact a system administrator to fix the data duplication", HttpStatus.InternalServerError, reject); return; }
 
             const guildMember = await GetGuildUser(discordId);
-            const isMod = guildMember && guildMember.roles.array().filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").length > 0;
-        
+            const isMod = guildMember && guildMember.roles.cache.filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").array.length > 0;
             const collaborators = await GetProjectCollaborators(projects[0].id);
             const userCanModify = collaborators.filter(user => user.isOwner && user.discordId == discordId).length > 0 || isMod;
 

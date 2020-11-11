@@ -9,7 +9,8 @@ export let bot: Discord.Client;
 export const uwpCommunityGuildId: string = process.env.guildId || "667491687639023636";
 
 export let InitBot = function () {
-    bot = new Discord.Client();
+    bot = new Discord.Client({ disableMentions: 'everyone' });
+
     if (!process.env.discord_botToken) {
         console.log(`\x1b[33m${`Missing "discord_botToken" environment variable. You will not be able to interact with the Discord bot without this`}\x1b[0m`);
         return;
@@ -17,43 +18,57 @@ export let InitBot = function () {
 
     bot.once('ready', () => {
         console.log("Server Companion bot initialized");
-
         InitBot = () => { }; // Prevents init from being called again
     });
+
     bot.login(process.env.discord_botToken);
 };
 
 
-export function GetGuild(): Discord.Guild | undefined {
-    return bot.guilds.get(uwpCommunityGuildId);
+export function GetGuild(): Promise<Discord.Guild | undefined> {
+    return bot.guilds.fetch(uwpCommunityGuildId);
+}
+
+export async function GetGuildMembers(): Promise<Discord.GuildMember[] | undefined> {
+    const server = await GetGuild();
+    if (!server) return;
+    
+    return await (await server.members.fetch()).array();
 }
 
 export async function GetGuildUser(discordId: string): Promise<Discord.GuildMember | undefined> {
-    const server = GetGuild();
+    const server = await GetGuild();
     if (!server) return;
 
-    return (await server.members.filter(member => member.id == discordId)).first();
+    return ((await server.members.fetch()).filter(member => member.id == discordId)).first();
 }
 
 export function GetUser(discordId: string) {
-    return bot.fetchUser(discordId)
+    return bot.users.fetch(discordId)
 }
 
-export async function GetGuildRoles() {
-    const server = GetGuild();
+export async function GetRoles() {
+    const server = await GetGuild();
     if (!server) return;
 
-    return server.roles.array();
+    return (await server.roles.fetch()).cache.array();
 }
 
-export function GetChannelByName(channelName: string): Discord.GuildChannel | null {
-    const server = GetGuild();
-    if (!server) return null;
+export async function GetGuildChannels(): Promise<Discord.GuildChannel[] | undefined> {
+    const server = await GetGuild();
 
-    let requestedChannel = server.channels.find(i => i.name == channelName);
+    return server?.channels.cache.array();
+}
+
+export async function GetChannelByName(channelName: string): Promise<Discord.GuildChannel | undefined> {
+    const channels = await GetGuildChannels();
+    if (!channels)
+        return;
+
+    let requestedChannel = channels.find(i => i.name == channelName);
     if (!requestedChannel) {
-        requestedChannel = server.channels.find(i => i.name == "mod-chat");
-        (requestedChannel as Discord.TextChannel).sendMessage(`Bot tried to find channel ${channelName} but failed.`);
+        requestedChannel = channels.find(i => i.name == "mod-chat");
+        (requestedChannel as Discord.TextChannel).send(`Bot tried to find channel ${channelName} but failed.`);
     }
 
     return requestedChannel;
@@ -65,9 +80,9 @@ export async function EditMultiMessages(content: string, ...params: Discord.Mess
     }
 }
 
-export async function SendMultiMessages(content: string, ...params: (Discord.GuildChannel | Discord.TextChannel | Discord.DMChannel | Discord.GroupDMChannel)[]): Promise<Discord.Message[]> {
-    const results : Discord.Message[] = [];
-    
+export async function SendMultiMessages(content: string, ...params: (Discord.GuildChannel | Discord.TextChannel | Discord.DMChannel)[]): Promise<Discord.Message[]> {
+    const results: Discord.Message[] = [];
+
     for (const channel of params) {
         if (channel.type === "text") {
             const sentMessage = await (channel as Discord.TextChannel).send(content);
