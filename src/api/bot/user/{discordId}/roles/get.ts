@@ -19,6 +19,8 @@ module.exports = async (req: Request, res: Response) => {
         return;
     }
 
-    let roles = guildMember.roles.array().map(role => { delete role.guild; return role });
+    // Using "as any" here to silence the compiler warning that the role.guild object must be optional if deleting it.
+    // This is only fine because data is immediately used as the response.
+    let roles = guildMember.roles.cache.map(role => { delete (role as any).guild; return role });
     BuildResponse(res, HttpStatus.Success, roles);
 };

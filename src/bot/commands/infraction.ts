@@ -5,35 +5,50 @@ import { setInterval } from "timers";
 
 let infractions: IInfraction[];
 let infractionData: IInfractionData[] = [];
+let handleInfractionRemovalInterval: NodeJS.Timeout;
+
+let successfulInit: boolean = false;
 
 export async function Initialize() {
-    const server = GetGuild();
+    const server = await GetGuild();
     if (server) {
-        const botChannel = GetChannelByName("bot-stuff") as TextChannel;
-        var mutedRole = server.roles.find(i => i.name.toLowerCase() == "muted");
+        const botChannel = await GetChannelByName("bot-stuff") as TextChannel;
+        var mutedRole = server.roles.cache.find(i => i.name.toLowerCase() == "muted");
+        if (mutedRole == null) {
+            console.error("Couldn't find muted role");
+            return;
+        }
 
         await initExistingInfractionData(server);
-        setInterval(handleInfractionRemoval, 15 * 1000, botChannel, mutedRole);
+        handleInfractionRemovalInterval = setInterval(handleInfractionRemoval, 15 * 1000, botChannel, mutedRole);
         handleInfractionRemoval(botChannel, mutedRole);
     }
 }
 
 export default async (discordMessage: Message, commandParts: string[], args: IBotCommandArgument[]) => {
-    const server = GetGuild();
+    if (!successfulInit)
+        return;
+
+    const server = await GetGuild();
     if (!server) return;
 
-    const infractionChannel = GetChannelByName("infraction-log") as TextChannel;
-    const botChannel = GetChannelByName("bot-stuff") as TextChannel;
-    const metaChannel = GetChannelByName("meta") as TextChannel;
+    const infractionChannel = await GetChannelByName("infraction-log") as TextChannel;
+    const botChannel = await GetChannelByName("bot-stuff") as TextChannel;
+    const metaChannel = await GetChannelByName("meta") as TextChannel;
 
-    if (!discordMessage.member.roles.find(i => i.name.toLowerCase() == "mod")) {
+    if (!discordMessage.member?.roles.cache.find(i => i.name.toLowerCase() == "mod")) {
         return;
     }
 
     if (infractions == undefined)
         return;
 
-    var mutedRole = server.roles.find(i => i.name.toLowerCase() == "muted");
+    var mutedRole = server.roles.cache.find(i => i.name.toLowerCase() == "muted");
+    if (!mutedRole) {
+        discordMessage.channel.send(`Couldn't find muted role.`)
+        return;
+    }
+
     setupMutedChannelSettings(server, mutedRole);
 
     const messageLinkArg = args.find(i => i.name == "messageLink"),
@@ -58,7 +73,7 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
 
     if (offenderDiscordId) {
 
-        member = await server.fetchMember(offenderDiscordId)
+        member = await server.members.fetch(offenderDiscordId)
 
     } else if (messageLink) {
 
@@ -83,13 +98,13 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
             return;
         }
 
-        const relevantChannel = server.channels.find(i => i.id == channelId) as TextChannel;
+        const relevantChannel = server.channels.cache.find(i => i.id == channelId) as TextChannel;
         if (!relevantChannel) {
             discordMessage.channel.send("Channel not found");
             return;
         }
 
-        const relevantMessage = await relevantChannel.fetchMessage(messageId);
+        const relevantMessage = await relevantChannel.messages.fetch(messageId);
         if (!relevantMessage) {
             discordMessage.channel.send("Message not found");
             return;
@@ -102,7 +117,8 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
         }
 
         // Get previous recent infractions
-        member = await server.fetchMember(relevantMessage.member);
+        if (relevantMessage.member)
+            member = await server.members.fetch(relevantMessage.member);
     }
 
     if (member == null) {
@@ -112,7 +128,7 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
 
     const memberInfraction: IInfraction = findInfractionFor(member);
 
-    member.addRole(memberInfraction.nextInfraction.role);
+    member.roles.add(memberInfraction.nextInfraction.role);
 
     removeInfractionDataFor(member);
 
@@ -125,7 +141,7 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
 
     // Only mute when the infraction isn't a warning
     if (memberInfraction.worstOffense != undefined)
-        await member.addRole(mutedRole);
+        await member.roles.add(mutedRole);
 
     // User has no infractions
     if (memberInfraction.worstOffense == undefined) {
@@ -174,9 +190,9 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
     }
 };
 
-function handleInfractionRemoval(botChannel: TextChannel, mutedRole: Role) {
+async function handleInfractionRemoval(botChannel: TextChannel, mutedRole: Role) {
     const warnedRole = infractionData.find(x => x.label == "Warned")?.role;
-    const guild = GetGuild();
+    const guild = await GetGuild();
     if (!guild) return;
 
     for (let infrac of infractions) {
@@ -188,7 +204,7 @@ function handleInfractionRemoval(botChannel: TextChannel, mutedRole: Role) {
             continue;
 
         // If the user no longer has the role, we can assume it was manually removed.
-        if (!infrac.member.roles.find(role => infrac.worstOffense?.role.id == role.id)) {
+        if (!infrac.member.roles.cache.find(role => infrac.worstOffense?.role.id == role.id)) {
             botChannel.send(`User <@${infrac.member.id}> is internally recorded as having ${infrac.worstOffense.label}, but doesn't have the corresponding role. Assuming manual role removal, cleaning up data.`);
             continue;
         }
@@ -196,9 +212,9 @@ function handleInfractionRemoval(botChannel: TextChannel, mutedRole: Role) {
         // Unmute if needed.
         if (infrac.worstOffense.unmuteAfterDays && infrac.assignedAt < xDaysAgo(infrac.worstOffense.unmuteAfterDays)) {
             // Only unmute and send messages if the user is muted.
-            if (infrac.member.roles.find(x => x.id == mutedRole.id)) {
+            if (infrac.member.roles.cache.find(x => x.id == mutedRole.id)) {
                 infrac.member.send(`You have been unmuted in the ${guild.name} Discord server.`);
-                infrac.member.removeRole(mutedRole);
+                infrac.member.roles.remove(mutedRole);
 
                 botChannel.send(`<@${infrac.member.id}> has been unmuted`);
             }
@@ -209,8 +225,8 @@ function handleInfractionRemoval(botChannel: TextChannel, mutedRole: Role) {
             const infractionTypeLabel = infrac.worstOffense.label == "Warned" ? "warning" : "infraction";
 
             infrac.member.send(`Your ${infractionTypeLabel} in the ${guild.name} Discord server has been removed.`);
-            infrac.member.removeRole(infrac.worstOffense.role);
-            infrac.member.removeRole(warnedRole);
+            infrac.member.roles.remove(infrac.worstOffense.role);
+            infrac.member.roles.remove(warnedRole);
 
             infractions.splice(infractions.findIndex(x => x.member.id == infrac.member.id), 1);
             botChannel.send(`<@${infrac.member.id}>'s ${infractionTypeLabel} has been removed`);
@@ -219,13 +235,20 @@ function handleInfractionRemoval(botChannel: TextChannel, mutedRole: Role) {
 }
 
 async function initExistingInfractionData(server: Guild) {
-    const infractionChannel = GetChannelByName("infraction-log") as TextChannel;
+    const infractionChannel = await GetChannelByName("infraction-log") as TextChannel;
 
-    const warnedRole = server.roles.find(i => i.name.toLowerCase() == "warned");
-    const strike1Role = server.roles.find(i => i.name.toLowerCase() == "strike 1");
-    const strike2Role = server.roles.find(i => i.name.toLowerCase() == "strike 2");
-    const strike3Role = server.roles.find(i => i.name.toLowerCase() == "strike 3");
-    const strike4Role = server.roles.find(i => i.name.toLowerCase() == "strike 4");
+    const warnedRole = server.roles.cache.find(i => i.name.toLowerCase() == "warned");
+    const strike1Role = server.roles.cache.find(i => i.name.toLowerCase() == "strike 1");
+    const strike2Role = server.roles.cache.find(i => i.name.toLowerCase() == "strike 2");
+    const strike3Role = server.roles.cache.find(i => i.name.toLowerCase() == "strike 3");
+    const strike4Role = server.roles.cache.find(i => i.name.toLowerCase() == "strike 4");
+
+    if (!warnedRole || !strike1Role || !strike2Role || !strike3Role || !strike4Role) {
+        const botChannel = await GetChannelByName("bot-stuff") as TextChannel;
+        clearInterval(handleInfractionRemovalInterval)
+        botChannel.send(`Unable to init existing infraction data. Missing a warned or strike role.`);
+        return;
+    }
 
     infractions = [];
     infractionData = [
@@ -264,27 +287,29 @@ async function initExistingInfractionData(server: Guild) {
     const infractionRoles = [strike4Role, strike3Role, strike2Role, strike1Role, warnedRole];
 
     // Build a list of all users' current infractions. We're using the infraction channel as a makeshift database.
-    for (let message of (await infractionChannel.fetchMessages({ limit: 100 }))) {
+    for (let message of (await infractionChannel.messages.fetch({ limit: 100 }))) {
+        if (!message)
+            continue;
+
+        const mentionedMember = message[1].mentions.members?.first();
+
+        if (mentionedMember == null)
+            continue;
 
         // If we already found an infraction for this user
-        if (infractions.find(i => i.member.id == message[1].mentions.members.first().id) != undefined)
+        if (infractions.find(i => i.member.id == mentionedMember.id) != undefined)
             continue;
 
         // Find the worst offense they have in their roles.
         // The newer the offense is, the higher and more up to date it should be (if checking messages in the channel)
 
-        const relevantMember = message[1].mentions.members.first();
-
-        if (relevantMember == null)
-            continue;
-
-        const worstOffense = findHighestInfractionRole(relevantMember, infractionRoles);
+        const worstOffense = findHighestInfractionRole(mentionedMember, infractionRoles);
 
         if (worstOffense != undefined) {
             const strikeData = infractionData.find(i => i.role.id == worstOffense.id);
 
             infractions.push({
-                member: message[1].mentions.members.first(),
+                member: mentionedMember,
                 worstOffense: strikeData,
                 nextInfraction: findNextInfraction(strikeData),
                 assignedAt: message[1].createdAt
@@ -292,16 +317,18 @@ async function initExistingInfractionData(server: Guild) {
         }
 
     }
+
+    successfulInit = true;
 }
 
 function setupMutedChannelSettings(server: Guild, mutedRole: Role) {
-    server.channels.forEach(channel => {
+    server.channels.cache.forEach(channel => {
         if (channel.type === "text") {
-            (channel as TextChannel).overwritePermissions(mutedRole, { "SEND_MESSAGES": false, "ADD_REACTIONS": false });
+            (channel as TextChannel).createOverwrite(mutedRole, { "SEND_MESSAGES": false, "ADD_REACTIONS": false });
         }
 
         if (channel.type == "voice") {
-            (channel as VoiceChannel).overwritePermissions(mutedRole, { "SPEAK": false, "STREAM": false });
+            (channel as VoiceChannel).createOverwrite(mutedRole, { "SPEAK": false, "STREAM": false });
         }
     });
 }
@@ -318,7 +345,7 @@ function findNextInfraction(infraction: IInfractionData | undefined): IInfractio
 
 function findHighestInfractionRole(member: GuildMember, roles: Role[]): Role | undefined {
     for (let role of roles) {
-        if (member.roles.find(i => role.id == i.id)) return role;
+        if (member.roles.cache.find(i => role.id == i.id)) return role;
     }
 }
 

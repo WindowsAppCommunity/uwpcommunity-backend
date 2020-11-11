@@ -1,5 +1,5 @@
 import { Request, Response } from "express-serve-static-core";
-import { GetGuildUser, GetGuild, GetDiscordUser } from "../../../../common/helpers/discord";
+import { GetGuildUser, GetGuild, GetDiscordUser, GetRoles } from "../../../../common/helpers/discord";
 import { genericServerError, validateAuthenticationHeader, capitalizeFirstLetter } from "../../../../common/helpers/generic";
 import { getProjectsByDiscordId } from "../../../../models/Project";
 import { HttpStatus, BuildResponse } from "../../../../common/helpers/responseHelper";
@@ -38,21 +38,27 @@ module.exports = async (req: Request, res: Response) => {
         return;
     }
 
-    const server = GetGuild();
+    const server = await GetGuild();
     if (!server) return;
 
     const roleName = req.body.appName + " " + capitalizeFirstLetter(req.body.subRole);
 
+    const serverRoles = await GetRoles();
+    if (!serverRoles)
+        return;
+
     // Check that the role doesn't already exist
-    if (server.roles.array().filter(role => role.name == roleName).length > 0) {
+    if (serverRoles.filter(role => role.name == roleName).length > 0) {
         BuildResponse(res, HttpStatus.Unauthorized, "Role already exists");
         return;
     }
 
-    server.createRole({
-        name: roleName,
-        mentionable: true,
-        color: req.body.color
+    server.roles.create({
+        data: {
+            name: roleName,
+            mentionable: true,
+            color: req.body.color
+        }
     });
 
     BuildResponse(res, HttpStatus.Success, "Success");
