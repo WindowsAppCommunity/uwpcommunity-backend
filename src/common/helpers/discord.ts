@@ -33,14 +33,16 @@ export async function GetGuildMembers(): Promise<Discord.GuildMember[] | undefin
     const server = await GetGuild();
     if (!server) return;
     
-    return await (await server.members.fetch()).array();
+    var members = await server.members.fetch();
+
+    return members.array();
 }
 
 export async function GetGuildUser(discordId: string): Promise<Discord.GuildMember | undefined> {
     const server = await GetGuild();
     if (!server) return;
 
-    return ((await server.members.fetch()).filter(member => member.id == discordId)).first();
+    return (server.members.cache.filter(member => member.id == discordId)).first();
 }
 
 export function GetUser(discordId: string) {
