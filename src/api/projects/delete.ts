@@ -4,6 +4,7 @@ import { validateAuthenticationHeader } from "../../common/helpers/generic";
 import { GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
 import { HttpStatus, BuildResponse, ResponsePromiseReject, IRequestPromiseReject } from "../../common/helpers/responseHelper";
 import { GetProjectCollaborators } from "../../models/UserProject";
+import ProjectImage from "../../models/ProjectImage";
 
 module.exports = async (req: Request, res: Response) => {
     const bodyCheck = checkBody(req.body);
@@ -35,9 +36,11 @@ function deleteProject(projectRequestData: IDeleteProjectsRequestBody, discordId
         Project.findAll({
             where: { appName: projectRequestData.appName }
         }).then(async (projects) => {
+            if (projects.length === 0) { ResponsePromiseReject(`Project with name "${projectRequestData.appName}" could not be found.}`, HttpStatus.NotFound, reject); return; }
+            if (projects.length > 1) { ResponsePromiseReject("More than one project with that name found. Contact a system administrator to fix the data duplication", HttpStatus.InternalServerError, reject); return; }
+
             const guildMember = await GetGuildUser(discordId);
             const isMod = guildMember && guildMember.roles.cache.filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").array.length > 0;
-
             const collaborators = await GetProjectCollaborators(projects[0].id);
             const userCanModify = collaborators.filter(user => user.isOwner && user.discordId == discordId).length > 0 || isMod;
 
@@ -46,9 +49,13 @@ function deleteProject(projectRequestData: IDeleteProjectsRequestBody, discordId
                 return;
             }
 
-            let similarAppName = findSimilarProjectName(projects, projectRequestData.appName);
-            if (projects.length === 0) { ResponsePromiseReject(`Project with name "${projectRequestData.appName}" could not be found. ${(similarAppName !== undefined ? `Did you mean ${similarAppName}?` : "")}`, HttpStatus.NotFound, reject); return; }
-            if (projects.length > 1) { ResponsePromiseReject("More than one project with that name found. Contact a system administrator to fix the data duplication", HttpStatus.InternalServerError, reject); return; }
+            const projectImages = await ProjectImage.findAll({ where: { projectId: projects[0].id } }).catch(err => ResponsePromiseReject(err, HttpStatus.InternalServerError, reject)) as ProjectImage[] | null;
+
+            if (projectImages != null) {
+                for (let image of projectImages) {
+                    await image.destroy();
+                }
+            }
 
             projects[0].destroy({ force: true })
                 .then(resolve)

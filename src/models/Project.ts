@@ -5,6 +5,7 @@ import * as faker from 'faker'
 import UserProject, { GetProjectCollaborators } from './UserProject';
 import { IProject, IProjectCollaborator } from './types';
 import { levenshteinDistance } from '../common/helpers/generic';
+import { getImagesForProject } from './ProjectImage';
 
 @Table
 export default class Project extends Model<Project> {
@@ -176,6 +177,7 @@ export function findSimilarProjectName(projects: Project[], appName: string, max
     for (let project of projects) {
         matches.push({ distance: levenshteinDistance(project.appName, appName), appName: project.appName });
     }
+
     const returnData = matches[0].appName + (matches.length > 1 ? " or " + matches[1].appName : "");
 
     // Sort by closest match 
@@ -216,6 +218,7 @@ export async function DbToStdModal_Project(project: Project): Promise<IProject> 
     const launchYear = await GetLaunchYearFromId(project.launchId);
 
     const collaborators: IProjectCollaborator[] = await GetProjectCollaborators(project.id);
+    const images: string[] = (await getImagesForProject(project.id).catch(console.log)) || [];
 
     const stdProject: IProject = {
         id: project.id,
@@ -232,6 +235,7 @@ export async function DbToStdModal_Project(project: Project): Promise<IProject> 
         updatedAt: project.updatedAt,
         awaitingLaunchApproval: project.awaitingLaunchApproval,
         needsManualReview: project.needsManualReview,
+        images: images,
         heroImage: project.heroImage,
         appIcon: project.appIcon,
         accentColor: project.accentColor,
@@ -246,6 +250,7 @@ export async function GenerateMockProject(launch: Launch, user: User): Promise<P
     if (!LaunchId) LaunchId = 0;
 
     const mockProject: IProject = {
+        images: [faker.image.imageUrl()],
         heroImage: faker.image.imageUrl(),
         appIcon: faker.image.imageUrl(),
         accentColor: faker.commerce.color(),

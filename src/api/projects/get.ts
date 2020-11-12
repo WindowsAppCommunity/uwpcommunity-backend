@@ -32,11 +32,11 @@ export async function getAllProjects(all?: boolean): Promise<IProject[]> {
     let projects: IProject[] = [];
 
     if (DbProjects) {
-
         for (let project of DbProjects) {
             let proj = await DbToStdModal_Project(project).catch(Promise.reject);
             // Only push a project if not private
-            if (proj && (!proj.isPrivate && !proj.needsManualReview || all)) projects.push(proj);
+            if (proj && (!proj.isPrivate && !proj.needsManualReview || all))
+                projects.push(proj);
         }
     }
 

@@ -155,7 +155,7 @@ async function SetupBotCommands() {
                     if (message.mentions.everyone)
                         return; // Don't allow mentioning everyone
 
-                    const argsRegexMatch = message.content.matchAll(/ (?:\/|-)([a-zA-Z1-9]+) (?:([\w\s\/\,\.:#!~\@\$\%\^&\*\(\)-_+=`\[\]\\\|\;\'\<\>]+)|\"([\w\s\/\,\.:#!~\@\$\%\^&\*\(\)-_+=`\[\]\\\|\;\'\<\>)]+)\")/gm);
+                    const argsRegexMatch = message.content.matchAll(/ (?:\/|-|--)([a-zA-Z1-9]+) (?:([\w\s\/\,\.:#!~\@\$\%\^&\*\(\)-_+=`\[\]\\\|\;\'\<\>]+)|\"([\w\/\,\.:#!~\@\$\%\^&\*\(\)-_+=`\[\]\\\|\;\'\<\>)]+)\")/gm);
                     const argsMatch = Array.from(argsRegexMatch);
                     let args: IBotCommandArgument[] = argsMatch.map(i => { return { name: i[1], value: i[2] || i[3] } });
 
@@ -169,7 +169,27 @@ async function SetupBotCommands() {
                     const commandPartsMatch = Array.from(commandPartsRegexMatch);
                     let commandParts: string[] = commandPartsMatch.map(i => i[1] || i[2]);
 
+                    // If a user was mentioned, add the discordId as an argument.
+                    // Only first user supported.
+                    var mentions = message.mentions.members?.array();
+                    if (mentions && mentions.length > 0) {
+                        args.push({
+                            name: "discordId",
+                            value: mentions[0].id
+                        });
+                    }
+
                     module.default(message, commandParts, args);
+
+                    const peekArg = args.find(i => i.name == "peek");
+                    if (peekArg) {
+                        var timeout = isNaN(peekArg.value as any) ? 5 : parseInt(peekArg.value as any);
+
+                        setTimeout(() => {
+                            message.channel.messages.cache.find(x => x.author.id == bot.user?.id)?.delete();
+                            message.delete();
+                        }, timeout * 1000);
+                    }
                 }
             });
         }

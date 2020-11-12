@@ -48,8 +48,12 @@ export default async (message: Message, commandParts: string[], args: IBotComman
 async function handleUserCommand(project: IProject, message: Message, commandParts: string[], args: IBotCommandArgument[]) {
     // User type
     //    - Beta tester
-    //    - Translator 
+    //    - Translator
     //    - Collaborator
+    //    - Advocate
+    //    - Patreon
+    //    - Lead
+    //    - Support
     // User identifier
     //    - discordId
     //    - username
@@ -57,14 +61,16 @@ async function handleUserCommand(project: IProject, message: Message, commandPar
     const isOwner = project.collaborators.find(collaborator => collaborator.isOwner)?.discordId == message.author.id;
     const isCollaborator = project.collaborators.find(collaborator => collaborator.discordId == message.author.id);
     const isMod = message.member?.roles.cache.find(i => i.name.toLowerCase() == "mod" || i.name.toLowerCase() == "admin");
-    const userCanModify = isOwner || isCollaborator || isMod;
-    const userCanModifyDevs = isOwner || isMod;
 
-    // Need to add existing users to database
-    // And remove the roles for users that aren't registered on the website
+    const isLead = isCollaborator && await UserHasDbRole(project.id, message.author.id, "Lead");
+    const isSupport = isCollaborator && await UserHasDbRole(project.id, message.author.id, "Support");
+    const isDev = isCollaborator && await UserHasDbRole(project.id, message.author.id, "Developer");
+
+    const userCanModify = isOwner || isLead || isSupport || isDev || isMod;
+    const userCanModifyDevs = isOwner || isLead || isSupport || isMod;
 
     if (!userCanModify) {
-        message.channel.send(`Only devs or the project owner can manage users`);
+        message.channel.send(`Only the project owner, project lead, support staff, or a dev can manage users`);
         return;
     }
 
@@ -75,12 +81,12 @@ async function handleUserCommand(project: IProject, message: Message, commandPar
 
     const typeArg = args.find(arg => arg.name == "type");
     if (!typeArg) {
-        message.channel.send(`Please specify a user type argument. Valid values are \`tester\`, \`translator\`, and \`dev\`\nExample: \`/type translator\``);
+        message.channel.send(`Please specify a user type argument. Valid values are \`tester\`, \`translator\`, \`dev\`, \`advocate\`, \`patreon\`, \`lead\`, and \`support\`\nExample: \`/type translator\``);
         return;
     }
 
     if (!userCanModifyDevs && typeArg.value == "dev") {
-        message.channel.send(`Only the project owner can manage devs on this project.`);
+        message.channel.send(`Only the project owner, project lead, or support staff can manage devs on this project.`);
         return;
     }
 
@@ -224,7 +230,7 @@ async function handleRemoveUserCommand(project: IProject, message: Message, comm
 
     const typeArg = args.find(arg => arg.name == "type");
     if (!typeArg) {
-        message.channel.send(`Please specify a role type argument. Valid values are \`tester\`, \`translator\`, and \`dev\`\nExample: \`/type translator\``);
+        message.channel.send(`Please specify a role type argument. Valid values are \`tester\`, \`translator\`, \`dev\`, \`advocate\`, \`patreon\`, \`lead\`, and \`support\`\nExample: \`/type translator\``);
         return;
     }
 
@@ -246,7 +252,7 @@ function safeRemoveRole(role: Role | undefined, discordUser: GuildMember) {
 
 function safeAddRole(role: Role | undefined, discordUser: GuildMember) {
     if (role)
-        discordUser.roles.remove(role);
+        discordUser.roles.add(role);
 }
 
 function InputtedUserTypeToDBRoleType(inputtedRole: string): string {
@@ -257,6 +263,14 @@ function InputtedUserTypeToDBRoleType(inputtedRole: string): string {
             return "Translator";
         case "dev":
             return "Developer";
+        case "advocate":
+            return "Advocate";
+        case "support":
+            return "Support";
+        case "lead":
+            return "Lead";
+        case "patreon":
+            return "Patreon";
         default:
             return "Other";
     }
@@ -271,7 +285,7 @@ async function getRoleForProject(project: IProject, message: Message, commandPar
 
     const typeArg = args.find(arg => arg.name == "type");
     if (!typeArg) {
-        message.channel.send(`Please specify a role type argument. Valid values are \`tester\`, \`translator\`, and \`dev\`\nExample: \`/type translator\``);
+        message.channel.send(`Please specify a role type argument. Valid values are \`tester\`, \`translator\`, \`dev\`, \`advocate\`, \`patreon\`, \`lead\`, and \`support\`\nExample: \`/type translator\``);
         return null;
     }
 
@@ -287,6 +301,18 @@ async function getRoleForProject(project: IProject, message: Message, commandPar
             break;
         case "dev":
             appNameInRoleRegex = /(.+) Dev/;
+            break;
+        case "advocate":
+            appNameInRoleRegex = /(.+) Advocate/;
+            break;
+        case "support":
+            appNameInRoleRegex = /(.+) Support/;
+            break;
+        case "lead":
+            appNameInRoleRegex = /(.+) Lead/;
+            break;
+        case "patreon":
+            appNameInRoleRegex = /(.+) Patreon/;
             break;
         default:
             message.channel.send(`${typeArg.value} is not a valid role type. Expected \`tester\`, \`translator\` or \`dev\``);
@@ -397,6 +423,28 @@ async function GetProjectOwnerFormattedDiscordUsername(project: IProject): Promi
     return ownerUsername;
 }
 
+async function UserHasDbRole(projectId: number, userDiscordId: string, roleName: string): Promise<boolean> {
+    const role = await GetRoleByName(roleName);
+    if (!role)
+        return false;
+
+    const user = await getUserByDiscordId(userDiscordId);
+    if (!user)
+        return false;
+
+    const projects = await GetProjectsByUserId(user.id);
+    if (!projects || projects.length === 0)
+        return false;
+
+    const relevantProject = projects.filter(x => x.id == projectId)[0];
+
+    if (!relevantProject)
+        return false;
+
+    const roleExists = await UserProject.findOne({ where: { roleId: role.id, userId: user.id, projectId: relevantProject.id } });
+
+    return !!roleExists;
+}
 
 async function ReactWithPromiseStatus<T>(promise: Promise<T>, message: Message) {
     const guild = await GetGuild();

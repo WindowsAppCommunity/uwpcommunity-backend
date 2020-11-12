@@ -1,5 +1,5 @@
 export interface IProject {
-    id?: number;
+    id: number;
 
     appName: string;
     description: string;
@@ -9,6 +9,7 @@ export interface IProject {
     externalLink?: string;
 
     heroImage: string;
+    images: string[];
     appIcon?: string;
     accentColor?: string;
 
