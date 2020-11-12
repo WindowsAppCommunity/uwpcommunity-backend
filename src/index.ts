@@ -180,6 +180,16 @@ async function SetupBotCommands() {
                     }
 
                     module.default(message, commandParts, args);
+
+                    const peekArg = args.find(i => i.name == "peek");
+                    if (peekArg) {
+                        var timeout = isNaN(peekArg.value as any) ? 5 : parseInt(peekArg.value as any);
+
+                        setTimeout(() => {
+                            message.channel.messages.cache.find(x => x.author.id == bot.user?.id)?.delete();
+                            message.delete();
+                        }, timeout * 1000);
+                    }
                 }
             });
         }

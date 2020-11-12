@@ -183,11 +183,6 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
 
         infractionChannel.send(`${discordMessage.member.displayName} has re-issued Strike 4 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`);
     }
-
-    const removeArg = args.find(i => i.name == "rmself");
-    if (removeArg) {
-        discordMessage.delete();
-    }
 };
 
 async function handleInfractionRemoval(botChannel: TextChannel, mutedRole: Role) {
