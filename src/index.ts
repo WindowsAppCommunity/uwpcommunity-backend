@@ -169,6 +169,16 @@ async function SetupBotCommands() {
                     const commandPartsMatch = Array.from(commandPartsRegexMatch);
                     let commandParts: string[] = commandPartsMatch.map(i => i[1] || i[2]);
 
+                    // If a user was mentioned, add the discordId as an argument.
+                    // Only first user supported.
+                    var mentions = message.mentions.members?.array();
+                    if (mentions && mentions.length > 0) {
+                        args.push({
+                            name: "discordId",
+                            value: mentions[0].id
+                        });
+                    }
+
                     module.default(message, commandParts, args);
                 }
             });
