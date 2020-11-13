@@ -68,6 +68,7 @@ async function handleUserCommand(project: IProject, message: Message, commandPar
 
     const userCanModify = isOwner || isLead || isSupport || isDev || isMod;
     const userCanModifyDevs = isOwner || isLead || isSupport || isMod;
+    const userCanModifyLead = isOwner || isMod;
 
     if (!userCanModify) {
         message.channel.send(`Only the project owner, project lead, support staff, or a dev can manage users`);
@@ -87,6 +88,11 @@ async function handleUserCommand(project: IProject, message: Message, commandPar
 
     if (!userCanModifyDevs && typeArg.value == "dev") {
         message.channel.send(`Only the project owner, project lead, or support staff can manage devs on this project.`);
+        return;
+    }
+
+    if(!userCanModifyLead && typeArg.value == "lead") {
+        message.channel.send(`Only the project owner can manage project lead role.`);
         return;
     }
 
