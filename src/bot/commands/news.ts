@@ -3,7 +3,7 @@ import { TextChannel, User, Message, Emoji, Client } from 'discord.js';
 import { IBotCommandArgument } from '../../models/types';
 import { GetChannelByName } from '../../common/helpers/discord';
 
-const linkRegex = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[\-;:&=\+\$,\w]+@)?[A-Za-z0-9\.\-]+|(?:www\.|[\-;:&=\+\$,\w]+@)[A-Za-z0-9\.\-]+)((?:\/[\+~%\/\.\w\-_]*)?\??(?:[\-\+=&;%@\.\w_]*)#?(?:[\.\!\/\\\w]*))?)/;
+const linkRegex = /(https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b[-a-zA-Z0-9()@:%_\+.~#?&//=]*)/;
 
 let RecentPostsStore: { user: User; lastPost: number; }[] = [];
 
