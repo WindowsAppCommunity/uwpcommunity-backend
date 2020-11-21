@@ -38,7 +38,9 @@ function checkBody(body: IPostProjectsRequestBody): true | string {
     if (!body.role) return "role";
     if (!body.category) return "category";
     if (!body.heroImage) return "heroImage";
-    if (!body.images) return "images";
+    
+    // Disabled. Feature should not have been merged.
+    //if (!body.images) return "images";
     if (body.isPrivate == undefined) return "isPrivate";
     return true;
 }

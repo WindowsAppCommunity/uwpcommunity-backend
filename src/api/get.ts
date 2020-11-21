@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
 
 module.exports = (req: Request, res: Response) => {
-    res.redirect(`https://uwpcommunity.github.io`);
+    res.redirect(`https://uwpcommunity.com`);
 }
