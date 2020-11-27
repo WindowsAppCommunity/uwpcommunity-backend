@@ -1,6 +1,5 @@
 import { Column, CreatedAt, Model, Table, UpdatedAt, ForeignKey, BelongsTo, PrimaryKey, AutoIncrement, DataType, BelongsToMany } from 'sequelize-typescript';
 import User, { getUserByDiscordId } from './User';
-import Launch, { GetLaunchIdFromYear, GetLaunchYearFromId } from './Launch';
 import * as faker from 'faker'
 import UserProject, { GetProjectCollaborators } from './UserProject';
 import { IProject, IProjectCollaborator } from './types';
@@ -54,12 +53,6 @@ export default class Project extends Model<Project> {
 
     @BelongsToMany(() => User, () => UserProject)
     users?: User[];
-
-    @ForeignKey(() => Launch)
-    launchId!: number;
-
-    @BelongsTo(() => Launch, 'launchId')
-    launch!: Launch
 
     @Column
     category!: string;
@@ -119,24 +112,6 @@ export function getOwnedProjectsByDiscordId(discordId: string): Promise<Project[
         }
 
         resolve(results);
-    });
-}
-
-export function getProjectByLaunchYear(year: string): Promise<Project[]> {
-    return new Promise((resolve, reject) => {
-        Project.findAll({
-            include: [{
-                model: Launch,
-                where: {
-                    year: year
-                }
-            }, {
-                model: User
-            }]
-        }).then(projects => {
-            if (!projects) { reject("Year not found"); return; }
-            resolve(projects);
-        }).catch(reject);
     });
 }
 
@@ -200,7 +175,6 @@ export async function StdToDbModal_Project(project: Partial<IProject>): Promise<
         appName: project.appName,
         description: project.description,
         isPrivate: project.isPrivate,
-        launchId: project.launchYear ? await GetLaunchIdFromYear(project.launchYear) : 0,
         downloadLink: project.downloadLink,
         githubLink: project.githubLink,
         externalLink: project.externalLink,
@@ -215,10 +189,9 @@ export async function StdToDbModal_Project(project: Partial<IProject>): Promise<
 }
 
 export async function DbToStdModal_Project(project: Project): Promise<IProject> {
-    const launchYear = await GetLaunchYearFromId(project.launchId);
-
     const collaborators: IProjectCollaborator[] = await GetProjectCollaborators(project.id);
-    const images: string[] = (await getImagesForProject(project.id).catch(console.log)) || [];
+    // Due to load times, this has been disabled, and the feature has been postponed.
+    //const images: string[] = (await getImagesForProject(project.id).catch(console.log)) || [];
 
     const stdProject: IProject = {
         id: project.id,
@@ -229,47 +202,18 @@ export async function DbToStdModal_Project(project: Project): Promise<IProject> 
         githubLink: project.githubLink,
         externalLink: project.externalLink,
         collaborators: collaborators,
-        launchYear: launchYear,
         category: project.category,
         createdAt: project.createdAt,
         updatedAt: project.updatedAt,
         awaitingLaunchApproval: project.awaitingLaunchApproval,
         needsManualReview: project.needsManualReview,
-        images: images,
+        images: [],
         heroImage: project.heroImage,
         appIcon: project.appIcon,
         accentColor: project.accentColor,
         lookingForRoles: JSON.parse(project.lookingForRoles)
     };
+    
     return (stdProject);
 }
 //#endregion
-
-export async function GenerateMockProject(launch: Launch, user: User): Promise<Project> {
-    let LaunchId = await GetLaunchYearFromId(launch.id);
-    if (!LaunchId) LaunchId = 0;
-
-    const mockProject: IProject = {
-        images: [faker.image.imageUrl()],
-        heroImage: faker.image.imageUrl(),
-        appIcon: faker.image.imageUrl(),
-        accentColor: faker.commerce.color(),
-        collaborators: [],
-        id: faker.random.number({ min: 0, max: 1000 }),
-        category: "Other", // TODO: Update this when we start using mock data again
-        appName: faker.commerce.product(),
-        description: faker.lorem.paragraph(),
-        isPrivate: false,
-        launchYear: LaunchId,
-        createdAt: faker.date.past(),
-        updatedAt: faker.date.recent(),
-        downloadLink: faker.internet.url(),
-        githubLink: faker.internet.url(),
-        externalLink: faker.internet.url(),
-        awaitingLaunchApproval: faker.random.boolean(),
-        needsManualReview: faker.random.boolean(),
-        lookingForRoles: undefined
-    };
-
-    return new Project(await StdToDbModal_Project(mockProject));
-}

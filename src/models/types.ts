@@ -22,7 +22,6 @@ export interface IProject {
 
     createdAt: Date;
     updatedAt: Date;
-    launchYear?: number;
     category?: string;
 };
 

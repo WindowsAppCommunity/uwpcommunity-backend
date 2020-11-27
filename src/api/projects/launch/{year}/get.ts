@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { DbToStdModal_Project, getProjectByLaunchYear } from "../../../../models/Project";
+import { DbToStdModal_Project } from "../../../../models/Project";
 import { IProject, IProjects } from "../../../../models/types";
 import { HttpStatus, BuildResponse, ResponsePromiseReject, IRequestPromiseReject } from "../../../../common/helpers/responseHelper";
 
@@ -20,7 +20,7 @@ module.exports = async (req: Request, res: Response) => {
 export function getProjectByYear(year: string): Promise<IProjects> {
     return new Promise(async (resolve, reject) => {
 
-        await getProjectByLaunchYear(year)
+      /*   await getProjectByLaunchYear(year)
             .then(
                 async results => {
 
@@ -50,7 +50,7 @@ export function getProjectByYear(year: string): Promise<IProjects> {
 
                     resolve(iProjects);
                 }
-            ).catch(err => ResponsePromiseReject("Internal server error: " + err, HttpStatus.InternalServerError, reject));
+            ).catch(err => ResponsePromiseReject("Internal server error: " + err, HttpStatus.InternalServerError, reject)); */
 
     });
 }
