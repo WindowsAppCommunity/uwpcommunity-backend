@@ -44,7 +44,7 @@ module.exports = async (req: Request, res: Response) => {
 };
 
 function checkBody(body: IPostProjectTagsRequestBody): true | string {
-    if (!body.name) return "name";
+    if (!body.tagName) return "tagName";
 
     return true;
 }
@@ -61,7 +61,7 @@ function checkQuery(query: IPostProjectTagsRequestQuery): true | string {
 
 async function checkPermission(body: IPostProjectTagsRequestBody, query: IPostProjectTagsRequestQuery, discordId: string): Promise<boolean> {
     return new Promise(async (resolve, reject) => {
-        const tag = body as ITag;
+        const tag = body as IPostProjectTagsRequestBody;
 
         const allDbProjects = await getAllDbProjects();
         const matchingDbProjects = allDbProjects.filter(x => x.appName == query.appName || x.id == query.projectId);
@@ -80,7 +80,7 @@ async function checkPermission(body: IPostProjectTagsRequestBody, query: IPostPr
             return;
         }
 
-        const isLaunchTag = tag.name.includes("Launch ");
+        const isLaunchTag = tag.tagName?.includes("Launch ") ?? false;
         const isLaunchCoordinator = (guildMember?.roles.cache.array().filter(role => role.name.toLowerCase() === "launch coordinator").length ?? 0) > 0;
 
         const userOwnsProject: boolean = await UserOwnsProject(relevantUser![0], matchingDbProjects[0]);
@@ -94,7 +94,7 @@ async function checkPermission(body: IPostProjectTagsRequestBody, query: IPostPr
 
 async function createTag(body: IPostProjectTagsRequestBody, query: IPostProjectTagsRequestQuery, discordId: string) {
     return new Promise(async (resolve, reject) => {
-        const tag = body as ITag;
+        const tag = body as IPostProjectTagsRequestBody;
 
         const allDbProjects = await getAllDbProjects();
         const matchingDbProjects = allDbProjects.filter(x => x.appName == query.appName || x.id == query.projectId);
@@ -112,11 +112,11 @@ async function createTag(body: IPostProjectTagsRequestBody, query: IPostProjectT
         }
 
         // Tag needs to be added only if it doesn't exist.
-        const tagExists = project.tags.filter(x => x.name == tag.name || x.id == tag.id).length > 0;
+        const tagExists = project.tags.filter(x => x.name == tag.tagName || x.id == tag.tagId).length > 0;
 
         if (!tagExists) {
             var dbTags = await Tag.findAll();
-            var dbTag = dbTags.filter(x => x.id == body.id || x.name == body.name)[0];
+            var dbTag = dbTags.filter(x => x.id == body.tagId || x.name == body.tagName)[0];
 
             ProjectTag.create({
                 projectId: project.id,
@@ -133,7 +133,10 @@ async function createTag(body: IPostProjectTagsRequestBody, query: IPostProjectT
     });
 }
 
-type IPostProjectTagsRequestBody = ITag;
+interface IPostProjectTagsRequestBody {
+    tagName: string;
+    tagId?: number;
+} 
 
 interface IPostProjectTagsRequestQuery {
     appName?: string;

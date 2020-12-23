@@ -58,11 +58,6 @@ function updateProject(projectUpdateRequest: IProject, query: IPutProjectRequest
     return new Promise<Project>(async (resolve, reject) => {
         let DBProjects = await getAllDbProjects();
 
-        if (DBProjects.filter(x => x.appName == projectUpdateRequest.appName).length > 0) {
-            ResponsePromiseReject(`Project with name "${projectUpdateRequest.appName}" already exists.`, HttpStatus.BadRequest, reject);
-            return;
-        }
-
         DBProjects = DBProjects.filter(x => x.appName === query.appName);
 
         if (DBProjects.length === 0) {
@@ -167,7 +162,7 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IProject, disc
             }
         }
 
-        const isMod = guildMember && guildMember.roles.cache.filter(role => role.name.toLowerCase() === "mod").array.length > 0;
+        const isMod = guildMember && guildMember.roles.cache.array().filter(role => role.name.toLowerCase() === "mod").length > 0;
         if (shouldUpdateManualReview) {
             if (!isMod) {
                 ResponsePromiseReject("User has insufficient permissions", HttpStatus.Unauthorized, reject);
