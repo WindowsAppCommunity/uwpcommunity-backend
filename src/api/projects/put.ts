@@ -153,14 +153,6 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IProject, disc
         if (updatedProject.lookingForRoles) updatedDbProjectData.lookingForRoles = JSON.stringify(updatedProject.lookingForRoles);
 
         const guildMember = await GetGuildUser(discordId);
-        const isLaunchCoordinator = guildMember && guildMember.roles.cache.array().filter(role => role.name.toLowerCase() === "launch coordinator").length > 0;
-
-        if (shouldUpdateAwaitingLaunch) {
-            if (!isLaunchCoordinator) {
-                ResponsePromiseReject("User has insufficient permissions", HttpStatus.Unauthorized, reject);
-                return;
-            }
-        }
 
         const isMod = guildMember && guildMember.roles.cache.array().filter(role => role.name.toLowerCase() === "mod").length > 0;
         if (shouldUpdateManualReview) {
