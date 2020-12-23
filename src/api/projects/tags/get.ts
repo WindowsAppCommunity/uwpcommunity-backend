@@ -17,25 +17,24 @@ module.exports = async (req: Request, res: Response) => {
 
     const dbProjects = await getAllDbProjects();
 
-    var filteredDbProjects = dbProjects.filter(x => (x.tags?.filter(x => x.id == reqQuery.id || x.name == reqQuery.name).length ?? 0 > 0) && !x.isPrivate);
-
+    var filteredDbProjects = dbProjects.filter(x => (x.tags?.filter(x => x.id == reqQuery.tagId || x.name == reqQuery.tagName).length ?? 0 > 0) && !x.isPrivate);
     var filteredProjects = filteredDbProjects.map(DbToStdModal_Project);
 
     res.json(filteredProjects);
 };
 
 function checkQuery(query: IGetProjectTagRequestQuery): true | string {
-    if (query.id && query.name)
-        return "Only one of 'id' or 'name' should be specified.";
+    if (query.tagId && query.tagName)
+        return "Only one of 'tagId' or 'tagName' should be specified.";
 
-    if (query.id == undefined && query.name == undefined)
-        return "Either 'id' or 'name' should be specified.";
+    if (query.tagId == undefined && query.tagName == undefined)
+        return "Either 'tagId' or 'tagName' should be specified.";
 
     return true;
 }
 
 
 interface IGetProjectTagRequestQuery {
-    id?: number;
-    name?: string;
+    tagId?: number;
+    tagName?: string;
 }
