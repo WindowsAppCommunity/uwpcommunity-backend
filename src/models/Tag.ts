@@ -1,6 +1,7 @@
 import { Column, CreatedAt, Model, Table, UpdatedAt, PrimaryKey, AutoIncrement, DataType, HasMany, BelongsToMany } from 'sequelize-typescript';
-import Project from './Project';
+import Project, { DbToStdModal_Project } from './Project';
 import ProjectTag from './ProjectTag';
+import { ITag } from './types';
 
 @Table
 export default class Tag extends Model<Tag> {
@@ -9,7 +10,7 @@ export default class Tag extends Model<Tag> {
     @AutoIncrement
     @Column(DataType.INTEGER)
     id!: number;
-    
+
     @Column
     name!: string;
 
@@ -26,4 +27,13 @@ export default class Tag extends Model<Tag> {
     @UpdatedAt
     @Column
     updatedAt!: Date;
+}
+
+export function DbToStdModal_Tag(tag: Tag): ITag {
+    return {
+        id: tag.id,
+        name: tag.name,
+        icon: tag.icon,
+        projects: tag.projects?.map(DbToStdModal_Project) ?? [],
+    }
 }

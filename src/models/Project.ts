@@ -1,14 +1,10 @@
-import { Column, CreatedAt, Model, Table, UpdatedAt, ForeignKey, BelongsTo, PrimaryKey, AutoIncrement, DataType, BelongsToMany, HasMany } from 'sequelize-typescript';
+import { Column, CreatedAt, Model, Table, UpdatedAt, PrimaryKey, AutoIncrement, DataType, BelongsToMany, HasMany } from 'sequelize-typescript';
 import User, { getUserByDiscordId } from './User';
-import * as faker from 'faker'
-import UserProject, { DbToStdModal_UserProject, GetProjectCollaborators } from './UserProject';
+import UserProject, { DbToStdModal_UserProject } from './UserProject';
 import { IProject, IProjectCollaborator } from './types';
 import { levenshteinDistance } from '../common/helpers/generic';
-import { getImagesForProject } from './ProjectImage';
-import Role from './Role';
-import Tag from './Tag';
+import Tag, { DbToStdModal_Tag } from './Tag';
 import ProjectTag from './ProjectTag';
-import ModelManager from 'sequelize/types/lib/model-manager';
 
 @Table
 export default class Project extends Model<Project> {
@@ -228,7 +224,7 @@ export async function StdToDbModal_Project(project: Partial<IProject>): Promise<
 }
 
 export function DbToStdModal_Project(project: Project): IProject {
-    const collaborators: IProjectCollaborator[] = project.userProjects.map(DbToStdModal_UserProject);
+    const collaborators: IProjectCollaborator[] = project.userProjects?.map(DbToStdModal_UserProject);
     // Due to load times, this has been disabled, and the feature has been postponed.
     // edit: to fix this, include the model in the database request (see getAllProjects)
     //const images: string[] = (await getImagesForProject(project.id).catch(console.log)) || [];
@@ -248,6 +244,7 @@ export function DbToStdModal_Project(project: Project): IProject {
         awaitingLaunchApproval: project.awaitingLaunchApproval,
         needsManualReview: project.needsManualReview,
         images: [],
+        tags: project.tags?.map(DbToStdModal_Tag) ?? [],
         heroImage: project.heroImage,
         appIcon: project.appIcon,
         accentColor: project.accentColor,
