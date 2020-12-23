@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import User from "../../../../models/User";
-import Project, { DbToStdModal_Project } from "../../../../models/Project";
+import Project, { CachedProjects, DbToStdModal_Project, getProjectsByDiscordId } from "../../../../models/Project";
 import { IProject } from "../../../../models/types";
 import { genericServerError, validateAuthenticationHeader } from "../../../../common/helpers/generic";
 import { GetDiscordIdFromToken } from "../../../../common/helpers/discord";
@@ -29,20 +29,13 @@ module.exports = async (req: Request, res: Response) => {
 export function getAllProjectsbyUser(discordId: string): Promise<IProject[]> {
     return new Promise(async (resolve, reject) => {
 
-        const results = await Project.findAll({
-            include: [{
-                model: User,
-                where: {
-                    discordId: discordId
-                }
-            }]
-        }).catch(reject);
+        const results = await getProjectsByDiscordId(discordId).catch(reject);
 
         if (results) {
             let projects: IProject[] = [];
 
             for (let project of results) {
-                let proj = await DbToStdModal_Project(project).catch(reject);
+                let proj = DbToStdModal_Project(project)
                 if (proj) projects.push(proj);
             }
 
@@ -54,23 +47,14 @@ export function getAllProjectsbyUser(discordId: string): Promise<IProject[]> {
 export function getPublicProjectsbyUser(discordId: string): Promise<IProject[]> {
     return new Promise(async (resolve, reject) => {
 
-        const results = await Project.findAll({
-            include: [{
-                model: User,
-                where: {
-                    discordId: discordId
-                }
-            }],
-            where: {
-                isPrivate: false
-            }
-        }).catch(reject);
+
+        var results = CachedProjects.filter(x => !x.isPrivate && x.users?.filter(x => x.discordId === discordId).length);
 
         if (results) {
             let projects: IProject[] = [];
 
             for (let project of results) {
-                let proj = await DbToStdModal_Project(project).catch(reject);
+                let proj = DbToStdModal_Project(project)
                 if (proj) projects.push(proj);
             }
 

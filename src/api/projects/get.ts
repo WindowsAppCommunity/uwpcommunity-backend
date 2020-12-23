@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import Project, { DbToStdModal_Project } from "../../models/Project";
+import Project, { DbToStdModal_Project, getAllProjects } from "../../models/Project";
 import { IProject } from "../../models/types";
 import { validateAuthenticationHeader } from "../../common/helpers/generic";
 import { GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
@@ -8,7 +8,7 @@ import { HttpStatus, BuildResponse, ResponsePromiseReject, IRequestPromiseReject
 module.exports = async (req: Request, res: Response) => {
     const reqQuery = req.query as IGetProjectsRequestQuery;
 
-    const projects = await getAllProjects(reqQuery.all && await isMod(req, res)).catch((err: IRequestPromiseReject) => BuildResponse(res, err.status, err.reason));
+    const projects = await getAllProjectsApi(reqQuery.all && await isMod(req, res)).catch((err: IRequestPromiseReject) => BuildResponse(res, err.status, err.reason));
     if (projects) {
         BuildResponse(res, HttpStatus.Success, projects);
     }
@@ -27,20 +27,13 @@ async function isMod(req: Request, res: Response): Promise<boolean> {
     return false;
 }
 
-export async function getAllProjects(all?: boolean): Promise<IProject[]> {
-    const DbProjects = await Project.findAll().catch(err => ResponsePromiseReject("Internal server error: " + err, HttpStatus.InternalServerError, Promise.reject));
-    let projects: IProject[] = [];
+export async function getAllProjectsApi(all?: boolean): Promise<IProject[]> {
+    let queryFilter : any = { isPrivate: false, needsManualReview: false };
 
-    if (DbProjects) {
-        for (let project of DbProjects) {
-            let proj = await DbToStdModal_Project(project).catch(Promise.reject);
-            // Only push a project if not private
-            if (proj && (!proj.isPrivate && !proj.needsManualReview || all))
-                projects.push(proj);
-        }
-    }
+    if (all === false)
+        queryFilter = undefined;
 
-    return projects;
+    return getAllProjects(queryFilter).catch(err => ResponsePromiseReject("Internal server error: " + err, HttpStatus.InternalServerError, Promise.reject));
 }
 
 interface IGetProjectsRequestQuery {

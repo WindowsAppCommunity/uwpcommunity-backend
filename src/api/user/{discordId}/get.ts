@@ -24,7 +24,7 @@ function GetUser(discordId: string): Promise<IUser | undefined> {
             return;
         }
 
-        const StdUser = await DbToStdModal_User(DbUser).catch(reject);
+        const StdUser = DbToStdModal_User(DbUser)
         if (StdUser == undefined || StdUser == null) {
             reject("Unable to convert database entry");
             return;

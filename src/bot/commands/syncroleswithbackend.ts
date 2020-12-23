@@ -1,9 +1,9 @@
 import { Message, Role as DiscordRole, TextChannel } from "discord.js";
 import { IBotCommandArgument, IProject } from "../../models/types";
 import { GetGuild, EditMultiMessages, GetChannelByName, SendMultiMessages, GetGuildMembers, GetRoles } from "../../common/helpers/discord";
-import Role, { GetRoleByName, GetRoleById } from "../../models/Role";
+import Role, { GetRoleByName } from "../../models/Role";
 import UserProject from "../../models/UserProject";
-import { getUserByDiscordId } from "../../models/User";
+import User, { getUserByDiscordId } from "../../models/User";
 import Project, { DbToStdModal_Project, getAllProjects } from "../../models/Project";
 
 export default async (message: Message, commandParts: string[], args: IBotCommandArgument[]) => {
@@ -121,7 +121,7 @@ async function GetRoleDataIfCreatingMissingRolesDoesntExceedRoleLimit(message: M
 
     await EditMultiMessages(`Checking if creating missing Discord roles would exceed role limit...\nFinding all UserProjects...`, ...messages);
 
-    const userProjects = await UserProject.findAll();
+    const userProjects = await UserProject.findAll({ include: [{ model: User }, { model: UserProject }, { model: Role }, { model: Project }] });
     const guild = await GetGuild();
     const roles = guild?.roles.cache.array();
     if (!roles) return [];
@@ -147,7 +147,7 @@ async function GetRoleDataIfCreatingMissingRolesDoesntExceedRoleLimit(message: M
     for (const userProject of userProjectsUniqueByProjectAndRole) {
         const currentIndex = userProjectsUniqueByProjectAndRole.findIndex(x => userProject.id == x.id);
 
-        const role = await GetRoleById(userProject.roleId);
+        const role = userProject.role;
         if (!role) continue;
 
         await EditMultiMessages(`Checking if creating missing Discord roles would exceed role limit...\nDiscovering roles that need to be created... (${currentIndex} of ${userProjects.length})\n\n${role.name} role on project #${userProject.id}:\nGetting project data`, ...messages);

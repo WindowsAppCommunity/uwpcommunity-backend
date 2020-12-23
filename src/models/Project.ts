@@ -1,11 +1,10 @@
-import { Column, CreatedAt, Model, Table, UpdatedAt, ForeignKey, BelongsTo, PrimaryKey, AutoIncrement, DataType, BelongsToMany } from 'sequelize-typescript';
+import { Column, CreatedAt, Model, Table, UpdatedAt, PrimaryKey, AutoIncrement, DataType, BelongsToMany, HasMany } from 'sequelize-typescript';
 import User, { getUserByDiscordId } from './User';
-import Launch, { GetLaunchIdFromYear, GetLaunchYearFromId } from './Launch';
-import * as faker from 'faker'
-import UserProject, { GetProjectCollaborators } from './UserProject';
+import UserProject, { DbToStdModal_UserProject } from './UserProject';
 import { IProject, IProjectCollaborator } from './types';
 import { levenshteinDistance } from '../common/helpers/generic';
-import { getImagesForProject } from './ProjectImage';
+import Tag, { DbToStdModal_Tag } from './Tag';
+import ProjectTag from './ProjectTag';
 
 @Table
 export default class Project extends Model<Project> {
@@ -55,11 +54,11 @@ export default class Project extends Model<Project> {
     @BelongsToMany(() => User, () => UserProject)
     users?: User[];
 
-    @ForeignKey(() => Launch)
-    launchId!: number;
+    @BelongsToMany(() => Tag, () => ProjectTag)
+    tags?: Tag[];
 
-    @BelongsTo(() => Launch, 'launchId')
-    launch!: Launch
+    @HasMany(() => UserProject)
+    userProjects!: UserProject[];
 
     @Column
     category!: string;
@@ -83,18 +82,15 @@ export function isExistingProject(appName: string): Promise<boolean> {
     });
 }
 
-export function getProjectsByDiscordId(discordId: string): Promise<Project[]> {
-    return new Promise((resolve, reject) => {
-        Project.findAll({
-            include: [{
-                model: User,
-                where: { discordId: discordId }
-            }]
-        }).then(projects => {
-            if (!projects) { reject("User not found"); return; }
-            resolve(projects);
-        }).catch(reject);
-    });
+export async function getProjectsByDiscordId(discordId: string): Promise<Project[]> {
+    let projects = await getAllDbProjects().catch(x => Promise.reject(x));
+
+    projects = projects.filter(x => x.users?.filter(x => x.discordId == discordId).length ?? 0 > 0);
+
+    if (!projects)
+        Promise.reject("User not found");
+
+    return projects;
 }
 
 export function getOwnedProjectsByDiscordId(discordId: string): Promise<Project[]> {
@@ -122,38 +118,52 @@ export function getOwnedProjectsByDiscordId(discordId: string): Promise<Project[
     });
 }
 
-export function getProjectByLaunchYear(year: string): Promise<Project[]> {
-    return new Promise((resolve, reject) => {
-        Project.findAll({
-            include: [{
-                model: Launch,
-                where: {
-                    year: year
-                }
-            }, {
-                model: User
-            }]
-        }).then(projects => {
-            if (!projects) { reject("Year not found"); return; }
-            resolve(projects);
-        }).catch(reject);
-    });
-}
-
 export interface ISimilarProjectMatch {
     distance: number;
     appName: string;
 }
 
-export function getAllProjects(): Promise<IProject[]> {
+export let CachedProjects: Project[] = [];
+
+export let IsRefreshingCache = false;
+
+export async function RefreshProjectCache() {
+    CachedProjects.length = 0;
+    IsRefreshingCache = true;
+
+    await getAllProjects();
+
+    IsRefreshingCache = false;
+}
+
+export async function getAllDbProjects(customWhere: any = undefined): Promise<Project[]> {
+    if (CachedProjects.length > 0 && !IsRefreshingCache) {
+        return CachedProjects;
+    }
+
+    const dbProjects = await Project.findAll({
+        include: [{
+            all: true, include: [{ all: true }],
+        }],
+        where: customWhere,
+    })
+        .catch(x => Promise.reject(x));
+
+    CachedProjects = dbProjects;
+
+    return dbProjects;
+}
+
+export function getAllProjects(customWhere: any = undefined): Promise<IProject[]> {
     return new Promise(async (resolve, reject) => {
 
-        const DbProjects = await Project.findAll().catch(reject);
+        const DbProjects = await getAllDbProjects(customWhere).catch(reject);
+
         let projects: IProject[] = [];
 
         if (DbProjects) {
             for (let project of DbProjects) {
-                let proj = await DbToStdModal_Project(project).catch(reject);
+                let proj = DbToStdModal_Project(project);
                 if (proj) {
                     projects.push(proj);
                 }
@@ -200,7 +210,6 @@ export async function StdToDbModal_Project(project: Partial<IProject>): Promise<
         appName: project.appName,
         description: project.description,
         isPrivate: project.isPrivate,
-        launchId: project.launchYear ? await GetLaunchIdFromYear(project.launchYear) : 0,
         downloadLink: project.downloadLink,
         githubLink: project.githubLink,
         externalLink: project.externalLink,
@@ -214,11 +223,11 @@ export async function StdToDbModal_Project(project: Partial<IProject>): Promise<
     return (dbProject);
 }
 
-export async function DbToStdModal_Project(project: Project): Promise<IProject> {
-    const launchYear = await GetLaunchYearFromId(project.launchId);
-
-    const collaborators: IProjectCollaborator[] = await GetProjectCollaborators(project.id);
-    const images: string[] = (await getImagesForProject(project.id).catch(console.log)) || [];
+export function DbToStdModal_Project(project: Project): IProject {
+    const collaborators: IProjectCollaborator[] = project.userProjects?.map(DbToStdModal_UserProject);
+    // Due to load times, this has been disabled, and the feature has been postponed.
+    // edit: to fix this, include the model in the database request (see getAllProjects)
+    //const images: string[] = (await getImagesForProject(project.id).catch(console.log)) || [];
 
     const stdProject: IProject = {
         id: project.id,
@@ -229,47 +238,19 @@ export async function DbToStdModal_Project(project: Project): Promise<IProject> 
         githubLink: project.githubLink,
         externalLink: project.externalLink,
         collaborators: collaborators,
-        launchYear: launchYear,
         category: project.category,
         createdAt: project.createdAt,
         updatedAt: project.updatedAt,
         awaitingLaunchApproval: project.awaitingLaunchApproval,
         needsManualReview: project.needsManualReview,
-        images: images,
+        images: [],
+        tags: project.tags?.map(DbToStdModal_Tag) ?? [],
         heroImage: project.heroImage,
         appIcon: project.appIcon,
         accentColor: project.accentColor,
         lookingForRoles: JSON.parse(project.lookingForRoles)
     };
+
     return (stdProject);
 }
 //#endregion
-
-export async function GenerateMockProject(launch: Launch, user: User): Promise<Project> {
-    let LaunchId = await GetLaunchYearFromId(launch.id);
-    if (!LaunchId) LaunchId = 0;
-
-    const mockProject: IProject = {
-        images: [faker.image.imageUrl()],
-        heroImage: faker.image.imageUrl(),
-        appIcon: faker.image.imageUrl(),
-        accentColor: faker.commerce.color(),
-        collaborators: [],
-        id: faker.random.number({ min: 0, max: 1000 }),
-        category: "Other", // TODO: Update this when we start using mock data again
-        appName: faker.commerce.product(),
-        description: faker.lorem.paragraph(),
-        isPrivate: false,
-        launchYear: LaunchId,
-        createdAt: faker.date.past(),
-        updatedAt: faker.date.recent(),
-        downloadLink: faker.internet.url(),
-        githubLink: faker.internet.url(),
-        externalLink: faker.internet.url(),
-        awaitingLaunchApproval: faker.random.boolean(),
-        needsManualReview: faker.random.boolean(),
-        lookingForRoles: undefined
-    };
-
-    return new Project(await StdToDbModal_Project(mockProject));
-}
