@@ -9,7 +9,9 @@ import { UserOwnsProject } from "../../models/UserProject";
 import ProjectImage from "../../models/ProjectImage";
 
 module.exports = async (req: Request, res: Response) => {
-    const body = req.body;
+    const body = req.body as IProject;
+
+    body.images == body.images ?? [];
 
     const authAccess = validateAuthenticationHeader(req, res);
     if (!authAccess) return;
@@ -52,7 +54,7 @@ function checkIProject(body: IProject): true | string {
     return true;
 }
 
-function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPutProjectRequestQuery, discordId: string): Promise<Project> {
+function updateProject(projectUpdateRequest: IProject, query: IPutProjectRequestQuery, discordId: string): Promise<Project> {
     return new Promise<Project>(async (resolve, reject) => {
         let DBProjects = await getAllDbProjects();
 
@@ -130,7 +132,7 @@ function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPu
     });
 }
 
-export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRequestBody, discordId: string, shouldUpdateManualReview: boolean, shouldUpdateAwaitingLaunch: boolean): Promise<Partial<Project>> {
+export function StdToDbModal_IPutProjectsRequestBody(projectData: IProject, discordId: string, shouldUpdateManualReview: boolean, shouldUpdateAwaitingLaunch: boolean): Promise<Partial<Project>> {
     return new Promise(async (resolve, reject) => {
         const updatedProject = projectData as IProject;
 
@@ -175,27 +177,6 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
 
         resolve(updatedDbProjectData);
     });
-}
-
-/** @interface IProject */
-interface IPutProjectsRequestBody {
-    appName: string;
-    description?: string;
-    isPrivate: boolean;
-
-    downloadLink?: string;
-    githubLink?: string;
-    externalLink?: string;
-
-    heroImage: string;
-    images: string[];
-    appIcon?: string;
-    accentColor?: string;
-    awaitingLaunchApproval: boolean;
-    needsManualReview: boolean;
-    lookingForRoles?: string[];
-    launchYear?: number;
-    category?: string;
 }
 
 interface IPutProjectRequestQuery {

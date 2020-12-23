@@ -9,7 +9,9 @@ import { BuildResponse, HttpStatus, } from "../../common/helpers/responseHelper"
 import ProjectImage from "../../models/ProjectImage";
 
 module.exports = async (req: Request, res: Response) => {
-    const body = req.body;
+    const body = req.body as IPostProjectsRequestBody;
+
+    body.images == body.images ?? [];
 
     const authAccess = validateAuthenticationHeader(req, res);
     if (!authAccess) return;
@@ -39,7 +41,6 @@ function checkBody(body: IPostProjectsRequestBody): true | string {
     if (!body.role) return "role";
     if (!body.category) return "category";
     if (!body.heroImage) return "heroImage";
-    if (!body.images) return "images";
     if (body.isPrivate == undefined) return "isPrivate";
     return true;
 }
@@ -94,7 +95,7 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
                 roleId: role.id
             }).catch(reject);
 
-        for (let url of projectRequestData.images) {
+        for (let url of projectRequestData.images ?? []) {
             await ProjectImage.create(
                 {
                     projectId: project[0].id,
@@ -161,7 +162,7 @@ interface IPostProjectsRequestBody {
     externalLink?: string;
     awaitingLaunchApproval: boolean;
     needsManualReview: boolean;
-    images: string[];
+    images?: string[];
     heroImage: string;
     appIcon?: string;
     accentColor?: string;
