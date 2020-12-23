@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import Project, { StdToDbModal_Project, isExistingProject } from "../../models/Project";
+import Project, { StdToDbModal_Project, isExistingProject, CachedProjects, RefreshProjectCache } from "../../models/Project";
 import { genericServerError, validateAuthenticationHeader, match } from "../../common/helpers/generic";
 import UserProject, { GetProjectsByUserId } from "../../models/UserProject";
 import { GetRoleByName } from "../../models/Role";
@@ -9,7 +9,9 @@ import { BuildResponse, HttpStatus, } from "../../common/helpers/responseHelper"
 import ProjectImage from "../../models/ProjectImage";
 
 module.exports = async (req: Request, res: Response) => {
-    const body = req.body;
+    const body = req.body as IPostProjectsRequestBody;
+
+    body.images == body.images ?? [];
 
     const authAccess = validateAuthenticationHeader(req, res);
     if (!authAccess) return;
@@ -28,6 +30,7 @@ module.exports = async (req: Request, res: Response) => {
     submitProject(body, discordId)
         .then(() => {
             BuildResponse(res, HttpStatus.Success, "Success");
+            RefreshProjectCache();
         })
         .catch((err) => genericServerError(err, res));
 };
@@ -38,9 +41,6 @@ function checkBody(body: IPostProjectsRequestBody): true | string {
     if (!body.role) return "role";
     if (!body.category) return "category";
     if (!body.heroImage) return "heroImage";
-    
-    // Disabled. Feature should not have been merged.
-    //if (!body.images) return "images";
     if (body.isPrivate == undefined) return "isPrivate";
     return true;
 }
@@ -95,7 +95,7 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
                 roleId: role.id
             }).catch(reject);
 
-        for (let url of projectRequestData.images) {
+        for (let url of projectRequestData.images ?? []) {
             await ProjectImage.create(
                 {
                     projectId: project[0].id,
@@ -104,7 +104,6 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
         }
 
         resolve();
-
     });
 }
 
@@ -149,12 +148,6 @@ function ProjectFieldsAreValid(project: IPostProjectsRequestBody, res: Response)
         return false;
     }
 
-    // Make sure the user isn't trying to spoof the launch status
-    if ((project as any).launchYear) {
-        BuildResponse(res, HttpStatus.MalformedRequest, "launchYear cannot be set when registering");
-        return false;
-    }
-
     return true;
 }
 
@@ -169,7 +162,7 @@ interface IPostProjectsRequestBody {
     externalLink?: string;
     awaitingLaunchApproval: boolean;
     needsManualReview: boolean;
-    images: string[];
+    images?: string[];
     heroImage: string;
     appIcon?: string;
     accentColor?: string;

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
 import { getUserByDiscordId } from "../../models/User";
-import { getProjectsByDiscordId } from "../../models/Project";
+import { CachedProjects, getProjectsByDiscordId, RefreshProjectCache } from "../../models/Project";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 import { BuildResponse,  HttpStatus } from "../../common/helpers/responseHelper";
 
@@ -16,6 +16,7 @@ module.exports = async (req: Request, res: Response) => {
         .then(success => {
             if (success) {
                 BuildResponse(res, HttpStatus.Success, "Success");
+                RefreshProjectCache();
             } else {
                 BuildResponse(res, HttpStatus.NotFound, "User does not exist in database");
             }

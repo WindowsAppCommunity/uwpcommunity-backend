@@ -1,57 +1,33 @@
 import { Request, Response } from "express";
-import { DbToStdModal_Project, getProjectByLaunchYear } from "../../../../models/Project";
+import Project, { DbToStdModal_Project, getAllDbProjects, getAllProjects } from "../../../../models/Project";
 import { IProject, IProjects } from "../../../../models/types";
 import { HttpStatus, BuildResponse, ResponsePromiseReject, IRequestPromiseReject } from "../../../../common/helpers/responseHelper";
 
 module.exports = async (req: Request, res: Response) => {
     const reqQuery = req.params as IGetProjectRequestQuery;
 
-    getProjectByYear(reqQuery.year as string)
+    getProjectByLaunchYear(reqQuery.year as string)
         .then(results => {
-            let projects: IProjects | undefined;
-            if (results) {
-                projects = results;
-            }
-            BuildResponse(res, HttpStatus.Success, projects);
+            BuildResponse(res, HttpStatus.Success, results);
         })
         .catch((err: IRequestPromiseReject) => BuildResponse(res, err.status, err.reason));
 };
 
-export function getProjectByYear(year: string): Promise<IProjects> {
+export function getProjectByLaunchYear(year: string): Promise<IProjects> {
     return new Promise(async (resolve, reject) => {
+        // get all projects
+        const allDbProjects = await getAllDbProjects();
 
-        await getProjectByLaunchYear(year)
-            .then(
-                async results => {
+        // find only the ones for the given launch year.
+        var projectsFromLaunchYear = allDbProjects.filter(x => x.tags?.filter(tag => tag.name == `Launch ${year}`).length ?? 0 > 0);
 
-                    let project: IProject[] = [];
-                    let iProjects: IProjects = {
-                        privateCount: 0,
-                        projects: project
-                    };
+        // filter out private projects
+        var publicLaunchProjects = projectsFromLaunchYear.filter(x => !x.isPrivate);
 
-                    if (results.length > 0) {
-                        let i = 0;
-                        for (let project of results) {
-                            let proj = await DbToStdModal_Project(project);
-
-                            // Only push a project if not private
-                            if (proj && !proj.isPrivate && !proj.needsManualReview)
-                                iProjects.projects.push(proj);
-
-                            if (proj && proj.isPrivate)
-                                i++;
-                        }
-                        iProjects.privateCount = i;
-                    } else {
-                        ResponsePromiseReject("Year not found", HttpStatus.NotFound, reject);
-                        return;
-                    }
-
-                    resolve(iProjects);
-                }
-            ).catch(err => ResponsePromiseReject("Internal server error: " + err, HttpStatus.InternalServerError, reject));
-
+        resolve({
+            projects: publicLaunchProjects.map(DbToStdModal_Project),
+            privateCount: projectsFromLaunchYear.length - publicLaunchProjects.length,
+        });
     });
 }
 

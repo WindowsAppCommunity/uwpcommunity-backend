@@ -4,6 +4,7 @@ import { InitDb, CreateMocks } from './common/sequalize';
 import * as helpers from './common/helpers/generic';
 import cors from "cors";
 import { IBotCommandArgument } from "./models/types";
+import { RefreshProjectCache } from "./models/Project";
 
 /**
  * This file sets up API endpoints based on the current folder tree in Heroku.
@@ -44,6 +45,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 InitDb().then(() => {
+    RefreshProjectCache();
     if (MOCK) CreateMocks()
 });
 

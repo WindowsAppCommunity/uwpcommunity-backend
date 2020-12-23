@@ -1,6 +1,6 @@
 import { IBotCommandArgument, IProject } from "../../models/types";
 import { Message, TextChannel, Role, User, GuildMember } from "discord.js";
-import Project, { findSimilarProjectName, DbToStdModal_Project } from "../../models/Project";
+import Project, { findSimilarProjectName, DbToStdModal_Project, RefreshProjectCache } from "../../models/Project";
 import { GetUser, GetRoles, GetDiscordUser, GetGuild, GetGuildMembers } from "../../common/helpers/discord";
 import UserProject, { GetUsersByProjectId, GetProjectsByUserId, GetProjectCollaborators } from "../../models/UserProject";
 import { GetRoleByName } from "../../models/Role";
@@ -170,6 +170,8 @@ async function handleAddUserCommand(project: IProject, message: Message, command
             roleId: contributorRole.id
         }), message)
         .catch(err => message.channel.send(err));
+        
+        RefreshProjectCache();
 }
 
 
@@ -249,6 +251,8 @@ async function handleRemoveUserCommand(project: IProject, message: Message, comm
 
     await ReactWithPromiseStatus(dataActionsPromise, message)
         .catch(message.channel.send);
+
+    RefreshProjectCache();
 }
 
 function safeRemoveRole(role: Role | undefined, discordUser: GuildMember) {

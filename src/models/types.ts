@@ -19,12 +19,19 @@ export interface IProject {
     lookingForRoles?: string[];
 
     collaborators: IProjectCollaborator[];
+    tags: ITag[];
 
     createdAt: Date;
     updatedAt: Date;
-    launchYear?: number;
     category?: string;
 };
+
+export interface ITag {
+    id: number;
+    projects?: IProject[];
+    name: string;
+    icon?: string;
+}
 
 export interface IProjectCollaborator extends IUser {
     isOwner: boolean;

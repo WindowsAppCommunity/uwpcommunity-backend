@@ -1,16 +1,17 @@
 import { Request, Response } from "express";
 import User, { getUserByDiscordId } from "../../models/User"
-import Project, { findSimilarProjectName } from "../../models/Project";
+import Project, { getAllDbProjects, RefreshProjectCache } from "../../models/Project";
 import { validateAuthenticationHeader } from '../../common/helpers/generic';
 import { IProject } from "../../models/types";
-import { EditMultiMessages, GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
-import { GetLaunchIdFromYear, GetLaunchYearFromId } from "../../models/Launch";
+import { GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
 import { BuildResponse, HttpStatus, ResponsePromiseReject, IRequestPromiseReject } from "../../common/helpers/responseHelper";
 import { UserOwnsProject } from "../../models/UserProject";
-import ProjectImage, { getImagesForProject } from "../../models/ProjectImage";
+import ProjectImage from "../../models/ProjectImage";
 
 module.exports = async (req: Request, res: Response) => {
-    const body = req.body;
+    const body = req.body as IProject;
+
+    body.images == body.images ?? [];
 
     const authAccess = validateAuthenticationHeader(req, res);
     if (!authAccess) return;
@@ -33,6 +34,7 @@ module.exports = async (req: Request, res: Response) => {
     updateProject(body, req.query, discordId)
         .then(() => {
             BuildResponse(res, HttpStatus.Success, "Success");
+            RefreshProjectCache();
         })
         .catch((err: IRequestPromiseReject) => BuildResponse(res, err.status, err.reason));
 };
@@ -52,19 +54,19 @@ function checkIProject(body: IProject): true | string {
     return true;
 }
 
-function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPutProjectRequestQuery, discordId: string): Promise<Project> {
+function updateProject(projectUpdateRequest: IProject, query: IPutProjectRequestQuery, discordId: string): Promise<Project> {
     return new Promise<Project>(async (resolve, reject) => {
-        const DBProjects = await Project.findAll({
-            where: { appName: query.appName }
-        });
+        let DBProjects = await getAllDbProjects();
 
-        if (!DBProjects) {
+        DBProjects = DBProjects.filter(x => x.appName === query.appName);
+
+        if (DBProjects.length === 0) {
             ResponsePromiseReject(`Project with name "${query.appName}" could not be found.`, HttpStatus.NotFound, reject);
             return;
         }
 
         const guildMember = await GetGuildUser(discordId);
-        const isMod = guildMember && guildMember.roles.cache.filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").array.length > 0;
+        const isMod = guildMember && guildMember.roles.cache.array().filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").length > 0;
 
         const user: User | null = await getUserByDiscordId(discordId);
         if (!user) {
@@ -80,14 +82,11 @@ function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPu
             return;
         }
 
-        const currentLaunchYear = await GetLaunchYearFromId(DBProjects[0].launchId);
-        const shouldUpdateLaunch: boolean = currentLaunchYear !== projectUpdateRequest.launchYear;
-
         const shouldUpdateManualReview: boolean = DBProjects[0].needsManualReview !== projectUpdateRequest.needsManualReview;
 
         const shouldUpdateAwaitingLaunch: boolean = DBProjects[0].awaitingLaunchApproval !== projectUpdateRequest.awaitingLaunchApproval;
 
-        const DbProjectData: Partial<Project> | void = await StdToDbModal_IPutProjectsRequestBody(projectUpdateRequest, discordId, shouldUpdateLaunch, shouldUpdateManualReview, shouldUpdateAwaitingLaunch).catch(reject);
+        const DbProjectData: Partial<Project> | void = await StdToDbModal_IPutProjectsRequestBody(projectUpdateRequest, discordId, shouldUpdateManualReview, shouldUpdateAwaitingLaunch).catch(reject);
 
         if (DbProjectData) {
             await DBProjects[0].update(DbProjectData)
@@ -96,26 +95,30 @@ function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPu
             // The images in the DB should match those sent in this request
             const existingDbImages = await ProjectImage.findAll({ where: { projectId: DBProjects[0].id } });
 
-            // Remove images from DB that exist in DB but don't exist in req
-            for (let image of existingDbImages) {
-                if (projectUpdateRequest.images.includes(image.imageUrl) == false) {
-                    image.destroy();
+            projectUpdateRequest.images = projectUpdateRequest.images ?? [];
+
+            if (existingDbImages) {
+                // Remove images from DB that exist in DB but don't exist in req
+                for (let image of existingDbImages) {
+                    if (projectUpdateRequest.images.includes(image.imageUrl) == false) {
+                        image.destroy();
+                    }
                 }
-            }
 
-            var existingDbImageUrls = existingDbImages.map(x => x.imageUrl);
+                var existingDbImageUrls = existingDbImages.map(x => x.imageUrl);
 
-            // Create images in the DB that exist in req but not DB
-            for (let url of projectUpdateRequest.images) {
-                if (existingDbImageUrls.includes(url) === false) {
-                    await ProjectImage.create(
-                        {
-                            projectId: DBProjects[0].id,
-                            imageUrl: url
-                        }).catch(err => {
-                            console.log(err);
-                            reject(err);
-                        });
+                // Create images in the DB that exist in req but not DB
+                for (let url of projectUpdateRequest.images) {
+                    if (existingDbImageUrls.includes(url) === false) {
+                        await ProjectImage.create(
+                            {
+                                projectId: DBProjects[0].id,
+                                imageUrl: url
+                            }).catch(err => {
+                                console.log(err);
+                                reject(err);
+                            });
+                    }
                 }
             }
         }
@@ -124,7 +127,7 @@ function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPu
     });
 }
 
-export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRequestBody, discordId: string, shouldUpdateLaunch: boolean, shouldUpdateManualReview: boolean, shouldUpdateAwaitingLaunch: boolean): Promise<Partial<Project>> {
+export function StdToDbModal_IPutProjectsRequestBody(projectData: IProject, discordId: string, shouldUpdateManualReview: boolean, shouldUpdateAwaitingLaunch: boolean): Promise<Partial<Project>> {
     return new Promise(async (resolve, reject) => {
         const updatedProject = projectData as IProject;
 
@@ -150,14 +153,7 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
         if (updatedProject.lookingForRoles) updatedDbProjectData.lookingForRoles = JSON.stringify(updatedProject.lookingForRoles);
 
         const guildMember = await GetGuildUser(discordId);
-        const isLaunchCoordinator = guildMember && guildMember.roles.cache.filter(role => role.name.toLowerCase() === "launch coordinator").array.length > 0;
-
-        if (shouldUpdateLaunch && updatedProject.launchYear) {
-            if (!isLaunchCoordinator) ResponsePromiseReject("User has insufficient permissions", HttpStatus.Unauthorized, reject);
-            else {
-                updatedDbProjectData.launchId = await GetLaunchIdFromYear(updatedProject.launchYear);
-            }
-        }
+        const isLaunchCoordinator = guildMember && guildMember.roles.cache.array().filter(role => role.name.toLowerCase() === "launch coordinator").length > 0;
 
         if (shouldUpdateAwaitingLaunch) {
             if (!isLaunchCoordinator) {
@@ -166,7 +162,7 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
             }
         }
 
-        const isMod = guildMember && guildMember.roles.cache.filter(role => role.name.toLowerCase() === "mod").array.length > 0;
+        const isMod = guildMember && guildMember.roles.cache.array().filter(role => role.name.toLowerCase() === "mod").length > 0;
         if (shouldUpdateManualReview) {
             if (!isMod) {
                 ResponsePromiseReject("User has insufficient permissions", HttpStatus.Unauthorized, reject);
@@ -176,27 +172,6 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
 
         resolve(updatedDbProjectData);
     });
-}
-
-/** @interface IProject */
-interface IPutProjectsRequestBody {
-    appName: string;
-    description?: string;
-    isPrivate: boolean;
-
-    downloadLink?: string;
-    githubLink?: string;
-    externalLink?: string;
-
-    heroImage: string;
-    images: string[];
-    appIcon?: string;
-    accentColor?: string;
-    awaitingLaunchApproval: boolean;
-    needsManualReview: boolean;
-    lookingForRoles?: string[];
-    launchYear?: number;
-    category?: string;
 }
 
 interface IPutProjectRequestQuery {

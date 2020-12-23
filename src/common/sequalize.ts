@@ -1,11 +1,12 @@
 import { Sequelize } from 'sequelize-typescript';
-import Launch from '../models/Launch';
-import Project, { GenerateMockProject } from '../models/Project';
+import Project from '../models/Project';
 import User, { GenerateMockUser } from '../models/User';
 import UserProject from '../models/UserProject';
 import Role from '../models/Role';
 import * as helpers from './helpers/generic';
 import ProjectImage from '../models/ProjectImage';
+import Tag from '../models/Tag';
+import ProjectTag from '../models/ProjectTag';
 
 const db_url = process.env.DATABASE_URL;
 
@@ -20,7 +21,7 @@ export const sequelize = new Sequelize(db_url, {
     dialectOptions: {
         ssl: true
     },
-    models: [ProjectImage, Launch, Project, User, Role, UserProject]
+    models: [ProjectImage, Project, User, Role, UserProject, ProjectTag, Tag]
 });
 
 export async function InitDb() {
@@ -33,17 +34,6 @@ export async function InitDb() {
     if (helpers.DEVENV) {
 
         await sequelize.sync().catch(console.error);
-
-        Launch.count() // There an error in the log related to this line
-            .then(c => {
-                if (c < 1) {
-                    Launch.bulkCreate([
-                        { year: 2019 },
-                        { year: 2020 }
-                    ]);
-                }
-            })
-            .catch(console.error);
 
         Role.count()
             .then((c) => {
