@@ -5,6 +5,8 @@ import UserProject from '../models/UserProject';
 import Role from '../models/Role';
 import * as helpers from './helpers/generic';
 import ProjectImage from '../models/ProjectImage';
+import Tag from '../models/Tag';
+import ProjectTag from '../models/ProjectTag';
 
 const db_url = process.env.DATABASE_URL;
 
@@ -19,7 +21,7 @@ export const sequelize = new Sequelize(db_url, {
     dialectOptions: {
         ssl: true
     },
-    models: [ProjectImage, Project, User, Role, UserProject]
+    models: [ProjectImage, Project, User, Role, UserProject, ProjectTag, Tag]
 });
 
 export async function InitDb() {

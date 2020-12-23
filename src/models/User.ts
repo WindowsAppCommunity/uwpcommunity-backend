@@ -7,12 +7,10 @@ import { IUser, IProject } from './types';
 
 @Table
 export default class User extends Model<User> {
-
     @PrimaryKey
     @AutoIncrement
     @Column(DataType.INTEGER)
     id!: number;
-
 
     @Column
     name!: string;
@@ -23,10 +21,8 @@ export default class User extends Model<User> {
     @Column
     discordId!: string;
 
-
     @BelongsToMany(() => Project, () => UserProject)
     projects?: Project[];
-
 
     @CreatedAt
     @Column
@@ -37,7 +33,7 @@ export default class User extends Model<User> {
     updatedAt!: Date;
 }
 
-export async function DbToStdModal_User(user: User): Promise<IUser> {
+export function DbToStdModal_User(user: User): IUser {
     const stdUser: IUser = {
         discordId: user.discordId,
         name: user.name,
@@ -59,14 +55,8 @@ export async function StdToDbModal_User(user: IUser): Promise<User> {
 }
 
 export function getUserByDiscordId(discordId: string): Promise<User | null> {
-    return new Promise<User>((resolve, reject) => {
-        User.findAll({
-            where: { discordId: discordId }
-        }).then(users => {
-            if (!users || (users[0] && users[0].discordId !== discordId)) { resolve(); return; }
-            if (users.length > 1) { reject("More than one user with that id found. Contact a system administrator to fix the data duplication"); return; }
-            resolve(users[0]);
-        }).catch(reject);
+    return User.findOne({
+        where: { discordId: discordId }
     });
 }
 

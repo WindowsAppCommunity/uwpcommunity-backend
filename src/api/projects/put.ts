@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
 import User, { getUserByDiscordId } from "../../models/User"
-import Project, { findSimilarProjectName } from "../../models/Project";
+import Project, { getAllDbProjects, RefreshProjectCache } from "../../models/Project";
 import { validateAuthenticationHeader } from '../../common/helpers/generic';
 import { IProject } from "../../models/types";
-import { EditMultiMessages, GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
+import { GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
 import { BuildResponse, HttpStatus, ResponsePromiseReject, IRequestPromiseReject } from "../../common/helpers/responseHelper";
 import { UserOwnsProject } from "../../models/UserProject";
-import ProjectImage, { getImagesForProject } from "../../models/ProjectImage";
+import ProjectImage from "../../models/ProjectImage";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body;
@@ -32,6 +32,7 @@ module.exports = async (req: Request, res: Response) => {
     updateProject(body, req.query, discordId)
         .then(() => {
             BuildResponse(res, HttpStatus.Success, "Success");
+            RefreshProjectCache();
         })
         .catch((err: IRequestPromiseReject) => BuildResponse(res, err.status, err.reason));
 };
@@ -53,11 +54,16 @@ function checkIProject(body: IProject): true | string {
 
 function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPutProjectRequestQuery, discordId: string): Promise<Project> {
     return new Promise<Project>(async (resolve, reject) => {
-        const DBProjects = await Project.findAll({
-            where: { appName: query.appName }
-        });
+        let DBProjects = await getAllDbProjects();
 
-        if (!DBProjects) {
+        if (DBProjects.filter(x => x.appName == projectUpdateRequest.appName).length > 0) {
+            ResponsePromiseReject(`Project with name "${projectUpdateRequest.appName}" already exists.`, HttpStatus.BadRequest, reject);
+            return;
+        }
+
+        DBProjects = DBProjects.filter(x => x.appName === query.appName);
+
+        if (DBProjects.length === 0) {
             ResponsePromiseReject(`Project with name "${query.appName}" could not be found.`, HttpStatus.NotFound, reject);
             return;
         }
@@ -92,26 +98,30 @@ function updateProject(projectUpdateRequest: IPutProjectsRequestBody, query: IPu
             // The images in the DB should match those sent in this request
             const existingDbImages = await ProjectImage.findAll({ where: { projectId: DBProjects[0].id } });
 
-            // Remove images from DB that exist in DB but don't exist in req
-            for (let image of existingDbImages) {
-                if (projectUpdateRequest.images.includes(image.imageUrl) == false) {
-                    image.destroy();
+            projectUpdateRequest.images = projectUpdateRequest.images ?? [];
+
+            if (existingDbImages) {
+                // Remove images from DB that exist in DB but don't exist in req
+                for (let image of existingDbImages) {
+                    if (projectUpdateRequest.images.includes(image.imageUrl) == false) {
+                        image.destroy();
+                    }
                 }
-            }
 
-            var existingDbImageUrls = existingDbImages.map(x => x.imageUrl);
+                var existingDbImageUrls = existingDbImages.map(x => x.imageUrl);
 
-            // Create images in the DB that exist in req but not DB
-            for (let url of projectUpdateRequest.images) {
-                if (existingDbImageUrls.includes(url) === false) {
-                    await ProjectImage.create(
-                        {
-                            projectId: DBProjects[0].id,
-                            imageUrl: url
-                        }).catch(err => {
-                            console.log(err);
-                            reject(err);
-                        });
+                // Create images in the DB that exist in req but not DB
+                for (let url of projectUpdateRequest.images) {
+                    if (existingDbImageUrls.includes(url) === false) {
+                        await ProjectImage.create(
+                            {
+                                projectId: DBProjects[0].id,
+                                imageUrl: url
+                            }).catch(err => {
+                                console.log(err);
+                                reject(err);
+                            });
+                    }
                 }
             }
         }
@@ -146,7 +156,7 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IPutProjectsRe
         if (updatedProject.lookingForRoles) updatedDbProjectData.lookingForRoles = JSON.stringify(updatedProject.lookingForRoles);
 
         const guildMember = await GetGuildUser(discordId);
-        const isLaunchCoordinator = guildMember && guildMember.roles.cache.filter(role => role.name.toLowerCase() === "launch coordinator").array.length > 0;
+        const isLaunchCoordinator = guildMember && guildMember.roles.cache.array().filter(role => role.name.toLowerCase() === "launch coordinator").length > 0;
 
         if (shouldUpdateAwaitingLaunch) {
             if (!isLaunchCoordinator) {

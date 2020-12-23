@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import Project, { findSimilarProjectName } from "../../models/Project";
+import Project, { RefreshProjectCache } from "../../models/Project";
 import { validateAuthenticationHeader } from "../../common/helpers/generic";
 import { GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
 import { HttpStatus, BuildResponse, ResponsePromiseReject, IRequestPromiseReject } from "../../common/helpers/responseHelper";
@@ -22,6 +22,7 @@ module.exports = async (req: Request, res: Response) => {
     deleteProject(req.body, discordId)
         .then(() => {
             BuildResponse(res, HttpStatus.Success, "Success");
+            RefreshProjectCache();
         })
         .catch((err: IRequestPromiseReject) => BuildResponse(res, err.status, err.reason));
 };

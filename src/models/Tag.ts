@@ -1,4 +1,6 @@
-import { Column, CreatedAt, Model, Table, UpdatedAt, PrimaryKey, AutoIncrement, DataType } from 'sequelize-typescript';
+import { Column, CreatedAt, Model, Table, UpdatedAt, PrimaryKey, AutoIncrement, DataType, HasMany, BelongsToMany } from 'sequelize-typescript';
+import Project from './Project';
+import ProjectTag from './ProjectTag';
 
 @Table
 export default class Tag extends Model<Tag> {
@@ -13,6 +15,9 @@ export default class Tag extends Model<Tag> {
 
     @Column
     icon!: string;
+
+    @BelongsToMany(() => Project, () => ProjectTag)
+    projects: Project[];
 
     @CreatedAt
     @Column

@@ -1,7 +1,7 @@
 import { Column, Model, Table, ForeignKey, PrimaryKey, AutoIncrement, DataType, BelongsTo } from 'sequelize-typescript';
-import User, { DbToStdModal_User } from './User';
+import User from './User';
 import Project from './Project';
-import Role, { GetRoleById } from './Role';
+import Role from './Role';
 import { IProjectCollaborator } from './types';
 
 @Table
@@ -14,20 +14,39 @@ export default class UserProject extends Model<UserProject> {
     @Column
     isOwner!: boolean;
 
+    @BelongsTo(() => User, 'userId')
+    user!: User;
+    
     @ForeignKey(() => User)
     @Column
     userId!: number;
 
+    @BelongsTo(() => Project, 'projectId')
+    project!: Project;
+    
     @ForeignKey(() => Project)
     @Column
     projectId!: number;
 
+    @BelongsTo(() => Role, 'roleId')
+    role!: Role;
+    
     @ForeignKey(() => Role)
     @Column
     roleId!: number;
+}
 
-    @BelongsTo(() => Role, 'roleId')
-    role!: Role;
+export function DbToStdModal_UserProject(userProject: UserProject): IProjectCollaborator {
+
+    let user: IProjectCollaborator =
+    {
+        isOwner: userProject.isOwner,
+        role: userProject.role?.name ?? "Other",
+        name: userProject.user.name,
+        discordId: userProject.user.discordId,
+    };
+
+    return user;
 }
 
 export async function GetUsersByProjectId(ProjectId: number) {
@@ -45,15 +64,7 @@ export async function GetUsersByProjectId(ProjectId: number) {
 export async function GetProjectCollaborators(ProjectId: number): Promise<IProjectCollaborator[]> {
     const RelevantUserProjects = await UserProject.findAll({ where: { projectId: ProjectId } });
 
-    let users: IProjectCollaborator[] = [];
-    for (let userProject of RelevantUserProjects) {
-        const RelevantUser = await User.findOne({ where: { id: userProject.userId } });
-        const role = await GetRoleById(userProject.roleId);
-
-        if (RelevantUser) {
-            users.push({ ...(await DbToStdModal_User(RelevantUser)), role: role?.name ?? "Other", isOwner: userProject.isOwner });
-        }
-    }
+    let users: IProjectCollaborator[] = RelevantUserProjects.map(DbToStdModal_UserProject);
 
     return users;
 }
@@ -65,13 +76,7 @@ export async function UserOwnsProject(user: User, project: Project): Promise<boo
 }
 
 export async function GetProjectsByUserId(UserId: number, isOwner: boolean = false): Promise<Project[]> {
-    const RelevantUserProjects = await UserProject.findAll({ where: { userId: UserId, isOwner } });
+    const RelevantUserProjects = await UserProject.findAll({ where: { userId: UserId, isOwner }, include: [{ model: Project }] });
 
-    let projects: Project[] = [];
-    for (let userProject of RelevantUserProjects) {
-        const RelevantProject = await Project.findOne({ where: { id: userProject.projectId } });
-        if (RelevantProject) projects.push(RelevantProject);
-    }
-
-    return projects;
+    return RelevantUserProjects.flatMap(x => x.project);
 }

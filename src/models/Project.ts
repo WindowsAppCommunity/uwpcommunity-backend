@@ -1,10 +1,14 @@
-import { Column, CreatedAt, Model, Table, UpdatedAt, ForeignKey, BelongsTo, PrimaryKey, AutoIncrement, DataType, BelongsToMany } from 'sequelize-typescript';
+import { Column, CreatedAt, Model, Table, UpdatedAt, ForeignKey, BelongsTo, PrimaryKey, AutoIncrement, DataType, BelongsToMany, HasMany } from 'sequelize-typescript';
 import User, { getUserByDiscordId } from './User';
 import * as faker from 'faker'
-import UserProject, { GetProjectCollaborators } from './UserProject';
+import UserProject, { DbToStdModal_UserProject, GetProjectCollaborators } from './UserProject';
 import { IProject, IProjectCollaborator } from './types';
 import { levenshteinDistance } from '../common/helpers/generic';
 import { getImagesForProject } from './ProjectImage';
+import Role from './Role';
+import Tag from './Tag';
+import ProjectTag from './ProjectTag';
+import ModelManager from 'sequelize/types/lib/model-manager';
 
 @Table
 export default class Project extends Model<Project> {
@@ -54,6 +58,12 @@ export default class Project extends Model<Project> {
     @BelongsToMany(() => User, () => UserProject)
     users?: User[];
 
+    @BelongsToMany(() => Tag, () => ProjectTag)
+    tags?: Tag[];
+
+    @HasMany(() => UserProject)
+    userProjects!: UserProject[];
+
     @Column
     category!: string;
 
@@ -76,18 +86,15 @@ export function isExistingProject(appName: string): Promise<boolean> {
     });
 }
 
-export function getProjectsByDiscordId(discordId: string): Promise<Project[]> {
-    return new Promise((resolve, reject) => {
-        Project.findAll({
-            include: [{
-                model: User,
-                where: { discordId: discordId }
-            }]
-        }).then(projects => {
-            if (!projects) { reject("User not found"); return; }
-            resolve(projects);
-        }).catch(reject);
-    });
+export async function getProjectsByDiscordId(discordId: string): Promise<Project[]> {
+    let projects = await getAllDbProjects().catch(x => Promise.reject(x));
+
+    projects = projects.filter(x => x.users?.filter(x => x.discordId == discordId).length ?? 0 > 0);
+
+    if (!projects)
+        Promise.reject("User not found");
+
+    return projects;
 }
 
 export function getOwnedProjectsByDiscordId(discordId: string): Promise<Project[]> {
@@ -120,15 +127,47 @@ export interface ISimilarProjectMatch {
     appName: string;
 }
 
-export function getAllProjects(): Promise<IProject[]> {
+export let CachedProjects: Project[] = [];
+
+export let IsRefreshingCache = false;
+
+export async function RefreshProjectCache() {
+    CachedProjects.length = 0;
+    IsRefreshingCache = true;
+
+    await getAllProjects();
+
+    IsRefreshingCache = false;
+}
+
+export async function getAllDbProjects(customWhere: any = undefined): Promise<Project[]> {
+    if (CachedProjects.length > 0 && !IsRefreshingCache) {
+        return CachedProjects;
+    }
+
+    const dbProjects = await Project.findAll({
+        include: [{
+            all: true, include: [{ all: true }],
+        }],
+        where: customWhere,
+    })
+        .catch(x => Promise.reject(x));
+
+    CachedProjects = dbProjects;
+
+    return dbProjects;
+}
+
+export function getAllProjects(customWhere: any = undefined): Promise<IProject[]> {
     return new Promise(async (resolve, reject) => {
 
-        const DbProjects = await Project.findAll().catch(reject);
+        const DbProjects = await getAllDbProjects(customWhere).catch(reject);
+
         let projects: IProject[] = [];
 
         if (DbProjects) {
             for (let project of DbProjects) {
-                let proj = await DbToStdModal_Project(project).catch(reject);
+                let proj = DbToStdModal_Project(project);
                 if (proj) {
                     projects.push(proj);
                 }
@@ -188,9 +227,10 @@ export async function StdToDbModal_Project(project: Partial<IProject>): Promise<
     return (dbProject);
 }
 
-export async function DbToStdModal_Project(project: Project): Promise<IProject> {
-    const collaborators: IProjectCollaborator[] = await GetProjectCollaborators(project.id);
+export function DbToStdModal_Project(project: Project): IProject {
+    const collaborators: IProjectCollaborator[] = project.userProjects.map(DbToStdModal_UserProject);
     // Due to load times, this has been disabled, and the feature has been postponed.
+    // edit: to fix this, include the model in the database request (see getAllProjects)
     //const images: string[] = (await getImagesForProject(project.id).catch(console.log)) || [];
 
     const stdProject: IProject = {
@@ -213,7 +253,7 @@ export async function DbToStdModal_Project(project: Project): Promise<IProject> 
         accentColor: project.accentColor,
         lookingForRoles: JSON.parse(project.lookingForRoles)
     };
-    
+
     return (stdProject);
 }
 //#endregion

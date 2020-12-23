@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import Project, { StdToDbModal_Project, isExistingProject } from "../../models/Project";
+import Project, { StdToDbModal_Project, isExistingProject, CachedProjects, RefreshProjectCache } from "../../models/Project";
 import { genericServerError, validateAuthenticationHeader, match } from "../../common/helpers/generic";
 import UserProject, { GetProjectsByUserId } from "../../models/UserProject";
 import { GetRoleByName } from "../../models/Role";
@@ -28,6 +28,7 @@ module.exports = async (req: Request, res: Response) => {
     submitProject(body, discordId)
         .then(() => {
             BuildResponse(res, HttpStatus.Success, "Success");
+            RefreshProjectCache();
         })
         .catch((err) => genericServerError(err, res));
 };
@@ -102,7 +103,6 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
         }
 
         resolve();
-
     });
 }
 
