@@ -1,6 +1,6 @@
 import { IBotCommandArgument, IProject } from "../../models/types";
 import { Message, TextChannel, Role, User, GuildMember } from "discord.js";
-import Project, { findSimilarProjectName, DbToStdModal_Project, RefreshProjectCache } from "../../models/Project";
+import Project, { findSimilarProjectName, DbToStdModal_Project, RefreshProjectCache, getAllDbProjects } from "../../models/Project";
 import { GetUser, GetRoles, GetDiscordUser, GetGuild, GetGuildMembers } from "../../common/helpers/discord";
 import UserProject, { GetUsersByProjectId, GetProjectsByUserId, GetProjectCollaborators } from "../../models/UserProject";
 import { GetRoleByName } from "../../models/Role";
@@ -400,7 +400,7 @@ async function getProjectDetails(project: IProject, message: Message) {
 }
 
 async function findProject(projectName: string, srcChannel: TextChannel): Promise<IProject | undefined> {
-    const allProjects = await Project.findAll();
+    const allProjects = await getAllDbProjects();
 
     const matchedProjects = allProjects.filter((i: Project) => i.appName.toLowerCase().includes(projectName) || i.appName.toLowerCase() == projectName || projectName.includes(i.appName.toLowerCase()));
 

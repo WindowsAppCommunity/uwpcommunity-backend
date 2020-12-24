@@ -16,21 +16,21 @@ export default class UserProject extends Model<UserProject> {
 
     @BelongsTo(() => User, 'userId')
     user!: User;
-    
+
     @ForeignKey(() => User)
     @Column
     userId!: number;
 
     @BelongsTo(() => Project, 'projectId')
     project!: Project;
-    
+
     @ForeignKey(() => Project)
     @Column
     projectId!: number;
 
     @BelongsTo(() => Role, 'roleId')
     role!: Role;
-    
+
     @ForeignKey(() => Role)
     @Column
     roleId!: number;
@@ -62,7 +62,7 @@ export async function GetUsersByProjectId(ProjectId: number) {
 }
 
 export async function GetProjectCollaborators(ProjectId: number): Promise<IProjectCollaborator[]> {
-    const RelevantUserProjects = await UserProject.findAll({ where: { projectId: ProjectId } });
+    const RelevantUserProjects = await UserProject.findAll({ where: { projectId: ProjectId }, include: [{ model: User }]  });
 
     let users: IProjectCollaborator[] = RelevantUserProjects.map(DbToStdModal_UserProject);
 
