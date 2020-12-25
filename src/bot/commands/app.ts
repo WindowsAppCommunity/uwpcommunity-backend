@@ -378,7 +378,7 @@ async function getProjectDetails(project: IProject, message: Message) {
 
     if (!project || !project.id) return;
 
-    const collaborators = await GetProjectCollaborators(project.id);
+    const collaborators = project.collaborators;
     const devs = collaborators.filter(i => i.role == "Developer");
     const devIds = devs.map(i => `<@${i.discordId}>`).join(" ");
 
