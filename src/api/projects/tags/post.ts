@@ -31,7 +31,7 @@ module.exports = async (req: Request, res: Response) => {
     }
 
     if (!await checkPermission(body, reqQuery, discordId).catch((err) => genericServerError(err, res))) {
-        res.status(HttpStatus.Unauthorized).send("Unauthorized user");
+        res.status(HttpStatus.Unauthorized);
         return;
     }
 
@@ -73,17 +73,20 @@ async function checkPermission(body: IPostProjectTagsRequestBody, query: IPostPr
 
         const guildMember = await GetGuildUser(discordId);
         const isMod = guildMember && guildMember.roles.cache.array().filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").length > 0;
+        const isLaunchCoordinator = (guildMember?.roles.cache.array().filter(role => role.name.toLowerCase() === "launch coordinator").length ?? 0) > 0;
 
         const relevantUser = matchingDbProjects[0].users?.filter(x => x.discordId == discordId);
-        if ((relevantUser?.length ?? 0) === 0) {
+        if ((relevantUser?.length ?? 0) === 0 && !isMod) {
             ResponsePromiseReject("No user found.", HttpStatus.Unauthorized, reject);
             return;
         }
 
         const isLaunchTag = tag.tagName?.includes("Launch ") ?? false;
-        const isLaunchCoordinator = (guildMember?.roles.cache.array().filter(role => role.name.toLowerCase() === "launch coordinator").length ?? 0) > 0;
 
-        const userOwnsProject: boolean = await UserOwnsProject(relevantUser![0], matchingDbProjects[0]);
+        let userOwnsProject: boolean = false;
+
+        if (relevantUser && relevantUser.length > 0)
+            userOwnsProject = await UserOwnsProject(relevantUser[0], matchingDbProjects[0]);
 
         // Only launch coordinators can add a launch tag to a project. 
         const userCanModify = (isLaunchTag && isLaunchCoordinator) || (isMod && !isLaunchTag && !isLaunchCoordinator) || (userOwnsProject && !isLaunchTag);
@@ -122,8 +125,6 @@ async function createTag(body: IPostProjectTagsRequestBody, query: IPostProjectT
                 projectId: project.id,
                 tagId: dbTag.id,
             });
-
-            RefreshProjectCache();
         } else {
             ResponsePromiseReject("Tag already exists on project.", HttpStatus.BadRequest, reject);
             return;
@@ -136,7 +137,7 @@ async function createTag(body: IPostProjectTagsRequestBody, query: IPostProjectT
 interface IPostProjectTagsRequestBody {
     tagName: string;
     tagId?: number;
-} 
+}
 
 interface IPostProjectTagsRequestQuery {
     appName?: string;
