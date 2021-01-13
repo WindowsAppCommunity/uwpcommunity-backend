@@ -58,10 +58,12 @@ function updateProject(projectUpdateRequest: IProject, query: IPutProjectRequest
     return new Promise<Project>(async (resolve, reject) => {
         let DBProjects = await getAllDbProjects();
 
-        DBProjects = DBProjects.filter(x => x.appName === query.appName);
+        var appName = decodeURIComponent(query.appName);
+
+        DBProjects = DBProjects.filter(x => x.appName === appName);
 
         if (DBProjects.length === 0) {
-            ResponsePromiseReject(`Project with name "${query.appName}" could not be found.`, HttpStatus.NotFound, reject);
+            ResponsePromiseReject(`Project with name "${appName}" could not be found.`, HttpStatus.NotFound, reject);
             return;
         }
 
