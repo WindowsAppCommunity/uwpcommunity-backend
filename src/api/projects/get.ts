@@ -28,12 +28,13 @@ async function isMod(req: Request, res: Response): Promise<boolean> {
 }
 
 export async function getAllProjectsApi(all?: boolean): Promise<IProject[]> {
-    let queryFilter : any = { isPrivate: false, needsManualReview: false };
 
-    if (all === false)
-        queryFilter = undefined;
+    let allProjects = await getAllProjects().catch(err => ResponsePromiseReject("Internal server error: " + err, HttpStatus.InternalServerError, Promise.reject));
 
-    return getAllProjects(queryFilter).catch(err => ResponsePromiseReject("Internal server error: " + err, HttpStatus.InternalServerError, Promise.reject));
+    if (all !== true)
+        allProjects = (allProjects as IProject[]).filter(x => x.needsManualReview == false && x.isPrivate == false);
+
+    return allProjects;
 }
 
 interface IGetProjectsRequestQuery {
