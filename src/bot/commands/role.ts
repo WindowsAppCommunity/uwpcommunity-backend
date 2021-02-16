@@ -39,11 +39,20 @@ async function fromSpecificRole(roleName: string, discordMessage: Message) {
     const dateRoleCreated = role.createdAt.toUTCString();
     const mentionable = role.mentionable;
 
-    await discordMessage.channel.send(
-        `__**${capitalizeFirstLetter(discordMessage.content)}\ role info**__:
+    let messageToSend = `__**${capitalizeFirstLetter(roleName)}\ role info**__:
 Member count: ${numberOfMembers}
 Date created: ${dateRoleCreated}
-Mentionable: ${mentionable}`);
+Mentionable: ${mentionable}`
+
+    if (numberOfMembers < 8) {
+        messageToSend += `\nMembers:`;
+
+        role.members.forEach(member => {
+            messageToSend += `\n\`${member.user.username}#${member.user.discriminator}\``
+        });
+    }
+
+    await discordMessage.channel.send(messageToSend);
 
 }
 
@@ -56,12 +65,12 @@ async function findEmptyRoles(discordMessage: Message) {
 
     let message = `Total empty roles: ${emptyRoles.length}`;
 
-    if(emptyRoles.length > 0)
+    if (emptyRoles.length > 0)
         message += "\n";
 
     for (const role of emptyRoles) {
         message += `\n${role.name}`
     }
 
-    await discordMessage.channel.send(message);    
+    await discordMessage.channel.send(message);
 }
