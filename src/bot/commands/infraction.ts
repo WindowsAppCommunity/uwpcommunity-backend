@@ -255,7 +255,7 @@ async function initExistingInfractionData(server: Guild) {
         {
             label: "Strike 1",
             role: strike1Role,
-            expiresAfterDays: 21, // 2 weeks
+            expiresAfterDays: 21, // 3 weeks
             unmuteAfterDays: 7
         },
         {
