@@ -250,31 +250,31 @@ async function initExistingInfractionData(server: Guild) {
         {
             label: "Warned",
             role: warnedRole,
-            expiresAfterDays: 3
+            expiresAfterDays: 14
         },
         {
             label: "Strike 1",
             role: strike1Role,
-            expiresAfterDays: 7,
-            unmuteAfterDays: 1
+            expiresAfterDays: 21, // 2 weeks
+            unmuteAfterDays: 7
         },
         {
             label: "Strike 2",
             role: strike2Role,
-            expiresAfterDays: 14,
-            unmuteAfterDays: 3
+            expiresAfterDays: 63, // ~2 months
+            unmuteAfterDays: 21
         },
         {
             label: "Strike 3",
             role: strike3Role,
-            expiresAfterDays: 30,
-            unmuteAfterDays: 10
+            expiresAfterDays: 189, // ~6 months
+            unmuteAfterDays: 63
         },
         {
             label: "Strike 4",
             role: strike4Role,
-            expiresAfterDays: 60,
-            unmuteAfterDays: 30
+            expiresAfterDays: 567, // 18 months
+            unmuteAfterDays: 189
         }
     ];
 
