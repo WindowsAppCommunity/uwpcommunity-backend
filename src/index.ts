@@ -49,7 +49,11 @@ InitDb().then(() => {
     if (MOCK) CreateMocks()
 });
 
-InitBot();
+// TEMP: Only run the bot when on a development environment.
+// Heroku keeps killing the bot due to a memory spike.
+if (helpers.DEVENV)
+    InitBot();
+
 SetupAPI();
 SetupBotScripts();
 
