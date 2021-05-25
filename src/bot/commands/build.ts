@@ -4,22 +4,18 @@ import { IBotCommandArgument } from "../../models/types";
 import { swearRegex } from "../events/messageHandlers/swearFilter";
 
 export default async (discordMessage: Message, commandParts: string[], args: IBotCommandArgument[]) => {
-    // Command disabled post-build 2020
-    return;
-/* 
-    const message = commandParts[0].toLowerCase();
-
-    if (message.match(swearRegex))
+    if (!discordMessage.member)
         return;
 
-    const server = GetGuild();
+    const server = await GetGuild();
     if (!server) return;
 
-    const roles = server.roles.array();
-    const isDev = discordMessage.member.roles.find(i => i.name.toLowerCase() == "developer") != undefined;
+    if (!discordMessage.member)
+        return;
 
+    const isDev = discordMessage.member?.roles?.cache.find(i => i.name.toLowerCase() == "developer") != undefined;
 
-    const buildChannelCount = server.channels.array().filter(i => i.name.startsWith("build-") && i.type == "voice").length;
+    const buildChannelCount = server.channels.cache.filter(i => i.name.startsWith("build-") && i.type == "voice").array.length;
 
     if (buildChannelCount > 9) {
         discordMessage.channel.send(`Limit reached for user generated channels`);
@@ -27,7 +23,7 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
     }
 
     if (!isDev) {
-        discordMessage.channel.sendMessage(`<@${discordMessage.member.id}>, you aren't registered as a developer. See <#535460764614656010> for info on how to register.`);
+        discordMessage.channel.send(`<@${discordMessage.member.id}>, you aren't registered as a developer. See <#535460764614656010> for info on how to register.`);
         return;
     }
 
@@ -37,11 +33,20 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
         return;
     }
 
-    const existingChannel = await server.channels.find(i => i.name == "build-" + sessionNameArg.value);
-    const newChannel = existingChannel || await server.createChannel("build-" + sessionNameArg.value, { type: "voice" });
+    if (sessionNameArg.value.match(swearRegex)) {
+        return;
+    }
 
-    let category = server.channels.find(c => c.name == "🛠   Build" && c.type == "category");
-    newChannel.setParent(category);
+    const existingChannel = await server.channels.cache.find(i => i.name == "build-" + sessionNameArg.value);
+    const newChannel = existingChannel || await server.channels.create("build-" + sessionNameArg.value, { type: "voice" });
+
+    let category = server.channels.cache.find(c => c.name == "🛠   Build" && c.type == "category");
+    if (!category) {
+        discordMessage.channel.send(`Error: Build category not found.`);
+        return;
+    }
+
+    newChannel.setParent(category.id);
 
 
     if (!existingChannel) {
@@ -56,10 +61,10 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
     }
 
 
-    discordMessage.member.setVoiceChannel(newChannel).catch(() => { });
+    discordMessage.member.voice.setChannel(newChannel).catch(() => { });
 
     if (existingChannel) {
         discordMessage.channel.send(`<@${discordMessage.author.id}> this channel already exists.`);
     } else
-        discordMessage.channel.send("Channel created. It will be automatically deleted when no one is using it for 5 minutes.") */
+        discordMessage.channel.send("Channel created. It will be automatically deleted when no one is using it for 5 minutes.")
 };
