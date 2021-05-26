@@ -8,13 +8,14 @@ import { HttpStatus, BuildResponse, ResponsePromiseReject, IRequestPromiseReject
 module.exports = async (req: Request, res: Response) => {
     const reqQuery = req.query as IGetProjectsRequestQuery;
 
-    const projects = await getAllProjectsApi(reqQuery.all && await isMod(req, res)).catch((err: IRequestPromiseReject) => BuildResponse(res, err.status, err.reason));
+    var isMod = await checkIsMod(req, res);
+    const projects = await getAllProjectsApi(reqQuery.all && isMod).catch((err: IRequestPromiseReject) => BuildResponse(res, err.status, err.reason));
     if (projects) {
         BuildResponse(res, HttpStatus.Success, projects);
     }
 };
 
-async function isMod(req: Request, res: Response): Promise<boolean> {
+async function checkIsMod(req: Request, res: Response): Promise<boolean> {
     const authAccess = validateAuthenticationHeader(req, res, false);
     if (authAccess) {
         const discordId = await GetDiscordIdFromToken(authAccess, res, false);
@@ -22,7 +23,7 @@ async function isMod(req: Request, res: Response): Promise<boolean> {
 
         const user = await GetGuildUser(discordId);
         if (!user) return false;
-        return user.roles.cache.filter(role => role.name == "Mod" || role.name == "Admin").array.length > 0;
+        return user.roles.cache.array().filter(role => role.name == "Mod" || role.name == "Admin").length > 0;
     }
     return false;
 }
