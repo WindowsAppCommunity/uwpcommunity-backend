@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import Project, { StdToDbModal_Project, isExistingProject, CachedProjects, RefreshProjectCache } from "../../models/Project";
+import Project, { StdToDbModal_Project, isExistingProject, RefreshProjectCache } from "../../models/Project";
 import { genericServerError, validateAuthenticationHeader, match } from "../../common/helpers/generic";
 import UserProject, { GetProjectsByUserId } from "../../models/UserProject";
 import { GetRoleByName } from "../../models/Role";

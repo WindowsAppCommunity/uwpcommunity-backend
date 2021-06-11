@@ -5,6 +5,7 @@ import { IProject, IProjectCollaborator } from './types';
 import { levenshteinDistance } from '../common/helpers/generic';
 import Tag, { DbToStdModal_Tag } from './Tag';
 import ProjectTag from './ProjectTag';
+import fs from 'fs';
 
 @Table
 export default class Project extends Model<Project> {
@@ -123,54 +124,57 @@ export interface ISimilarProjectMatch {
     appName: string;
 }
 
-export let CachedProjects: Project[] = [];
-
 export let IsRefreshingCache = false;
+export let IsCacheInitialized = false;
 
 export async function RefreshProjectCache() {
-    CachedProjects.length = 0;
+    IsCacheInitialized = false;
     IsRefreshingCache = true;
 
     await getAllProjects();
 
     IsRefreshingCache = false;
+    IsCacheInitialized = true;
 }
 
 export async function getAllDbProjects(customWhere: any = undefined): Promise<Project[]> {
-    if (CachedProjects.length > 0 && !IsRefreshingCache) {
-        return CachedProjects;
-    }
-
     const dbProjects = await Project.findAll({
         include: [{
-            all: true, include: [{ all: true }],
+            all: true
         }],
         where: customWhere,
-    })
-        .catch(x => Promise.reject(x));
+    }).catch(Promise.reject);
 
-    CachedProjects = dbProjects;
-
-    return dbProjects;
+    return (dbProjects);
 }
 
-export function getAllProjects(customWhere: any = undefined): Promise<IProject[]> {
+export function getAllProjects(customWhere: any = undefined, cached: boolean = false): Promise<IProject[]> {
     return new Promise(async (resolve, reject) => {
+        if (cached && IsCacheInitialized) {
+            var file = fs.readFileSync("./projects.json", {}).toString();
+            var cachedProjects = JSON.parse(file) as IProject[];
+            resolve(cachedProjects);
+        }
+        else {
+            const DbProjects = await getAllDbProjects(customWhere).catch(reject);
 
-        const DbProjects = await getAllDbProjects(customWhere).catch(reject);
+            let projects: IProject[] = [];
 
-        let projects: IProject[] = [];
-
-        if (DbProjects) {
-            for (let project of DbProjects) {
-                let proj = DbToStdModal_Project(project);
-                if (proj) {
-                    projects.push(proj);
+            if (DbProjects) {
+                for (let project of DbProjects) {
+                    let proj = DbToStdModal_Project(project);
+                    if (proj) {
+                        projects.push(proj);
+                    }
                 }
             }
-        }
 
-        resolve(projects);
+            fs.writeFileSync("./projects.json", JSON.stringify(projects), {});
+
+            IsCacheInitialized = true;
+
+            resolve(projects);
+        }
     });
 }
 
@@ -224,7 +228,7 @@ export async function StdToDbModal_Project(project: Partial<IProject>): Promise<
 }
 
 export function DbToStdModal_Project(project: Project): IProject {
-    const collaborators: IProjectCollaborator[] = project.userProjects?.map(DbToStdModal_UserProject);
+    const collaborators: (IProjectCollaborator | undefined)[] = project.userProjects?.map(DbToStdModal_UserProject);
     // Due to load times, this has been disabled, and the feature has been postponed.
     // edit: to fix this, include the model in the database request (see getAllProjects)
     //const images: string[] = (await getImagesForProject(project.id).catch(console.log)) || [];
@@ -237,7 +241,7 @@ export function DbToStdModal_Project(project: Project): IProject {
         downloadLink: project.downloadLink,
         githubLink: project.githubLink,
         externalLink: project.externalLink,
-        collaborators: collaborators,
+        collaborators: collaborators.filter(x=> x != undefined) as IProjectCollaborator[],
         category: project.category,
         createdAt: project.createdAt,
         updatedAt: project.updatedAt,

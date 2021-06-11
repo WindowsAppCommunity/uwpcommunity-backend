@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
 import { getUserByDiscordId } from "../../models/User";
-import { CachedProjects, getProjectsByDiscordId, RefreshProjectCache } from "../../models/Project";
+import { getProjectsByDiscordId, RefreshProjectCache } from "../../models/Project";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 import { BuildResponse,  HttpStatus } from "../../common/helpers/responseHelper";
 

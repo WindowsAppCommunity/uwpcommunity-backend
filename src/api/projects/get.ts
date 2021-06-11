@@ -30,7 +30,7 @@ async function checkIsMod(req: Request, res: Response): Promise<boolean> {
 
 export async function getAllProjectsApi(all?: boolean): Promise<IProject[]> {
 
-    let allProjects = await getAllProjects().catch(err => ResponsePromiseReject("Internal server error: " + err, HttpStatus.InternalServerError, Promise.reject));
+    let allProjects = await getAllProjects(undefined, true).catch(err => ResponsePromiseReject("Internal server error: " + err, HttpStatus.InternalServerError, Promise.reject));
 
     if (all !== true)
         allProjects = (allProjects as IProject[]).filter(x => x.needsManualReview == false && x.isPrivate == false);
