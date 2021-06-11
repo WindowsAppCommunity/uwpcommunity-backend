@@ -36,14 +36,17 @@ export default class UserProject extends Model<UserProject> {
     roleId!: number;
 }
 
-export function DbToStdModal_UserProject(userProject: UserProject): IProjectCollaborator {
+export function DbToStdModal_UserProject(userProject: UserProject): IProjectCollaborator | undefined {
+    if(!userProject.user) {
+        return undefined;
+    }
 
     let user: IProjectCollaborator =
     {
         isOwner: userProject.isOwner,
         role: userProject.role?.name ?? "Other",
-        name: userProject.user.name,
-        discordId: userProject.user.discordId,
+        name: userProject.user?.name,
+        discordId: userProject.user?.discordId,
     };
 
     return user;
@@ -64,7 +67,7 @@ export async function GetUsersByProjectId(ProjectId: number) {
 export async function GetProjectCollaborators(ProjectId: number): Promise<IProjectCollaborator[]> {
     const RelevantUserProjects = await UserProject.findAll({ where: { projectId: ProjectId }, include: [{ model: User }]  });
 
-    let users: IProjectCollaborator[] = RelevantUserProjects.map(DbToStdModal_UserProject);
+    let users: IProjectCollaborator[] = RelevantUserProjects.map(DbToStdModal_UserProject).filter(x=> x != undefined) as IProjectCollaborator[];;
 
     return users;
 }
