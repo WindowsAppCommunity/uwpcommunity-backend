@@ -58,8 +58,10 @@ async function handleUserCommand(project: IProject, message: Message, commandPar
     //    - discordId
     //    - username
 
-    const isOwner = project.collaborators.find(collaborator => collaborator.isOwner)?.discordId == message.author.id;
-    const isCollaborator = project.collaborators.find(collaborator => collaborator.discordId == message.author.id);
+    var collaborators = await GetProjectCollaborators(project.id);
+
+    const isOwner = collaborators.find(collaborator => collaborator.isOwner)?.discordId == message.author.id;
+    const isCollaborator = collaborators.find(collaborator => collaborator.discordId == message.author.id);
     const isMod = message.member?.roles.cache.find(i => i.name.toLowerCase() == "mod" || i.name.toLowerCase() == "admin");
 
     const isLead = isCollaborator && await UserHasDbRole(project.id, message.author.id, "Lead");
