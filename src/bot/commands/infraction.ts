@@ -184,7 +184,9 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
 };
 
 async function handleInfractionRemoval(botChannel: TextChannel, mutedRole: Role) {
-    const warnedRole = infractionData.find(x => x.label == "Warned")?.role;
+    return;
+    // Removed, bot pings user constantly if manually given a mute.
+/*     const warnedRole = infractionData.find(x => x.label == "Warned")?.role;
     const guild = await GetGuild();
     if (!guild) return;
 
@@ -224,7 +226,7 @@ async function handleInfractionRemoval(botChannel: TextChannel, mutedRole: Role)
             infractions.splice(infractions.findIndex(x => x.member.id == infrac.member.id), 1);
             botChannel.send(`<@${infrac.member.id}>'s ${infractionTypeLabel} has been removed`);
         }
-    }
+    } */
 }
 
 async function initExistingInfractionData(server: Guild) {
