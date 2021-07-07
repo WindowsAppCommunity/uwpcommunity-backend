@@ -2,6 +2,7 @@ import { Message } from "discord.js";
 import { GetGuild, GetRoles } from "../../common/helpers/discord";
 import { capitalizeFirstLetter } from "../../common/helpers/generic";
 import { IBotCommandArgument } from "../../models/types";
+import { getUserByDiscordId } from "../../models/User";
 
 export default async (discordMessage: Message, commandParts: string[], args: IBotCommandArgument[]) => {
     const command = commandParts[0].toLowerCase();
@@ -19,11 +20,11 @@ async function findRole(discordMessage: Message, commandParts: string[], args: I
             findEmptyRoles(discordMessage);
             break;
         default:
-            fromSpecificRole(commandParts[1].toLowerCase(), discordMessage);
+            fromSpecificRole(commandParts[1].toLowerCase(), discordMessage, args);
     }
 }
 
-async function fromSpecificRole(roleName: string, discordMessage: Message) {
+async function fromSpecificRole(roleName: string, discordMessage: Message, args: IBotCommandArgument[]) {
     const roles = await GetRoles();
     if (!roles)
         return;
@@ -44,11 +45,25 @@ Member count: ${numberOfMembers}
 Date created: ${dateRoleCreated}
 Mentionable: ${mentionable}`
 
-    messageToSend += `\nMembers:`;
+    messageToSend += `\nMembers:\n===========`;
 
-    role.members.forEach(member => {
-        messageToSend += `\n\`${member.user.username}#${member.user.discriminator}\``
-    });
+    for (let memberItem of role.members) {
+        const member = memberItem[1];
+
+        messageToSend += `\n${member.user.username}#${member.user.discriminator}`
+
+        if (args.filter(x => x.name == "detailed").length > 0) {
+            var user = await getUserByDiscordId(member.id);
+
+            if(user) {
+                messageToSend += ` ${user.name}`;
+            }
+
+            if (user && user.email) {
+                messageToSend += ` | ${user.email}`
+            }
+        }
+    }
 
     await discordMessage.channel.send(messageToSend);
 
