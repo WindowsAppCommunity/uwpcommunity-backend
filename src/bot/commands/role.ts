@@ -20,11 +20,11 @@ async function findRole(discordMessage: Message, commandParts: string[], args: I
             findEmptyRoles(discordMessage);
             break;
         default:
-            fromSpecificRole(commandParts[1].toLowerCase(), discordMessage, args);
+            fromSpecificRole(commandParts[1].toLowerCase(), discordMessage, commandParts, args);
     }
 }
 
-async function fromSpecificRole(roleName: string, discordMessage: Message, args: IBotCommandArgument[]) {
+async function fromSpecificRole(roleName: string, discordMessage: Message,  commandParts: string[], args: IBotCommandArgument[]) {
     const roles = await GetRoles();
     if (!roles)
         return;
@@ -52,15 +52,15 @@ Mentionable: ${mentionable}`
 
         messageToSend += `\n${member.user.username}#${member.user.discriminator}`
 
-        if (args.filter(x => x.name == "detailed").length > 0) {
+        if (commandParts.filter(x => x == "detailed").length > 0) {
             var user = await getUserByDiscordId(member.id);
 
             if(user) {
-                messageToSend += ` ${user.name}`;
+                messageToSend += `  |  ${user.name}`;
             }
 
             if (user && user.email) {
-                messageToSend += ` | ${user.email}`
+                messageToSend += `  |  ${user.email}`
             }
         }
     }
