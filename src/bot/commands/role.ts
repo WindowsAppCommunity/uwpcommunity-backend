@@ -44,13 +44,11 @@ Member count: ${numberOfMembers}
 Date created: ${dateRoleCreated}
 Mentionable: ${mentionable}`
 
-    if (numberOfMembers < 8) {
-        messageToSend += `\nMembers:`;
+    messageToSend += `\nMembers:`;
 
-        role.members.forEach(member => {
-            messageToSend += `\n\`${member.user.username}#${member.user.discriminator}\``
-        });
-    }
+    role.members.forEach(member => {
+        messageToSend += `\n\`${member.user.username}#${member.user.discriminator}\``
+    });
 
     await discordMessage.channel.send(messageToSend);
 
