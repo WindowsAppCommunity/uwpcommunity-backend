@@ -1,6 +1,6 @@
 import { GuildMember, TextChannel } from "discord.js";
 import { getUserByDiscordId } from "../../models/User";
-import { getOwnedProjectsByDiscordId } from "../../models/Project";
+import { getOwnedProjectsByDiscordId, nukeProject } from "../../models/Project";
 import { GetChannelByName } from "../../common/helpers/discord";
 
 export default async (guildMember: GuildMember) => {
@@ -10,7 +10,7 @@ export default async (guildMember: GuildMember) => {
         console.log(removalMessage);
         await sendMessageWithBackups(guildMember, removalMessage);
 
-        await removeUserProjectsFromDb(user.discordId).catch(message => sendMessageWithBackups(guildMember, `Internal error whild removing user projects: ${message}`));
+        await removeProjectsFromDb(user.discordId).catch(message => sendMessageWithBackups(guildMember, `Internal error whild removing user projects: ${message}`));
         await removeUserFromDb(user.discordId).catch(message => sendMessageWithBackups(guildMember, `Internal error while removing user: ${message}`));
     }
 }
@@ -35,22 +35,16 @@ async function sendMessageWithBackups(guildMember: GuildMember, message: string)
  * @returns True if successful, false if user not found
  * @param user User who's projects are to be deleted
  */
-async function removeUserProjectsFromDb(discordId: string) {
+async function removeProjectsFromDb(discordId: string) {
     return new Promise(async (resolve, reject) => {
         // Find the projects
         const projects = await getOwnedProjectsByDiscordId(discordId).catch(reject);
         if (!projects) return;
 
         // Delete all associated projects with this user
-        let isRejected: boolean = false;
         for (let project of projects) {
-            await project.destroy().catch((error) => {
-                isRejected = true;
-                reject(error);
-            });
+            await nukeProject(project.appName, discordId).catch(reject);
         }
-
-        if (!isRejected) resolve();
     });
 }
 

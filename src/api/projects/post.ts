@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import Project, { StdToDbModal_Project, isExistingProject, RefreshProjectCache } from "../../models/Project";
+import Project, { StdToDbModal_Project, isExistingProject, RefreshProjectCache, ProjectFieldsAreValid } from "../../models/Project";
 import { genericServerError, validateAuthenticationHeader, match } from "../../common/helpers/generic";
 import UserProject, { GetProjectsByUserId } from "../../models/UserProject";
 import { GetRoleByName } from "../../models/Role";
@@ -7,6 +7,7 @@ import { getUserByDiscordId } from "../../models/User";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 import { BuildResponse, HttpStatus, } from "../../common/helpers/responseHelper";
 import ProjectImage from "../../models/ProjectImage";
+import { IProject } from "../../models/types";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body as IPostProjectsRequestBody;
@@ -14,18 +15,22 @@ module.exports = async (req: Request, res: Response) => {
     body.images == body.images ?? [];
 
     const authAccess = validateAuthenticationHeader(req, res);
-    if (!authAccess) return;
+    if (!authAccess)
+        return;
 
     let discordId = await GetDiscordIdFromToken(authAccess, res);
-    if (!discordId) return;
+    if (!discordId)
+        return;
 
     const bodyCheck = checkBody(body);
+    
     if (bodyCheck !== true) {
         BuildResponse(res, HttpStatus.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`);
         return;
     }
 
-    if (!ProjectFieldsAreValid(body, res)) return;
+    if (!ProjectFieldsAreValid(body as unknown as IProject, res))
+        return;
 
     submitProject(body, discordId)
         .then(() => {
@@ -84,7 +89,7 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
         var project = await Project.findAll({ where: { appName: projectData.appName ?? "" } }) as Project[];
 
         if (!project || project.length === 0)
-        return;
+            return;
 
         // Create the userproject
         await UserProject.create(
@@ -96,6 +101,9 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
             }).catch(reject);
 
         for (let url of projectRequestData.images ?? []) {
+            if (url.length == 0 || url.length > 300)
+                continue;
+
             await ProjectImage.create(
                 {
                     projectId: project[0].id,
@@ -105,50 +113,6 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
 
         resolve();
     });
-}
-
-function ProjectFieldsAreValid(project: IPostProjectsRequestBody, res: Response): boolean {
-    // Make sure download link is a valid URL
-    if (project.downloadLink && !match(project.downloadLink, /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig)) {
-        BuildResponse(res, HttpStatus.MalformedRequest, "Invalid downloadLink");
-        return false;
-    }
-
-    // Make sure github link is a valid URL
-    if (project.githubLink && !match(project.githubLink, /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig)) {
-        BuildResponse(res, HttpStatus.MalformedRequest, "Invalid githubLink");
-        return false;
-    }
-
-    // Make sure external link is a valid URL
-    if (project.externalLink !== undefined && !match(project.externalLink, /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig)) {
-        BuildResponse(res, HttpStatus.MalformedRequest, "Invalid externalLink");
-        return false;
-    }
-
-    // Make sure hero image is an image URL or a microsoft store image
-    if (project.heroImage && !match(project.heroImage, /(?:(?:https?:\/\/))[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&\/=].+(\.jpe?g|\.png|\.gif))|(store-images.s-microsoft.com\/image\/apps)/)) { 
-        BuildResponse(res, HttpStatus.MalformedRequest, "Invalid heroImage");
-        return false;
-    }
-
-    // Make sure images given are an image URL or a microsoft store image
-    if (project.images) {
-        for (let image of project.images) {
-            if (!match(image, /(?:(?:https?:\/\/))[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&\/=].+(\.jpe?g|\.png|\.gif))|(store-images.s-microsoft.com\/image\/apps)/)) {
-                BuildResponse(res, HttpStatus.MalformedRequest, "Invalid image in images");
-                return false;
-            }
-        }
-    }
-
-    // Make sure app icon is an image URL or a microsoft store image
-    if (project.appIcon && !match(project.appIcon, /(?:(?:https?:\/\/))[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&\/=].+(\.jpe?g|\.png|\.gif))|(store-images.s-microsoft.com\/image\/apps)/)) {
-        BuildResponse(res, HttpStatus.MalformedRequest, "Invalid appIcon");
-        return false;
-    }
-
-    return true;
 }
 
 interface IPostProjectsRequestBody {
