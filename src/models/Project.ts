@@ -1,11 +1,15 @@
 import { Column, CreatedAt, Model, Table, UpdatedAt, PrimaryKey, AutoIncrement, DataType, BelongsToMany, HasMany } from 'sequelize-typescript';
 import User, { getUserByDiscordId } from './User';
-import UserProject, { DbToStdModal_UserProject } from './UserProject';
+import UserProject, { DbToStdModal_UserProject, GetProjectCollaborators } from './UserProject';
 import { IProject, IProjectCollaborator } from './types';
-import { levenshteinDistance } from '../common/helpers/generic';
+import { levenshteinDistance, match } from '../common/helpers/generic';
 import Tag, { DbToStdModal_Tag } from './Tag';
 import ProjectTag from './ProjectTag';
 import fs from 'fs';
+import { BuildResponse, HttpStatus, ResponsePromiseReject } from '../common/helpers/responseHelper';
+import { Response } from 'express';
+import { GetGuildUser } from '../common/helpers/discord';
+import ProjectImage from './ProjectImage';
 
 @Table
 export default class Project extends Model<Project> {
@@ -137,6 +141,115 @@ export async function RefreshProjectCache() {
     IsCacheInitialized = true;
 }
 
+export function ProjectFieldsAreValid(project: IProject, res: Response): boolean {
+    // Make sure download link is a valid URL
+    if (project.downloadLink && !match(project.downloadLink, /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig)) {
+        BuildResponse(res, HttpStatus.MalformedRequest, "Invalid downloadLink");
+        return false;
+    }
+
+    // Make sure github link is a valid URL
+    if (project.githubLink && !match(project.githubLink, /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig)) {
+        BuildResponse(res, HttpStatus.MalformedRequest, "Invalid githubLink");
+        return false;
+    }
+
+    // Make sure external link is a valid URL
+    if (project.externalLink && !match(project.externalLink, /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig)) {
+        BuildResponse(res, HttpStatus.MalformedRequest, "Invalid externalLink");
+        return false;
+    }
+
+    // Make sure hero image is an image URL or a microsoft store image
+    if (project.heroImage && isInvalidImage(project.heroImage)) {
+        if (!project.heroImage.includes("https")) {
+            BuildResponse(res, HttpStatus.MalformedRequest, "heroImage must be hosted on https");
+            return false;
+        }
+
+        BuildResponse(res, HttpStatus.MalformedRequest, "Invalid heroImage");
+        return false;
+    }
+
+    // Make sure images given are an image URL or a microsoft store image
+    if (project.images) {
+        for (let image of project.images) {
+            if (isInvalidImage(image)) {
+                if (!image.includes("https")) {
+                    BuildResponse(res, HttpStatus.MalformedRequest, "Images must be hosted on https");
+                    return false;
+                }
+
+                BuildResponse(res, HttpStatus.MalformedRequest, "Invalid image");
+                return false;
+            }
+        }
+    }
+
+    // Make sure app icon is an image URL or a microsoft store image
+    if (project.appIcon && isInvalidImage(project.appIcon)) {
+        if (!project.appIcon.includes("https")) {
+            BuildResponse(res, HttpStatus.MalformedRequest, "appIcon must be hosted on https");
+            return false;
+        }
+
+        BuildResponse(res, HttpStatus.MalformedRequest, "Invalid appIcon");
+        return false;
+    }
+
+    return true;
+}
+
+function isInvalidImage(image: string) : boolean {
+    return !match(image, /(?:(?:https:\/\/))[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&\/=].+(\.jpe?g|\.png|\.gif))/) && !match(image, /(https:\/\/store-images.s-microsoft.com)/);
+}
+
+export function nukeProject(appName: string, discordId: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+        getAllDbProjects()
+            .then(async (allProjects) => {
+                const projects = allProjects.filter(x => x.appName == appName);
+
+                if (projects.length === 0) { ResponsePromiseReject(`Project with name "${appName}" could not be found.}`, HttpStatus.NotFound, reject); return; }
+                if (projects.length > 1) { ResponsePromiseReject("More than one project with that name found. Contact a system administrator to fix the data duplication", HttpStatus.InternalServerError, reject); return; }
+
+                const guildMember = await GetGuildUser(discordId);
+                const isMod = guildMember && guildMember.roles.cache.filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").array.length > 0;
+
+                const collaborators = await GetProjectCollaborators(projects[0].id);
+                const userCanModify = collaborators.filter(x => x.isOwner && x.discordId == discordId).length > 0 || isMod;
+
+                if (!userCanModify) {
+                    ResponsePromiseReject("Unauthorized user", HttpStatus.Unauthorized, reject);
+                    return;
+                }
+
+                const projectTags = await ProjectTag.findAll({ where: { projectId: projects[0].id } }).catch(err => ResponsePromiseReject(err, HttpStatus.InternalServerError, reject)) as ProjectTag[] | null;
+
+                for (var tag of projectTags ?? []) {
+                    await tag.destroy();
+                }
+
+                const projectImages = await ProjectImage.findAll({ where: { projectId: projects[0].id } }).catch(err => ResponsePromiseReject(err, HttpStatus.InternalServerError, reject)) as ProjectImage[] | null;
+
+                for (let image of projectImages ?? []) {
+                    await image.destroy();
+                }
+
+                const userProjects = await UserProject.findAll({ where: { projectId: projects[0].id } }).catch(err => ResponsePromiseReject(err, HttpStatus.InternalServerError, reject)) as UserProject[] | null;
+
+                for(const userProject of userProjects ?? []) {
+                    await userProject.destroy();
+                }
+
+                projects[0].destroy({ force: true })
+                    .then(resolve)
+                    .catch(err => ResponsePromiseReject(err, HttpStatus.InternalServerError, reject));
+                    
+            }).catch(err => ResponsePromiseReject(err, HttpStatus.InternalServerError, reject));
+    });
+}
+
 export async function getAllDbProjects(customWhere: any = undefined): Promise<Project[]> {
     const dbProjects = await Project.findAll({
         include: [{
@@ -154,8 +267,7 @@ export function getAllProjects(customWhere: any = undefined, cached: boolean = f
             var file = fs.readFileSync("./projects.json", {}).toString();
             var cachedProjects = JSON.parse(file) as IProject[];
             resolve(cachedProjects);
-        }
-        else {
+        } else {
             const DbProjects = await getAllDbProjects(customWhere).catch(reject);
 
             let projects: IProject[] = [];
@@ -241,7 +353,7 @@ export function DbToStdModal_Project(project: Project): IProject {
         downloadLink: project.downloadLink,
         githubLink: project.githubLink,
         externalLink: project.externalLink,
-        collaborators: collaborators.filter(x=> x != undefined) as IProjectCollaborator[],
+        collaborators: collaborators.filter(x => x != undefined) as IProjectCollaborator[],
         category: project.category,
         createdAt: project.createdAt,
         updatedAt: project.updatedAt,

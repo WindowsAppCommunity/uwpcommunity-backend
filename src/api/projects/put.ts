@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import User, { getUserByDiscordId } from "../../models/User"
-import Project, { getAllDbProjects, RefreshProjectCache } from "../../models/Project";
+import Project, { getAllDbProjects, ProjectFieldsAreValid, RefreshProjectCache } from "../../models/Project";
 import { validateAuthenticationHeader } from '../../common/helpers/generic';
 import { IProject } from "../../models/types";
 import { GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
@@ -30,6 +30,9 @@ module.exports = async (req: Request, res: Response) => {
         BuildResponse(res, HttpStatus.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`);
         return;
     }
+
+    if (!ProjectFieldsAreValid(body, res))
+        return;
 
     updateProject(body, req.query, discordId)
         .then(() => {
@@ -103,7 +106,7 @@ function updateProject(projectUpdateRequest: IProject, query: IPutProjectRequest
                 // Remove images from DB that exist in DB but don't exist in req
                 for (let image of existingDbImages) {
                     if (projectUpdateRequest.images.includes(image.imageUrl) == false) {
-                        image.destroy();
+                        await image.destroy();
                     }
                 }
 
@@ -111,6 +114,9 @@ function updateProject(projectUpdateRequest: IProject, query: IPutProjectRequest
 
                 // Create images in the DB that exist in req but not DB
                 for (let url of projectUpdateRequest.images) {
+                    if (url.length == 0 || url.length > 300)
+                        continue;
+
                     if (existingDbImageUrls.includes(url) === false) {
                         await ProjectImage.create(
                             {
