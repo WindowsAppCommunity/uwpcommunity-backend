@@ -7,6 +7,7 @@ import { GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discor
 import { BuildResponse, HttpStatus, ResponsePromiseReject, IRequestPromiseReject } from "../../common/helpers/responseHelper";
 import { UserOwnsProject } from "../../models/UserProject";
 import ProjectImage from "../../models/ProjectImage";
+import ProjectFeature from "../../models/ProjectFeature";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body as IProject;
@@ -57,8 +58,8 @@ function checkIProject(body: IProject): true | string {
     return true;
 }
 
-function updateProject(projectUpdateRequest: IProject, query: IPutProjectRequestQuery, discordId: string): Promise<Project> {
-    return new Promise<Project>(async (resolve, reject) => {
+function updateProject(projectUpdateRequest: IProject, query: IPutProjectRequestQuery, discordId: string): Promise<void> {
+    return new Promise<void>(async (resolve, reject) => {
         let DBProjects = await getAllDbProjects();
 
         var appName = decodeURIComponent(query.appName);
@@ -95,38 +96,87 @@ function updateProject(projectUpdateRequest: IProject, query: IPutProjectRequest
 
         if (DbProjectData) {
             await DBProjects[0].update(DbProjectData)
-                .catch(error => reject({ status: HttpStatus.InternalServerError, reason: `Internal server error: ${error}` }));
+                .then(() => updateImages(DBProjects, projectUpdateRequest))
+                .then(() => updateFeatures(DBProjects, projectUpdateRequest))
+                .catch(error => reject({ status: HttpStatus.InternalServerError, reason: `Internal server error: ${error}` }))
+        }
 
-            // The images in the DB should match those sent in this request
-            const existingDbImages = await ProjectImage.findAll({ where: { projectId: DBProjects[0].id } });
+        resolve();
+    });
+}
 
-            projectUpdateRequest.images = projectUpdateRequest.images ?? [];
+function updateImages(DBProjects: Project[], projectUpdateRequest: IProject) {
+    return new Promise<void>(async (resolve, reject) => {
 
-            if (existingDbImages) {
-                // Remove images from DB that exist in DB but don't exist in req
-                for (let image of existingDbImages) {
-                    if (projectUpdateRequest.images.includes(image.imageUrl) == false) {
-                        await image.destroy();
-                    }
+        // The images in the DB should match those sent in this request
+        const existingDbImages = await ProjectImage.findAll({ where: { projectId: DBProjects[0].id } });
+
+        projectUpdateRequest.images = projectUpdateRequest.images ?? [];
+
+        if (existingDbImages) {
+            // Remove images from DB that exist in DB but don't exist in req
+            for (let image of existingDbImages) {
+                if (projectUpdateRequest.images.includes(image.imageUrl) == false) {
+                    await image.destroy();
                 }
+            }
 
-                var existingDbImageUrls = existingDbImages.map(x => x.imageUrl);
+            var existingDbImageUrls = existingDbImages.map(x => x.imageUrl);
 
-                // Create images in the DB that exist in req but not DB
-                for (let url of projectUpdateRequest.images) {
-                    if (url.length == 0 || url.length > 300)
-                        continue;
+            // Create images in the DB that exist in req but not DB
+            for (let url of projectUpdateRequest.images) {
+                if (url.length == 0 || url.length > 300)
+                    continue;
 
-                    if (existingDbImageUrls.includes(url) === false) {
-                        await ProjectImage.create(
-                            {
-                                projectId: DBProjects[0].id,
-                                imageUrl: url
-                            }).catch(err => {
-                                console.log(err);
-                                reject(err);
-                            });
-                    }
+                if (existingDbImageUrls.includes(url) === false) {
+                    await ProjectImage.create(
+                        {
+                            projectId: DBProjects[0].id,
+                            imageUrl: url
+                        }).catch(err => {
+                            console.log(err);
+                            reject(err);
+                        });
+                }
+            }
+
+            resolve();
+        }
+    });
+}
+
+function updateFeatures(DBProjects: Project[], projectUpdateRequest: IProject) {
+    return new Promise<void>(async (resolve, reject) => {
+
+        // The features in the DB should match those sent in this request
+        const existingDbFeatureRows = await ProjectFeature.findAll({ where: { projectId: DBProjects[0].id } });
+
+        projectUpdateRequest.features = projectUpdateRequest.features ?? [];
+
+        if (existingDbFeatureRows) {
+            // Remove features from DB that exist in DB but don't exist in req
+            for (let feature of existingDbFeatureRows) {
+                if (projectUpdateRequest.features.includes(feature.feature) == false) {
+                    await feature.destroy();
+                }
+            }
+
+            var existingDbFeatures = existingDbFeatureRows.map(x => x.feature);
+
+            // Create features in the DB that exist in req but not DB
+            for (let feature of projectUpdateRequest.features) {
+                if (feature.length == 0 || feature.length > 240)
+                    continue;
+
+                if (existingDbFeatures.includes(feature) === false) {
+                    await ProjectFeature.create(
+                        {
+                            projectId: DBProjects[0].id,
+                            feature: feature,
+                        }).catch(err => {
+                            console.log(err);
+                            reject(err);
+                        });
                 }
             }
         }

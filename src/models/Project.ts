@@ -341,9 +341,6 @@ export async function StdToDbModal_Project(project: Partial<IProject>): Promise<
 
 export function DbToStdModal_Project(project: Project): IProject {
     const collaborators: (IProjectCollaborator | undefined)[] = project.userProjects?.map(DbToStdModal_UserProject);
-    // Due to load times, this has been disabled, and the feature has been postponed.
-    // edit: to fix this, include the model in the database request (see getAllProjects)
-    //const images: string[] = (await getImagesForProject(project.id).catch(console.log)) || [];
 
     const stdProject: IProject = {
         id: project.id,
@@ -360,6 +357,7 @@ export function DbToStdModal_Project(project: Project): IProject {
         awaitingLaunchApproval: project.awaitingLaunchApproval,
         needsManualReview: project.needsManualReview,
         images: [],
+        features: [],
         tags: project.tags?.map(DbToStdModal_Tag) ?? [],
         heroImage: project.heroImage,
         appIcon: project.appIcon,

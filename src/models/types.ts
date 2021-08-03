@@ -20,6 +20,8 @@ export interface IProject {
 
     collaborators: IProjectCollaborator[];
     tags: ITag[];
+    
+    features?: string[];
 
     createdAt: Date;
     updatedAt: Date;

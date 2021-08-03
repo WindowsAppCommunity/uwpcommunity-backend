@@ -8,6 +8,7 @@ import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 import { BuildResponse, HttpStatus, } from "../../common/helpers/responseHelper";
 import ProjectImage from "../../models/ProjectImage";
 import { IProject } from "../../models/types";
+import ProjectFeature from "../../models/ProjectFeature";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body as IPostProjectsRequestBody;
@@ -23,7 +24,7 @@ module.exports = async (req: Request, res: Response) => {
         return;
 
     const bodyCheck = checkBody(body);
-    
+
     if (bodyCheck !== true) {
         BuildResponse(res, HttpStatus.MalformedRequest, `Parameter "${bodyCheck}" not provided or malformed`);
         return;
@@ -98,7 +99,17 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
                 projectId: project[0].id,
                 isOwner: true, // Only the project owner can create the project
                 roleId: role.id
-            }).catch(reject);
+            })
+            .then(() => createImages(projectRequestData, project[0]))
+            .then(() => createFeatures(projectRequestData, project[0]))
+            .catch(reject);
+
+        resolve(project[0]);
+    });
+}
+
+function createImages(projectRequestData: IPostProjectsRequestBody, project: Project): Promise<void> {
+    return new Promise(async (resolve, reject) => {
 
         for (let url of projectRequestData.images ?? []) {
             if (url.length == 0 || url.length > 300)
@@ -106,8 +117,26 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
 
             await ProjectImage.create(
                 {
-                    projectId: project[0].id,
+                    projectId: project.id,
                     imageUrl: url
+                }).catch(reject);
+        }
+
+        resolve();
+    });
+}
+
+function createFeatures(projectRequestData: IPostProjectsRequestBody, project: Project): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+
+        for (let feature of projectRequestData.features ?? []) {
+            if (feature.length == 0 || feature.length > 240)
+                continue;
+
+            await ProjectFeature.create(
+                {
+                    projectId: project.id,
+                    feature: feature
                 }).catch(reject);
         }
 
@@ -127,6 +156,7 @@ interface IPostProjectsRequestBody {
     awaitingLaunchApproval: boolean;
     needsManualReview: boolean;
     images?: string[];
+    features?: string[];
     heroImage: string;
     appIcon?: string;
     accentColor?: string;
