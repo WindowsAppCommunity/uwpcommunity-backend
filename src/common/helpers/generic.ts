@@ -12,6 +12,14 @@ export function match(toMatch: string, regex: RegExp) {
     return (m && m[1]) ? m[1] : undefined;
 }
 
+export function isUrl(toMatch: string) {
+    // RFC 3986 compliant: https://datatracker.ietf.org/doc/html/rfc3986#appendix-B
+    const urlRegex = /^(([^:/?#]+):)?(\/\/([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?/ig;
+
+    let m = urlRegex.exec(toMatch);
+    return (m ?? []).filter(x => x != undefined && x.length).length > 0;
+}
+
 export function replaceAll(text: string, target: string, replacement: string) {
     return text.split(target).join(replacement);
 };

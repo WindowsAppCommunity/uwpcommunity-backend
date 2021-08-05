@@ -30,7 +30,7 @@ module.exports = async (req: Request, res: Response) => {
         return;
     }
 
-    if (!ProjectFieldsAreValid(body as unknown as IProject, res))
+    if (!await ProjectFieldsAreValid(body as unknown as IProject, res))
         return;
 
     submitProject(body, discordId)
