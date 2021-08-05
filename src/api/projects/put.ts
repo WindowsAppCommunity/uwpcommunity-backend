@@ -32,7 +32,7 @@ module.exports = async (req: Request, res: Response) => {
         return;
     }
 
-    if (!ProjectFieldsAreValid(body, res))
+    if (!await ProjectFieldsAreValid(body, res))
         return;
 
     updateProject(body, req.query, discordId)

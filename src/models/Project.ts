@@ -2,7 +2,7 @@ import { Column, CreatedAt, Model, Table, UpdatedAt, PrimaryKey, AutoIncrement, 
 import User, { getUserByDiscordId } from './User';
 import UserProject, { DbToStdModal_UserProject, GetProjectCollaborators } from './UserProject';
 import { IProject, IProjectCollaborator } from './types';
-import { levenshteinDistance, match } from '../common/helpers/generic';
+import { isUrl, levenshteinDistance, match } from '../common/helpers/generic';
 import Tag, { DbToStdModal_Tag } from './Tag';
 import ProjectTag from './ProjectTag';
 import fs from 'fs';
@@ -10,6 +10,7 @@ import { BuildResponse, HttpStatus, ResponsePromiseReject } from '../common/help
 import { Response } from 'express';
 import { GetGuildUser } from '../common/helpers/discord';
 import ProjectImage from './ProjectImage';
+import fetch from 'node-fetch';
 
 @Table
 export default class Project extends Model<Project> {
@@ -141,27 +142,28 @@ export async function RefreshProjectCache() {
     IsCacheInitialized = true;
 }
 
-export function ProjectFieldsAreValid(project: IProject, res: Response): boolean {
+export async function ProjectFieldsAreValid(project: IProject, res: Response): Promise<boolean> {
+
     // Make sure download link is a valid URL
-    if (project.downloadLink && !match(project.downloadLink, /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig)) {
+    if (project.downloadLink && !isUrl(project.downloadLink)) {
         BuildResponse(res, HttpStatus.MalformedRequest, "Invalid downloadLink");
         return false;
     }
 
     // Make sure github link is a valid URL
-    if (project.githubLink && !match(project.githubLink, /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig)) {
+    if (project.githubLink && !isUrl(project.githubLink)) {
         BuildResponse(res, HttpStatus.MalformedRequest, "Invalid githubLink");
         return false;
     }
 
     // Make sure external link is a valid URL
-    if (project.externalLink && !match(project.externalLink, /[(http(s)?):\/\/(www\.)?a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,6}\b([-a-zA-Z0-9@:%_\+.~#?&//=]*)/ig)) {
+    if (project.externalLink && !isUrl(project.externalLink)) {
         BuildResponse(res, HttpStatus.MalformedRequest, "Invalid externalLink");
         return false;
     }
 
     // Make sure hero image is an image URL or a microsoft store image
-    if (project.heroImage && isInvalidImage(project.heroImage)) {
+    if (project.heroImage && await isInvalidImage(project.heroImage)) {
         if (!project.heroImage.includes("https")) {
             BuildResponse(res, HttpStatus.MalformedRequest, "heroImage must be hosted on https");
             return false;
@@ -174,7 +176,7 @@ export function ProjectFieldsAreValid(project: IProject, res: Response): boolean
     // Make sure images given are an image URL or a microsoft store image
     if (project.images) {
         for (let image of project.images) {
-            if (isInvalidImage(image)) {
+            if (await isInvalidImage(image)) {
                 if (!image.includes("https")) {
                     BuildResponse(res, HttpStatus.MalformedRequest, "Images must be hosted on https");
                     return false;
@@ -187,7 +189,7 @@ export function ProjectFieldsAreValid(project: IProject, res: Response): boolean
     }
 
     // Make sure app icon is an image URL or a microsoft store image
-    if (project.appIcon && isInvalidImage(project.appIcon)) {
+    if (project.appIcon && await isInvalidImage(project.appIcon)) {
         if (!project.appIcon.includes("https")) {
             BuildResponse(res, HttpStatus.MalformedRequest, "appIcon must be hosted on https");
             return false;
@@ -200,8 +202,20 @@ export function ProjectFieldsAreValid(project: IProject, res: Response): boolean
     return true;
 }
 
-function isInvalidImage(image: string) : boolean {
-    return !match(image, /(?:(?:https:\/\/))[-a-zA-Z0-9@:%._\+~#=]{2,256}\.[a-z]{2,4}\b(?:[-a-zA-Z0-9@:%_\+.~#?&\/=].+(\.jpe?g|\.png|\.gif))/) && !match(image, /(https:\/\/store-images.s-microsoft.com)/);
+async function isInvalidImage(image: string): Promise<boolean> {
+    if (!image.includes("https"))
+        return true;
+
+    if (!isUrl(image))
+        return true;
+
+    var res = await fetch(image);
+    var contentType = res.headers.get("content-type");
+
+    if (!contentType)
+        return true;
+
+    return !contentType.includes("image/");
 }
 
 export function nukeProject(appName: string, discordId: string): Promise<void> {
@@ -238,14 +252,14 @@ export function nukeProject(appName: string, discordId: string): Promise<void> {
 
                 const userProjects = await UserProject.findAll({ where: { projectId: projects[0].id } }).catch(err => ResponsePromiseReject(err, HttpStatus.InternalServerError, reject)) as UserProject[] | null;
 
-                for(const userProject of userProjects ?? []) {
+                for (const userProject of userProjects ?? []) {
                     await userProject.destroy();
                 }
 
                 projects[0].destroy({ force: true })
                     .then(resolve)
                     .catch(err => ResponsePromiseReject(err, HttpStatus.InternalServerError, reject));
-                    
+
             }).catch(err => ResponsePromiseReject(err, HttpStatus.InternalServerError, reject));
     });
 }
