@@ -65,7 +65,7 @@ export async function GetUsersByProjectId(ProjectId: number) {
 }
 
 export async function GetProjectCollaborators(ProjectId: number): Promise<IProjectCollaborator[]> {
-    const RelevantUserProjects = await UserProject.findAll({ where: { projectId: ProjectId }, include: [{ model: User }]  });
+    const RelevantUserProjects = await UserProject.findAll({ where: { projectId: ProjectId }, include: [{ model: User }, {model: Role}]  });
 
     let users: IProjectCollaborator[] = RelevantUserProjects.map(DbToStdModal_UserProject).filter(x=> x != undefined) as IProjectCollaborator[];;
 
