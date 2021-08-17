@@ -8,6 +8,7 @@ import { BuildResponse, HttpStatus, ResponsePromiseReject, IRequestPromiseReject
 import { UserOwnsProject } from "../../models/UserProject";
 import ProjectImage from "../../models/ProjectImage";
 import ProjectFeature from "../../models/ProjectFeature";
+import ProjectTag from "../../models/ProjectTag";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body as IProject;
@@ -98,6 +99,7 @@ function updateProject(projectUpdateRequest: IProject, query: IPutProjectRequest
             await DBProjects[0].update(DbProjectData)
                 .then(() => updateImages(DBProjects, projectUpdateRequest))
                 .then(() => updateFeatures(DBProjects, projectUpdateRequest))
+                .then(() => updateTags(DBProjects, projectUpdateRequest))
                 .catch(error => reject({ status: HttpStatus.InternalServerError, reason: `Internal server error: ${error}` }))
         }
 
@@ -174,6 +176,45 @@ function updateFeatures(DBProjects: Project[], projectUpdateRequest: IProject) {
                             projectId: DBProjects[0].id,
                             feature: feature,
                         }).catch(err => {
+                            console.log(err);
+                            reject(err);
+                        });
+                }
+            }
+        }
+
+        resolve();
+    });
+}
+
+function updateTags(DBProjects: Project[], projectUpdateRequest: IProject) {
+    return new Promise<void>(async (resolve, reject) => {
+
+        // The tags in the DB should match those sent in this request
+        const existingDbProjectTags = await ProjectTag.findAll({ where: { projectId: DBProjects[0].id } });
+
+        projectUpdateRequest.tags = projectUpdateRequest.tags ?? [];
+
+        if (existingDbProjectTags) {
+            // Remove tags from DB that exist in DB but don't exist in req
+            for (let tag of existingDbProjectTags) {
+                if ((projectUpdateRequest.tags.filter(x => x.id == tag.id).length > 0) == false) {
+                    await tag.destroy();
+                }
+            }
+
+            // Create tags in the DB that exist in req but not DB
+            for (let tag of projectUpdateRequest.tags) {
+                if (!tag.id)
+                    continue;
+
+                if ((existingDbProjectTags.filter(x => x.id == tag.id).length > 0) === false) {
+                    await ProjectTag.create(
+                        {
+                            projectId: DBProjects[0].id,
+                            tagId: tag.id,
+                        })
+                        .catch(err => {
                             console.log(err);
                             reject(err);
                         });

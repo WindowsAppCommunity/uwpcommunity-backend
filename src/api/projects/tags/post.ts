@@ -110,7 +110,7 @@ async function createTag(body: IPostProjectTagsRequestBody, query: IPostProjectT
         const project = matchingDbProjects[0];
 
         if (!project.tags) {
-            ResponsePromiseReject("No tags found on this project.", HttpStatus.BadRequest, reject);
+            ResponsePromiseReject("No tags were supplied.", HttpStatus.BadRequest, reject);
             return;
         }
 
