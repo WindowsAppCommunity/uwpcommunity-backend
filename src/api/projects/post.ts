@@ -7,8 +7,9 @@ import { getUserByDiscordId } from "../../models/User";
 import { GetDiscordIdFromToken } from "../../common/helpers/discord";
 import { BuildResponse, HttpStatus, } from "../../common/helpers/responseHelper";
 import ProjectImage from "../../models/ProjectImage";
-import { IProject } from "../../models/types";
+import { IProject, ITag } from "../../models/types";
 import ProjectFeature from "../../models/ProjectFeature";
+import ProjectTag from "../../models/ProjectTag";
 
 module.exports = async (req: Request, res: Response) => {
     const body = req.body as IPostProjectsRequestBody;
@@ -102,6 +103,7 @@ function submitProject(projectRequestData: IPostProjectsRequestBody, discordId: 
             })
             .then(() => createImages(projectRequestData, project[0]))
             .then(() => createFeatures(projectRequestData, project[0]))
+            .then(() => createTags(projectRequestData, project[0]))
             .catch(reject);
 
         resolve(project[0]);
@@ -144,6 +146,24 @@ function createFeatures(projectRequestData: IPostProjectsRequestBody, project: P
     });
 }
 
+function createTags(projectRequestData: IPostProjectsRequestBody, project: Project): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+        for (let tag of projectRequestData.tags ?? []) {
+            
+            if (!tag.id)
+                continue;
+
+            await ProjectTag.create(
+                {
+                    projectId: project.id,
+                    tagId: tag.id,
+                }).catch(reject);
+        }
+
+        resolve();
+    });
+}
+
 interface IPostProjectsRequestBody {
     role: "Developer"; // Only a developer can create a new project
     appName: string;
@@ -157,6 +177,7 @@ interface IPostProjectsRequestBody {
     needsManualReview: boolean;
     images?: string[];
     features?: string[];
+    tags?: ITag[];
     heroImage: string;
     appIcon?: string;
     accentColor?: string;
