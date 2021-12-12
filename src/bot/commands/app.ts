@@ -93,7 +93,7 @@ async function handleUserCommand(project: IProject, message: Message, commandPar
         return;
     }
 
-    if(!userCanModifyLead && typeArg.value == "lead") {
+    if (!userCanModifyLead && typeArg.value == "lead") {
         message.channel.send(`Only the project owner can manage project lead role.`);
         return;
     }
@@ -172,8 +172,8 @@ async function handleAddUserCommand(project: IProject, message: Message, command
             roleId: contributorRole.id
         }), message)
         .catch(err => message.channel.send(err));
-        
-        RefreshProjectCache();
+
+    RefreshProjectCache();
 }
 
 
@@ -404,11 +404,16 @@ async function getProjectDetails(project: IProject, message: Message) {
 async function findProject(projectName: string, srcChannel: TextChannel): Promise<IProject | undefined> {
     const allProjects = await getAllDbProjects();
 
-    const matchedProjects = allProjects.filter((i: Project) => i.appName.toLowerCase().includes(projectName) || i.appName.toLowerCase() == projectName || projectName.includes(i.appName.toLowerCase()));
+    const matchedProjects = allProjects.filter((i: Project) => i.appName.toLowerCase() == projectName || i.appName.toLowerCase().includes(projectName) || projectName.includes(i.appName.toLowerCase()));
 
     if (!matchedProjects || matchedProjects.length == 0) {
         srcChannel.send(`Project is private or not found.`);
         return;
+    }
+
+    const exactMatchedProjects = allProjects.filter((i: Project) => i.appName.toLowerCase() == projectName);
+    if (exactMatchedProjects.length == 1) {
+        return DbToStdModal_Project(exactMatchedProjects[0]);
     }
 
     if (matchedProjects.length > 1) {
