@@ -362,8 +362,6 @@ async function getProjectDetails(project: IProject, message: Message) {
         }
     }
 
-    let ownerUsername = await GetProjectOwnerFormattedDiscordUsername(project);
-
     const messageEmbedFields = [
         { name: "Category", value: project.category },
         { name: "Created", value: project.createdAt.toUTCString() + " UTC" }
@@ -380,7 +378,9 @@ async function getProjectDetails(project: IProject, message: Message) {
 
     if (!project || !project.id) return;
 
-    const collaborators = project.collaborators;
+
+    const collaborators = await GetProjectCollaborators(project.id);
+
     const devs = collaborators.filter(i => i.role == "Developer");
     const devIds = devs.map(i => `<@${i.discordId}>`).join(" ");
 
