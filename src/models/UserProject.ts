@@ -43,6 +43,7 @@ export function DbToStdModal_UserProject(userProject: UserProject): IProjectColl
 
     let user: IProjectCollaborator =
     {
+        id: userProject.userId,
         isOwner: userProject.isOwner,
         role: userProject.role?.name ?? "Other",
         name: userProject.user?.name,

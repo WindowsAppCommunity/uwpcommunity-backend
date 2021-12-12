@@ -37,7 +37,7 @@ export interface ITag {
 
 export interface IProjectCollaborator extends IUser {
     isOwner: boolean;
-    role: "Developer" | "Translator" | "Beta Tester" | "Other";
+    role: "Developer" | "Translator" | "Beta Tester" | "Other" | "Support" | "Lead" | "Patreon" | "Advocate";
 }
 
 export interface IProjects {
