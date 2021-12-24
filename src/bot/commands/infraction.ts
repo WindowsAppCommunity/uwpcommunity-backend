@@ -157,18 +157,18 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
 
     // If user has 2 strikes, and needs a 3rd
     else if (memberInfraction.worstOffense.label == "Strike 2") {
-        metaChannel.send(`<@${member.id}>, you have been issued Strike 3 and a 2 month mute for the following reason:\n> ${reasonArg.value}\n${originalMessage}.\n Please remember to follow the rules in the future. \nThis strike will last for 6 months, and another infraction will result in a 6 month mute.`);
+        metaChannel.send(`<@${member.id}>, you have been issued Strike 3 and a 2.1 month mute for the following reason:\n> ${reasonArg.value}\n${originalMessage}.\n Please remember to follow the rules in the future. \nThis strike will last for 6 months, and another infraction will result in a 6 month mute.`);
         infractionMsg = await infractionChannel.send(`${discordMessage.member.id} has issued Strike 3 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`);
     }
 
     // If user has 3 strikes, needs a 4th    
     else if (memberInfraction.worstOffense.label == "Strike 3") {
-        metaChannel.send(`<@${member.id}>, you have been issued Strike 4 and a 6 month mute for the following reason:\n> ${reasonArg.value}\n${originalMessage}.\n Please remember to follow the rules in the future. \nThis strike will last for 18 months. There is no greater punishment. Shame on you.`);
+        metaChannel.send(`<@${member.id}>, you have been issued Strike 4 and a 6.3 month mute for the following reason:\n> ${reasonArg.value}\n${originalMessage}.\n Please remember to follow the rules in the future. \nThis strike will last for 18 months. There is no greater punishment. Shame on you.`);
         infractionMsg = await infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 4 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`);
     }
 
     else if (memberInfraction.worstOffense.label == "Strike 4") {
-        metaChannel.send(`<@${member.id}>, you have been re-issued Strike 4 and a 6 month mute for the following reason:\n> ${reasonArg.value}\n${originalMessage}.\n Please remember to follow the rules in the future. \nThis strike will last for 18 months. There is no greater punishment. Shame on you.`);
+        metaChannel.send(`<@${member.id}>, you have been re-issued Strike 4 and a 6.3 month mute for the following reason:\n> ${reasonArg.value}\n${originalMessage}.\n Please remember to follow the rules in the future. \nThis strike will last for 18 months. There is no greater punishment. Shame on you.`);
         infractionMsg = await infractionChannel.send(`${discordMessage.member.displayName} has re-issued Strike 4 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`);
     }
 
