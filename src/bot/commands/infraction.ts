@@ -262,37 +262,38 @@ async function initExistingInfractionData(server: Guild) {
         botChannel.send(`Unable to init existing infraction data. Missing a warned or strike role.`);
         return;
     }
-
+    
+    // Assume that a month consists of 30 days
     infractions = [];
     infractionData = [
         {
             label: "Warned",
             role: warnedRole,
-            expiresAfterDays: 14
+            expiresAfterDays: 14 // 2 weeks
         },
         {
             label: "Strike 1",
             role: strike1Role,
             expiresAfterDays: 21, // 3 weeks
-            unmuteAfterDays: 7
+            unmuteAfterDays: 7 // 1 week
         },
         {
             label: "Strike 2",
             role: strike2Role,
-            expiresAfterDays: 63, // ~2 months
-            unmuteAfterDays: 21
+            expiresAfterDays: 63, // 2.1 months
+            unmuteAfterDays: 21 // 3 weeks
         },
         {
             label: "Strike 3",
             role: strike3Role,
-            expiresAfterDays: 189, // ~6 months
-            unmuteAfterDays: 63
+            expiresAfterDays: 189, // 6.3 months
+            unmuteAfterDays: 63 // 2.1 months
         },
         {
             label: "Strike 4",
             role: strike4Role,
-            expiresAfterDays: 567, // 18 months
-            unmuteAfterDays: 189
+            expiresAfterDays: 567, // 18.9 months
+            unmuteAfterDays: 189 // 6.3 months
         }
     ];
 
