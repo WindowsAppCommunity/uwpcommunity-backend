@@ -327,7 +327,7 @@ async function getRoleForProject(project: IProject, message: Message, commandPar
             appNameInRoleRegex = /(.+) Patreon/;
             break;
         default:
-            message.channel.send(`${typeArg.value} is not a valid role type. Expected \`tester\`, \`translator\` or \`dev\``);
+            message.channel.send(`${typeArg.value} is not a valid role type. Valid values are \`tester\`, \`translator\`, \`dev\`, \`advocate\`, \`patreon\`, \`lead\`, and \`support\`\nExample: \`/type translator\``);
             return null;
     }
 
