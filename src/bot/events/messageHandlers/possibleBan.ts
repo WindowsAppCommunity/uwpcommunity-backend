@@ -43,7 +43,7 @@ async function userMessageCounter(member: GuildMember, limit: number): Promise<b
         if (channel.type == "text") {
             const textChannel = channel as TextChannel;
 
-            if (member.permissionsIn(textChannel).has("SEND_MESSAGES"))
+            if (!member.permissionsIn(textChannel).has("SEND_MESSAGES"))
                 continue;
 
             const messages = textChannel.messages.cache.array();
