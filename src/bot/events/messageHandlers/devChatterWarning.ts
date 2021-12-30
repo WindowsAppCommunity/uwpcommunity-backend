@@ -1,5 +1,6 @@
 import { Message, TextChannel, GuildMember } from "discord.js";
 import { bot, GetChannelByName, GetGuildChannels } from "../../../common/helpers/discord";
+import { getAllProjects } from "../../../models/Project";
 
 var sentenceStops: string[] = [".", "...", ":", "!"];
 
@@ -13,9 +14,19 @@ export async function devChatterWarning(discordMessage: Message) {
     if (!generalChannel || discordMessage.channel.id != generalChannel.id)
         return;
 
-    var hasMatch = /(?:[A-Z][a-z]{2,}){3,}|`.+?`/.test(discordMessage.content);
+    var matched = discordMessage.content.match(/(?:[A-Z][a-z]{2,}){3,}|`.+?`/g);
 
-    if (hasMatch) {
+    if (matched != null && matched.length > 0) {
+        var projects = await getAllProjects();
+
+        // If the message contains the name of a project, ignore the entire message.
+        // If the conversation has not been properly redirected,
+        // and subsequent messages contain dev chatter, it'll be caught.
+        for (const project of projects) {
+            if (matched?.includes(project.appName))
+                return;
+        }
+
         var interjection = interjections[Math.floor(Math.random() * interjections.length - 1) + 1];
         var quip = quips[Math.floor(Math.random() * quips.length - 1) + 1];
 
