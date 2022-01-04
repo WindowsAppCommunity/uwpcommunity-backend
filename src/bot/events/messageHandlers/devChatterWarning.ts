@@ -14,9 +14,14 @@ export async function devChatterWarning(discordMessage: Message) {
     if (!generalChannel || discordMessage.channel.id != generalChannel.id)
         return;
 
-    var matched = discordMessage.content.match(/(?:[A-Z][a-z]{2,}){3,}|`.+?`/g);
+    // Allow links regardless of possible dev talk.
+    if (discordMessage.content.includes("http"))
+        return;
+
+    let matched: string[] | undefined = discordMessage.content.match(/(?:[A-Z][a-z]{2,}){3,}|`.+?`/g)?.map(x => x);
 
     if (matched != null && matched.length > 0) {
+
         var projects = await getAllProjects();
 
         // If the message contains the name of a project, ignore the entire message.
