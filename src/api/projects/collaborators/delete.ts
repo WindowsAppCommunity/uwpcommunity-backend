@@ -28,11 +28,14 @@ module.exports = async (req: Request, res: Response) => {
     var callerUser = await GetGuildUser(discordId);
     if (!callerUser) return;
 
-    const user = await User.findOne({
-        where: Sequelize.or(
-            { id: body.userId ?? -1 },
-            { discordId: body.discordId ?? -1 })
-    }).catch(err => { BuildResponse(res, HttpStatus.NotFound, "User not found") });
+    const user = await (body.userId ?
+        User.findOne({
+            where: { id: body.userId }
+        }) :
+        User.findOne({
+            where: { discordId: body.discordId?.toString() ?? -1 }
+        })
+        ).catch(err => { BuildResponse(res, HttpStatus.NotFound, "User not found") });
 
     if (!user) {
         BuildResponse(res, HttpStatus.BadRequest, `User isn't registered with the UWP Community.`);
@@ -47,13 +50,13 @@ module.exports = async (req: Request, res: Response) => {
 
     var collaborators = await GetProjectCollaborators(body.projectId);
 
-    const isOwner = collaborators.find(collaborator => collaborator.isOwner)?.discordId == discordId;
-    const isCollaborator = collaborators.find(collaborator => collaborator.discordId == discordId);
+    const isOwner = collaborators.find(collaborator => collaborator.isOwner)?.discordId == user.discordId;
+    const isCollaborator = collaborators.find(collaborator => collaborator.discordId == user.discordId);
     const isMod = callerUser.roles.cache.find(i => i.name.toLowerCase() == "mod" || i.name.toLowerCase() == "admin");
 
-    const isLead = isCollaborator && await UserHasDbRole(body.projectId, discordId, "Lead");
-    const isSupport = isCollaborator && await UserHasDbRole(body.projectId, discordId, "Support");
-    const isDev = isCollaborator && await UserHasDbRole(body.projectId, discordId, "Developer");
+    const isLead = isCollaborator && await UserHasDbRole(body.projectId, user.discordId, "Lead");
+    const isSupport = isCollaborator && await UserHasDbRole(body.projectId, user.discordId, "Support");
+    const isDev = isCollaborator && await UserHasDbRole(body.projectId, user.discordId, "Developer");
 
     const userCanModify = isOwner || isLead || isSupport || isDev || isMod || user.discordId?.toString() == discordId;
     const userCanModifyDevs = isOwner || isLead || isSupport || isMod;
