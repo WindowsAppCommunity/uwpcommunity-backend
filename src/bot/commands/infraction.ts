@@ -161,7 +161,7 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
         infractionMsg = await infractionChannel.send(`${discordMessage.member.id} has issued Strike 3 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`);
     }
 
-    // If user has 3 strikes, needs a 4th    
+    // If user has 3 strikes, needs a 4th
     else if (memberInfraction.worstOffense.label == "Strike 3") {
         metaChannel.send(`<@${member.id}>, you have been issued Strike 4 and a ~6 month (189 day) mute for the following reason:\n> ${reasonArg.value}\n${originalMessage}.\n Please remember to follow the rules in the future. \nThis strike will last for ~19 months (567 days). There is no greater punishment. Shame on you.`);
         infractionMsg = await infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 4 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`);
@@ -262,7 +262,7 @@ async function initExistingInfractionData(server: Guild) {
         botChannel.send(`Unable to init existing infraction data. Missing a warned or strike role.`);
         return;
     }
-    
+
     infractions = [];
     infractionData = [
         {
@@ -338,11 +338,21 @@ async function initExistingInfractionData(server: Guild) {
 function setupMutedChannelSettings(server: Guild, mutedRole: Role) {
     server.channels.cache.forEach(channel => {
         if (channel.type === "text") {
-            (channel as TextChannel).createOverwrite(mutedRole, { "SEND_MESSAGES": false, "ADD_REACTIONS": false });
-        }
-
-        if (channel.type == "voice") {
-            (channel as VoiceChannel).createOverwrite(mutedRole, { "SPEAK": false, "STREAM": false });
+            const mutedTextPermissions = channel.permissionOverwrites.get(mutedRole.id);
+            console.log(mutedTextPermissions?.toJSON());
+            if (!mutedTextPermissions // Check if permissions for muted role are missing or wrong
+                || !mutedTextPermissions.deny.has("SEND_MESSAGES")
+                || !mutedTextPermissions.deny.has("ADD_REACTIONS")) {
+                channel.createOverwrite(mutedRole, { "SEND_MESSAGES": false, "ADD_REACTIONS": false });
+            }
+        } else if (channel.type == "voice") {
+            const mutedVoicePermissions = channel.permissionOverwrites.get(mutedRole.id);
+            console.log(mutedVoicePermissions?.toJSON());
+            if (!mutedVoicePermissions
+                || !mutedVoicePermissions.deny.has("SPEAK")
+                || !mutedVoicePermissions.deny.has("STREAM")) {
+                channel.createOverwrite(mutedRole, { "SPEAK": false, "STREAM": false });
+            }
         }
     });
 }
