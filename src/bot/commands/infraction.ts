@@ -339,7 +339,6 @@ function setupMutedChannelSettings(server: Guild, mutedRole: Role) {
     server.channels.cache.forEach(channel => {
         if (channel.type === "text") {
             const mutedTextPermissions = channel.permissionOverwrites.get(mutedRole.id);
-            console.log(mutedTextPermissions?.toJSON());
             if (!mutedTextPermissions // Check if permissions for muted role are missing or wrong
                 || !mutedTextPermissions.deny.has("SEND_MESSAGES")
                 || !mutedTextPermissions.deny.has("ADD_REACTIONS")) {
@@ -347,7 +346,6 @@ function setupMutedChannelSettings(server: Guild, mutedRole: Role) {
             }
         } else if (channel.type == "voice") {
             const mutedVoicePermissions = channel.permissionOverwrites.get(mutedRole.id);
-            console.log(mutedVoicePermissions?.toJSON());
             if (!mutedVoicePermissions
                 || !mutedVoicePermissions.deny.has("SPEAK")
                 || !mutedVoicePermissions.deny.has("STREAM")) {
