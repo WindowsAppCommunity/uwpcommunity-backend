@@ -9,7 +9,7 @@ var interjections: string[] = ["woah there,", "wait a sec.", "hey!", "hold on.",
 var quips: string[] = ["is that dev talk?", "heard you like programming.", "programming is fun, but...", "there's a time and place for dev talk, but not here."];
 
 export async function devChatterWarning(discordMessage: Message) {
-    var generalChannel = await GetChannelByName("general") as TextChannel;
+    var generalChannel = await GetChannelByName("user-chat") as TextChannel;
 
     if (!generalChannel || discordMessage.channel.id != generalChannel.id)
         return;
