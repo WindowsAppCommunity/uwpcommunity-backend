@@ -23,7 +23,7 @@ async function sendMessageWithBackups(guildMember: GuildMember, message: string)
         let modChannel = await GetChannelByName("mod-chat") as TextChannel;
         if (modChannel) modChannel.send("Something went wrong with the bot, please have an Admin take a look.");
         else {
-            let generalChannel = await GetChannelByName("general") as TextChannel;
+            let generalChannel = await GetChannelByName("user-chat") as TextChannel;
             if (!generalChannel) throw "Couldn't find bot channel, mod channel, or general channel";
             else generalChannel.send("A few things went wrong went wrong with the bot, please have an Admin take a look.");
         }
