@@ -18,7 +18,7 @@ export async function devChatterWarning(discordMessage: Message) {
     if (discordMessage.content.includes("http"))
         return;
 
-    let matched: string[] | undefined = discordMessage.content.match(/[^:](?:[A-Z][a-z]{2,}){3,}|`.+?`/g)?.map(x => x);
+    let matched: string[] | undefined = discordMessage.content.match(/[^:](?:[A-Z][a-z]{2,}){3,}|```[\s\S]+?```/g)?.map(x => x);
 
     if (matched != null && matched.length > 0) {
 
