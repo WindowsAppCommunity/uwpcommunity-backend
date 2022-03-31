@@ -6,7 +6,7 @@ var sentenceStops: string[] = [".", "...", ":", "!"];
 
 var interjections: string[] = ["woah there,", "wait a sec.", "hey!", "hold on.", "<@271332522095411202>'s words echoed..."];
 
-var quips: string[] = ["is that dev talk?", "heard you like programming.", "programming is fun, but...", "there's a time and place for dev talk, but not here."];
+var quips: string[] = ["is that dev talk?", "programming?", "programming is fun, but...", "there's a time and place for dev talk, but not here."];
 
 export async function devChatterWarning(discordMessage: Message) {
     var generalChannel = await GetChannelByName("user-chat") as TextChannel;
@@ -18,7 +18,7 @@ export async function devChatterWarning(discordMessage: Message) {
     if (discordMessage.content.includes("http"))
         return;
 
-    let matched: string[] | undefined = discordMessage.content.match(/(?:[A-Z][a-z]{2,}){3,}|`.+?`/g)?.map(x => x);
+    let matched: string[] | undefined = discordMessage.content.match(/[^:](?:[A-Z][a-z]{2,}){3,}|```[\s\S]+?```/g)?.map(x => x);
 
     if (matched != null && matched.length > 0) {
 
