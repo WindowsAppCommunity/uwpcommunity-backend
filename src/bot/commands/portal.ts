@@ -8,8 +8,8 @@ interface portalImage {
 
 var portalImages: portalImage[] = [
     {
-        out: "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/7065397f-4a9b-4510-838e-37abcab1a8b0/d5pcfmj-73cb13f5-9426-4ae8-beee-78f9480c4609.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzcwNjUzOTdmLTRhOWItNDUxMC04MzhlLTM3YWJjYWIxYThiMFwvZDVwY2Ztai03M2NiMTNmNS05NDI2LTRhZTgtYmVlZS03OGY5NDgwYzQ2MDkucG5nIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.91p8hw_kyp5gMF9TpXYNxxO78OxE42dmvI67qBnEnB4",
-        in: "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/7065397f-4a9b-4510-838e-37abcab1a8b0/d5pcfqc-27c3e3aa-840b-4c69-9dc0-2b8b294d393c.png?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzcwNjUzOTdmLTRhOWItNDUxMC04MzhlLTM3YWJjYWIxYThiMFwvZDVwY2ZxYy0yN2MzZTNhYS04NDBiLTRjNjktOWRjMC0yYjhiMjk0ZDM5M2MucG5nIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.26eFxDnUAstxj3OeyReQT_ajrCDgF4wJXFkfRBW_d3g",
+        out: "https://cdn.discordapp.com/attachments/642818541426573344/960339465891631186/b.png",
+        in: "https://cdn.discordapp.com/attachments/642818541426573344/960339466185224212/o.png",
     },
 ]
 
