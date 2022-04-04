@@ -26,9 +26,28 @@ export async function handleSwearFilter(discordMessage: PartialMessage | Message
 
             await discordMessage.fetch(); // Partial messages need to be resolved at this point. Does nothing if not partial
             if (!discordMessage.partial) { // This allows us to access properties that could have been null before fetching
-                const dm: DMChannel = await discordMessage.author.createDM();
-                await dm.send(`Your message was removed because it contained a swear word${isEmbed ? " in an embed" : ""}.
-> ${discordMessage.content}`);
+                try {
+                    // If the user has turned off DMs from all server members, this will throw
+                    const dm: DMChannel = await discordMessage.author.createDM();
+                    await dm.send(`Your message was removed because it contained a swear word${isEmbed ? " in an embed" : ""}.
+                    > ${discordMessage.content}`);
+                } catch {
+                    var tick = 5;
+                    var baseMsg = `<@${discordMessage.author.id}> Swear word was removed, see rule 4.\nThis message will self destruct in `;
+                    var sentMsg = await discordMessage.channel.send(baseMsg + tick);
+
+                    var interval = setInterval(() => {
+                        tick--;
+                        
+                        if (tick == 0) {
+                            sentMsg.delete();
+                            clearInterval(interval);
+                            return;
+                        }
+                        
+                        sentMsg.edit(baseMsg + tick);
+                    }, 1000);
+                }
 
                 const guild = await GetGuild();
                 const author = discordMessage.author;

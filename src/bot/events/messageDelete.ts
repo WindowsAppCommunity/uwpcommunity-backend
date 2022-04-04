@@ -2,6 +2,9 @@ import { Message, TextChannel } from "discord.js";
 import { GetChannelByName } from "../../common/helpers/discord";
 
 export default async (discordMessage: Message) => {
+    if (discordMessage.author?.bot)
+        return; // ignore messages sent by bots.
+        
     // Does not work for really old messages
     const botstuffChannel = await GetChannelByName("bot-stuff") as TextChannel;
 
