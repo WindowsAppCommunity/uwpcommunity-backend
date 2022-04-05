@@ -30,6 +30,11 @@ export default async (message: Message, commandParts: string[], args: IBotComman
     if (!channel)
         return;
 
+    if (channel.id == message.channel.id) {
+        message.channel.send("You're already in that channel!");
+        return;
+    }
+
     if (!channel.permissionsFor(message.author.id)?.has("SEND_MESSAGES") ||
         !channel.permissionsFor(message.author.id)?.has("VIEW_CHANNEL")) {
         message.channel.send(`You aren't allowed to open a portal there`);
