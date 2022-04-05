@@ -51,18 +51,18 @@ export default async (message: Message, commandParts: string[], args: IBotComman
 
 function createInitialInEmbed(channel: TextChannel, img: string): MessageEmbed {
     return new MessageEmbed()
-        .setImage(img)
+        .setThumbnail(img)
         .setDescription(`Spawning a portal to <#${channel.id}>...`);
 }
 
 function createOutputEmbed(userId: string, channel: TextChannel, img: string, msgLink: string): MessageEmbed {
     return new MessageEmbed()
-        .setImage(img)
+        .setThumbnail(img)
         .setDescription(`<@${userId}> opened a portal from <#${channel.id}>!\n[Go back through the portal](${msgLink})`);
 }
 
 function createFinalInEmbed(channel: TextChannel, img: string, msgLink: string): MessageEmbed {
     return new MessageEmbed()
-        .setImage(img)
-        .setDescription(`Opened a portal to <#${channel.id}>!\n[Enter the portal](${msgLink})`);
+        .setThumbnail(img)
+        .setDescription(`A portal to <#${channel.id}> was opened!\n[Enter the portal](${msgLink})`);
 }
