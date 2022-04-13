@@ -155,6 +155,7 @@ async function SetupBotCommands() {
                 if (message.content.startsWith(`!${commandPrefix}`)) {
 
                     message.content = message.content.replace('@here', '');
+                    message.content = message.content.replace('@everyone', '');
 
                     if (message.mentions.everyone)
                         return; // Don't allow mentioning everyone
