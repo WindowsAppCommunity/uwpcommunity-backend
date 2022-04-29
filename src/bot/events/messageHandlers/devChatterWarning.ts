@@ -32,7 +32,7 @@ export async function devChatterWarning(discordMessage: Message) {
     let interfaceNameMatch: string[] = discordMessage.content.match(/[^:]I[A-Z][a-z]{3,}/g)?.map(x => x) ?? [];
     let pascalOrCamelCaseOrCppNamespaceMatch: string[] = discordMessage.content.match(/[^:](?:[A-Z][a-z]{2,}:?:?){3,}/g)?.map(x => x) ?? [];
     let snakeCaseMatch: string[] = discordMessage.content.match(/[A-Za-z]{2,}_[A-Za-z]{2,}/g)?.map(x => x) ?? [];
-    let kebabCaseMatch: string[] = discordMessage.content.match(/[A-Za-z]{2,}-[A-Za-z]{2,}/g)?.map(x => x) ?? [];
+    let kebabCaseMatch: string[] = discordMessage.content.match(/[A-Za-z]{2,}-[A-Za-z]{3,}/g)?.map(x => x) ?? [];
 
     var allMatches = codeBlockMatch.concat(interfaceNameMatch).concat(pascalOrCamelCaseOrCppNamespaceMatch).concat(snakeCaseMatch).concat(kebabCaseMatch);
 
