@@ -2,6 +2,7 @@ import { Message } from "discord.js";
 import { devChatterWarning } from "./messageHandlers/devChatterWarning";
 import { handlePossibleBan } from "./messageHandlers/possibleBan";
 import { handleSwearFilter } from "./messageHandlers/swearFilter";
+import { wipThreadOnlyComments } from "./messageHandlers/wipThreadOnlyComments";
 
 export default (discordMessage: Message) => {
     if (discordMessage.author?.bot)
@@ -10,4 +11,5 @@ export default (discordMessage: Message) => {
     handleSwearFilter(discordMessage);
     handlePossibleBan(discordMessage);
     devChatterWarning(discordMessage);
+    wipThreadOnlyComments(discordMessage);
 }
