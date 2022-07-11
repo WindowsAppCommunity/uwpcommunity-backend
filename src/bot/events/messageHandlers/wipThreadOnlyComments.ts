@@ -16,7 +16,7 @@ export async function wipThreadOnlyComments(discordMessage: Message) {
         return;
 
     // If message doesn't contain links or media
-    if(!MessageContainsLinks(discordMessage) && !MessageContainsMedia(discordMessage)) {
+    if(!MessageContainsLinks(discordMessage) && !MessageContainsMedia(discordMessage) && discordMessage.system == false) {
         await discordMessage.delete();
         
         var dm = await discordMessage.author.createDM();
