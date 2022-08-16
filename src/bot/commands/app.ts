@@ -362,6 +362,11 @@ async function getProjectDetails(project: IProject, message: Message) {
         }
     }
 
+    if (project.needsManualReview) {
+        message.channel.send(`Project is awaiting ownership verification and review.`);
+        return;
+    }
+
     const messageEmbedFields = [
         { name: "Category", value: project.category },
         { name: "Created", value: project.createdAt.toUTCString() + " UTC" }
