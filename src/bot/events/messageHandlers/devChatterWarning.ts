@@ -3,6 +3,7 @@ import fetch from "node-fetch";
 import { bot, GetChannelByName } from "../../../common/helpers/discord";
 
 const disallowedDomainsForApiLookup = ["docs.microsoft.com", "devblogs.microsoft.com", "social.msdn.microsoft.com", "stackoverflow.com"];
+const allowedWords = ["winappsdk"];
 
 function hasDisallowedDomain(text: string): boolean {
     for (let domain of disallowedDomainsForApiLookup) {
@@ -27,7 +28,7 @@ export async function devChatterWarning(discordMessage: Message) {
     // Allow links regardless of possible dev talk.
     if (discordMessage.content.includes("http"))
         return;
-        
+
     let codeBlockMatch: string[] = discordMessage.content.match(/```[\s\S]+?```/g)?.map(x => x) ?? [];
     let interfaceNameMatch: string[] = discordMessage.content.match(/[^:]I[A-Z][a-z]{3,}/g)?.map(x => x) ?? [];
     let pascalOrCamelCaseOrCppNamespaceMatch: string[] = discordMessage.content.match(/[^:](?:[A-Z][a-z]{2,}:?:?){3,}/g)?.map(x => x) ?? [];
@@ -37,6 +38,9 @@ export async function devChatterWarning(discordMessage: Message) {
     var allMatches = codeBlockMatch.concat(interfaceNameMatch).concat(pascalOrCamelCaseOrCppNamespaceMatch).concat(snakeCaseMatch).concat(kebabCaseMatch);
 
     for (let match of allMatches) {
+        if (allowedWords.includes(match.toLowerCase()))
+            continue;
+
         var searchQuery = await fetch(`https://www.bing.com/search?q=${encodeURIComponent(match)}`, {
             headers: {
                 "User-Agent": "Mozilla/4.0 (compatible; MSIE 9.0; Windows NT 6.1; Trident/4.0)"
