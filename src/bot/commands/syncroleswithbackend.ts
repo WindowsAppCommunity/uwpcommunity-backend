@@ -1,4 +1,4 @@
-import { Message, Role as DiscordRole, TextChannel } from "discord.js";
+import { CreateRoleOptions, Message, Role as DiscordRole, TextChannel } from "discord.js";
 import { IBotCommandArgument, IProject } from "../../models/types";
 import { GetGuild, EditMultiMessages, GetChannelByName, SendMultiMessages, GetGuildMembers, GetRoles } from "../../common/helpers/discord";
 import Role, { GetRoleByName } from "../../models/Role";
@@ -7,13 +7,15 @@ import User, { getUserByDiscordId } from "../../models/User";
 import Project, { DbToStdModal_Project, getAllProjects } from "../../models/Project";
 
 export default async (message: Message, commandParts: string[], args: IBotCommandArgument[]) => {
-    const isAdmin = message.member?.roles.cache.array().filter(role => role.name.toLowerCase() === "admin").length != 0;
+    if (!message.member) return;
+
+    const isAdmin = [...message.member.roles.cache.values()].filter(role => role.name.toLowerCase() === "admin").length != 0;
     if (!isAdmin) return;
 
     const botChannel = await GetChannelByName("bot-stuff") as TextChannel;
     if (!botChannel) return;
 
-    const messages = await SendMultiMessages(`Started syncing discord roles and backend database.`, botChannel, message.channel);
+    const messages = await SendMultiMessages(`Started syncing discord roles and backend database.`, botChannel, message.channel as TextChannel);
 
     await CreateMissingUserProjectsForDiscordRoles(message);
 
@@ -25,14 +27,14 @@ export default async (message: Message, commandParts: string[], args: IBotComman
            await CreateMissingDiscordRolesForUserProjects(message, missingRoleData);
        } */
 
-    SendMultiMessages(`Finished syncing discord roles and backend database.`, botChannel, message.channel);
+    SendMultiMessages(`Finished syncing discord roles and backend database.`, botChannel, message.channel as TextChannel);
 }
 
 async function CreateMissingUserProjectsForDiscordRoles(message: Message) {
     const botChannel = await GetChannelByName("bot-stuff") as TextChannel;
     if (!botChannel) return;
 
-    const messages = await SendMultiMessages(`Registering missing collaborators based on Discord roles`, botChannel, message.channel);
+    const messages = await SendMultiMessages(`Registering missing collaborators based on Discord roles`, botChannel, message.channel as TextChannel);
 
     // Find all registered projects
     const registeredProjects = await getAllProjects()
@@ -117,13 +119,16 @@ async function GetRoleDataIfCreatingMissingRolesDoesntExceedRoleLimit(message: M
 
     const returnData: IDiscordRoleData[] = [];
 
-    const messages = await SendMultiMessages(`Checking if creating missing Discord roles would exceed role limit of ${limit}...`, message.channel, botChannel);
+    const messages = await SendMultiMessages(`Checking if creating missing Discord roles would exceed role limit of ${limit}...`, message.channel as TextChannel, botChannel);
 
     await EditMultiMessages(`Checking if creating missing Discord roles would exceed role limit...\nFinding all UserProjects...`, ...messages);
 
     const userProjects = await UserProject.findAll({ include: [{ model: User }, { model: UserProject }, { model: Role }, { model: Project }] });
+
     const guild = await GetGuild();
-    const roles = guild?.roles.cache.array();
+    if (!guild) return [];
+
+    const roles = [...guild.roles.cache.values()];
     if (!roles) return [];
 
     // Assuming the unused discord roles are cleaned up
@@ -189,16 +194,16 @@ async function GetRoleDataIfCreatingMissingRolesDoesntExceedRoleLimit(message: M
     if (isSafe) {
         return returnData;
     } else {
-        SendMultiMessages(`Unable to create missing Discord roles for registered \`UserProject\`s. Role ceiling would be reached.`, message.channel, botChannel);
+        SendMultiMessages(`Unable to create missing Discord roles for registered \`UserProject\`s. Role ceiling would be reached.`, message.channel as TextChannel, botChannel);
         return [];
     }
 }
 
-async function CreateMissingDiscordRolesForUserProjects(message: Message, discordRoleData: IDiscordRoleData[]) {
+async function CreateMissingDiscordRolesForUserProjects(message: Message, discordRoleData: CreateRoleOptions[]) {
     const botChannel = await GetChannelByName("bot-stuff") as TextChannel;
     if (!botChannel) return;
 
-    const messages = await SendMultiMessages(`Creating missing Discord roles for registered \`UserProject\`s`, message.channel, botChannel);
+    const messages = await SendMultiMessages(`Creating missing Discord roles for registered \`UserProject\`s`, message.channel as TextChannel, botChannel);
 
     const guild = await GetGuild();
 
@@ -206,7 +211,7 @@ async function CreateMissingDiscordRolesForUserProjects(message: Message, discor
     for (const roleData of discordRoleData) {
         EditMultiMessages(`Creating missing Discord roles for registered project collaborators\nCreating the role ${roleData.name}`, ...messages);
 
-        await guild?.roles.create({ data: roleData });
+        await guild?.roles.create(roleData);
     }
 
     EditMultiMessages(`Finished creating missing Discord roles for registered project collaborators`, ...messages);
@@ -219,7 +224,7 @@ async function RemoveDiscordRolesForUnregisteredProjects(message: Message) {
     const botChannel = await GetChannelByName("bot-stuff") as TextChannel;
     if (!botChannel) return;
 
-    const messages = await SendMultiMessages(`Cleaning up Discord roles for unregistered projects`, botChannel, message.channel);
+    const messages = await SendMultiMessages(`Cleaning up Discord roles for unregistered projects`, botChannel, message.channel as TextChannel);
 
     const roles = await GetRoles();
     if (!roles) return [];

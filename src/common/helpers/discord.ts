@@ -4,12 +4,24 @@ import { IDiscordUser } from "../../models/types";
 import { Response } from "express";
 import { genericServerError } from "./generic";
 import { BuildResponse, HttpStatus } from "./responseHelper";
+import { ChannelType, GatewayIntentBits } from "discord.js";
 
 export let bot: Discord.Client;
 export const uwpCommunityGuildId: string = process.env.guildId || "667491687639023636";
 
 export let InitBot = function () {
-    bot = new Discord.Client({ disableMentions: 'everyone' });
+    bot = new Discord.Client({
+        intents: [
+            GatewayIntentBits.Guilds,
+            GatewayIntentBits.GuildMessages,
+            GatewayIntentBits.GuildMembers,
+            GatewayIntentBits.GuildMessageReactions,
+            GatewayIntentBits.GuildPresences,
+            GatewayIntentBits.MessageContent,
+            GatewayIntentBits.DirectMessageReactions,
+            GatewayIntentBits.DirectMessages,
+        ],
+    });
 
     if (!process.env.discord_botToken) {
         console.log(`\x1b[33m${`Missing "discord_botToken" environment variable. You will not be able to interact with the Discord bot without this`}\x1b[0m`);
@@ -32,10 +44,10 @@ export function GetGuild(): Promise<Discord.Guild | undefined> {
 export async function GetGuildMembers(): Promise<Discord.GuildMember[] | undefined> {
     const server = await GetGuild();
     if (!server) return;
-    
+
     var members = await server.members.fetch();
 
-    return members.array();
+    return [...members.values()];
 }
 
 export async function GetGuildUser(discordId: string): Promise<Discord.GuildMember | undefined> {
@@ -53,16 +65,19 @@ export async function GetRoles() {
     const server = await GetGuild();
     if (!server) return;
 
-    return (await server.roles.fetch()).cache.array();
+    return [...(await server.roles.fetch()).values()];
 }
 
-export async function GetGuildChannels(): Promise<Discord.GuildChannel[] | undefined> {
+export async function GetGuildChannels(): Promise<Discord.GuildBasedChannel[] | undefined> {
     const server = await GetGuild();
 
-    return server?.channels.cache.array();
+    if (server == undefined)
+        return undefined;
+
+    return [...server!.channels.cache.values()];
 }
 
-export async function GetChannelByName(channelName: string): Promise<Discord.GuildChannel | undefined> {
+export async function GetChannelByName(channelName: string): Promise<Discord.GuildBasedChannel | undefined> {
     const channels = await GetGuildChannels();
     if (!channels)
         return;
@@ -86,7 +101,7 @@ export async function SendMultiMessages(content: string, ...params: (Discord.Gui
     const results: Discord.Message[] = [];
 
     for (const channel of params) {
-        if (channel.type === "text") {
+        if (channel.type === ChannelType.GuildText) {
             const sentMessage = await (channel as Discord.TextChannel).send(content);
             results.push(sentMessage as Discord.Message);
         }

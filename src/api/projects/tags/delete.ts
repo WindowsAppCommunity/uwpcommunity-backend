@@ -60,7 +60,7 @@ function checkQuery(query: IDeleteProjectTagsRequestQuery): true | string {
 }
 
 async function removeTag(body: IDeleteProjectTagsRequestBody, query: IDeleteProjectTagsRequestQuery, discordId: string) {
-    return new Promise(async (resolve, reject) => {
+    return new Promise<void>(async (resolve, reject) => {
         const tag = body as ITag;
 
         const allDbProjects = await getAllDbProjects();
@@ -108,7 +108,7 @@ async function checkPermission(body: IDeleteProjectTagsRequestBody, query: IDele
         }
 
         const guildMember = await GetGuildUser(discordId);
-        const isMod = guildMember && guildMember.roles.cache.array().filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").length > 0;
+        const isMod = guildMember && [...guildMember.roles.cache.values()].filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").length > 0;
 
         const relevantUser = matchingDbProjects[0].users?.filter(x => x.discordId == discordId);
         if (relevantUser?.length ?? 0 === 0) {

@@ -5,7 +5,7 @@ export default class ProjectImage extends Model<ProjectImage> {
     @PrimaryKey
     @AutoIncrement
     @Column(DataType.INTEGER)
-    id!: number;
+    declare id: number;
 
     @Column
     projectId!: number;

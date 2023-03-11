@@ -5,6 +5,7 @@ import * as helpers from './common/helpers/generic';
 import cors from "cors";
 import { IBotCommandArgument } from "./models/types";
 import { RefreshProjectCache } from "./models/Project";
+import { TextChannel } from "discord.js";
 
 /**
  * This file sets up API endpoints based on the current folder tree in Heroku.
@@ -165,17 +166,17 @@ async function SetupBotCommands() {
 
                     const argsRegexMatch = message.content.matchAll(/ (?:\/|-|--)([a-zA-Z1-9]+) (?:([\w\/\,\.:#!~\@\$\%\^&\*\(\)-_+=`\[\]\\\|\;\'\<\>]+)|\"([\w\s\/\,\.:#!~\@\$\%\^&\*\(\)-_+=`\[\]\\\|\;\'\<\>)]+)\")/gm);
                     const argsMatch = Array.from(argsRegexMatch);
-                    let args: IBotCommandArgument[] = argsMatch.map(i => { return { name: i[1], value: i[2] || i[3] } });
+                    let args: IBotCommandArgument[] = argsMatch.map(i => { return { name: (i as string)[1], value: (i as string)[2] || (i as string)[3] } });
 
                     let noArgsCommand = message.content;
 
                     // In order to easily get the command parts, we first remove the arguments
                     for (const argMatch of argsMatch)
-                        noArgsCommand = noArgsCommand.replace(argMatch[0], "");
+                        noArgsCommand = noArgsCommand.replace((argMatch as string)[0], "");
 
                     const commandPartsRegexMatch = noArgsCommand.matchAll(/ \"(.+?)\"| (\S+)/g);
                     const commandPartsMatch = Array.from(commandPartsRegexMatch);
-                    let commandParts: string[] = commandPartsMatch.map(i => i[1] || i[2]);
+                    let commandParts: string[] = commandPartsMatch.map(i => (i as string)[1] || (i as string)[2]);
 
                     // If a user was mentioned, add the discordId as an argument.
                     // Only first user supported.
@@ -194,7 +195,7 @@ async function SetupBotCommands() {
                         var timeout = isNaN(peekArg.value as any) ? 5 : parseInt(peekArg.value as any);
 
                         setTimeout(() => {
-                            message.channel.messages.cache.find(x => x.author.id == bot.user?.id)?.delete();
+                            (message.channel as TextChannel).messages.cache.find(x => x.author.id == bot.user?.id)?.delete();
                             message.delete();
                         }, timeout * 1000);
                     }

@@ -14,12 +14,10 @@ import fetch from 'node-fetch';
 
 @Table
 export default class Project extends Model<Project> {
-
     @PrimaryKey
     @AutoIncrement
     @Column(DataType.INTEGER)
-    id!: number;
-
+    declare id: number;
 
     @Column
     appName!: string;
@@ -71,11 +69,11 @@ export default class Project extends Model<Project> {
 
     @CreatedAt
     @Column
-    createdAt!: Date;
+    declare createdAt: Date;
 
     @UpdatedAt
     @Column
-    updatedAt!: Date;
+    declare updatedAt: Date;
 }
 
 export function isExistingProject(appName: string): Promise<boolean> {
@@ -228,7 +226,7 @@ export function nukeProject(appName: string, discordId: string): Promise<void> {
                 if (projects.length > 1) { ResponsePromiseReject("More than one project with that name found. Contact a system administrator to fix the data duplication", HttpStatus.InternalServerError, reject); return; }
 
                 const guildMember = await GetGuildUser(discordId);
-                const isMod = guildMember && guildMember.roles.cache.filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").array.length > 0;
+                const isMod = guildMember && [...guildMember.roles.cache.filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").values()].length > 0;
 
                 const collaborators = await GetProjectCollaborators(projects[0].id);
                 const userCanModify = collaborators.filter(x => x.isOwner && x.discordId == discordId).length > 0 || isMod;

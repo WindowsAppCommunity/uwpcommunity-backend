@@ -5,11 +5,10 @@ import { ITag } from './types';
 
 @Table
 export default class Tag extends Model<Tag> {
-
     @PrimaryKey
     @AutoIncrement
     @Column(DataType.INTEGER)
-    id!: number;
+    declare id: number;
 
     @Column
     name!: string;
@@ -22,11 +21,11 @@ export default class Tag extends Model<Tag> {
 
     @CreatedAt
     @Column
-    createdAt!: Date;
+    declare createdAt: Date;
 
     @UpdatedAt
     @Column
-    updatedAt!: Date;
+    declare updatedAt: Date;
 }
 
 export function DbToStdModal_Tag(tag: Tag): ITag {

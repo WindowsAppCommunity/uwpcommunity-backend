@@ -1,4 +1,4 @@
-import { Message } from "discord.js";
+import { Message, TextChannel } from "discord.js";
 import { GetGuild, GetRoles } from "../../common/helpers/discord";
 import { capitalizeFirstLetter } from "../../common/helpers/generic";
 import { IBotCommandArgument } from "../../models/types";
@@ -32,7 +32,7 @@ async function fromSpecificRole(roleName: string, discordMessage: Message,  comm
     const role = roles.find(i => i.name.toLowerCase() == roleName);
 
     if (!role) {
-        discordMessage.channel.send(`Role not found`);
+        (discordMessage.channel as TextChannel).send(`Role not found`);
         return;
     }
 
@@ -65,7 +65,7 @@ Mentionable: ${mentionable}`
         }
     }
 
-    await discordMessage.channel.send(messageToSend);
+    await (discordMessage.channel as TextChannel).send(messageToSend);
 
 }
 
@@ -85,5 +85,5 @@ async function findEmptyRoles(discordMessage: Message) {
         message += `\n${role.name}`
     }
 
-    await discordMessage.channel.send(message);
+    await (discordMessage.channel as TextChannel).send(message);
 }

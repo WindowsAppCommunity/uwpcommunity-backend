@@ -6,7 +6,7 @@ import { getUserByDiscordId } from "../../models/User";
 const validFindByMethod = ["discordId", "username"];
 
 export default async (discordMessage: Message, commandParts: string[], args: IBotCommandArgument[]) => {
-    const sentFromChannel = discordMessage.channel as TextChannel;
+    const sentFromChannel = (discordMessage.channel as TextChannel) as TextChannel;
 
     if (args.length == 0) {
         sentFromChannel.send(`No parameters provided. Provide one of: \`${validFindByMethod.join(', ')}\``);
@@ -51,29 +51,29 @@ async function handleFind(arg: IBotCommandArgument, discordMessage: Message) {
 async function findByDiscordId(discordMessage: Message, server: Guild, discordId: string) {
     const members = await GetGuildMembers();
     if (!members) {
-        discordMessage.channel.send("error: couldn't get members list");
+        (discordMessage.channel as TextChannel).send("error: couldn't get members list");
         return;
     }
 
     const member = members.find(i => i.id == discordId);
     if (!member)
-        discordMessage.channel.send("Could not find a user with that ID");
+        (discordMessage.channel as TextChannel).send("Could not find a user with that ID");
     else
-        sendFormattedUserInfo(discordMessage.channel as TextChannel, member);
+        sendFormattedUserInfo((discordMessage.channel as TextChannel) as TextChannel, member);
 }
 
 async function findByUsername(discordMessage: Message, server: Guild, username: string) {
     const members = await GetGuildMembers();
     if (!members) {
-        discordMessage.channel.send("error: couldn't get members list");
+        (discordMessage.channel as TextChannel).send("error: couldn't get members list");
         return;
     }
 
     const member = members.find(i => `${i.user.username}#${i.user.discriminator}` == username);
     if (!member)
-        discordMessage.channel.send("Could not find a user with that ID");
+        (discordMessage.channel as TextChannel).send("Could not find a user with that ID");
     else
-        sendFormattedUserInfo(discordMessage.channel as TextChannel, member);
+        sendFormattedUserInfo((discordMessage.channel as TextChannel) as TextChannel, member);
 }
 
 export async function sendFormattedUserInfo(channel: TextChannel, member: GuildMember) {
