@@ -1,12 +1,19 @@
-import { APIEmbed, APIEmbedField, EmbedType, GuildMember, Message, TextChannel } from "discord.js";
+import { ActionRowBuilder, APIActionRowComponent, APIEmbed, APIEmbedField, ButtonBuilder, ButtonStyle, EmbedType, Events, GuildMember, Interaction, InteractionType, Message, MessageActionRowComponentData, MessageCollector, ModalBuilder, TextChannel, TextInputBuilder, TextInputStyle } from "discord.js";
+import { col } from "sequelize/types";
 import { GetGuildMembers, GetRoles } from "../../common/helpers/discord";
 import { GetRoleByName } from "../../models/Role";
 import { IBotCommandArgument } from "../../models/types";
 
+export interface StaffPollResponse {
+    member: GuildMember;
+    value?: string;
+    pollMessage?: Message;
+}
+
 export interface StaffPoll {
     name: string;
     description: string;
-    responses: Message[];
+    responses: StaffPollResponse[];
 }
 
 export default async (message: Message, commandParts: string[], args: IBotCommandArgument[]) => {
@@ -18,6 +25,7 @@ export default async (message: Message, commandParts: string[], args: IBotComman
 
     var name = args.find(x => x.name.toLowerCase() == "name")?.value;
     var description = args.find(x => x.name.toLowerCase() == "description")?.value;
+    var isAnonymous = commandParts.includes("anonymous");
 
     if (args.length == 0) {
         sentFromChannel.send(`No parameters provided. Command usage: !staffpoll -name "Moderator nominations" -description "Nominate a server member for the mod position."`);
@@ -37,6 +45,11 @@ export default async (message: Message, commandParts: string[], args: IBotComman
     var thisPoll: StaffPoll = { name: name, description: description, responses: [] };
 
     var guildMembers = await GetGuildMembers();
+    if (!guildMembers) {
+        sentFromChannel.send(`Error: no staff members were found.`);
+        return;
+    }
+
     var allRoles = await GetRoles();
     if (allRoles == undefined) {
         sentFromChannel.send(`Error: couldn't retrieve roles.`);
@@ -48,14 +61,18 @@ export default async (message: Message, commandParts: string[], args: IBotComman
         sentFromChannel.send(`Error: couldn't find staff role.`);
         return;
     }
+    var staffMembers = guildMembers.filter(x => x.roles.cache.has(staffRole!.id));
 
-    var staffMembers = guildMembers?.filter(x => x.roles.cache.has(staffRole!.id));
-    if (staffMembers == undefined || staffMembers == null) {
-        sentFromChannel.send(`Error: no staff members were found.`);
-        return;
-    }
+    for (var staffMember of staffMembers) {
+        let button = new ActionRowBuilder<ButtonBuilder>();
 
-    for (var staffMember of staffMembers!) {
+        button.addComponents(
+            new ButtonBuilder()
+                .setCustomId(`staffpoll-button-${message.id}`)
+                .setStyle(ButtonStyle.Primary)
+                .setLabel('Submit your vote'),
+        );
+
         var sentMessage = await staffMember.send({
             content: "A staff poll has started",
             embeds: [
@@ -63,55 +80,79 @@ export default async (message: Message, commandParts: string[], args: IBotComman
                     "title": name,
                     "description": description,
                     "footer": {
-                        "text": `To provide your respond, reply to this message. Your reply will be held in our server's memory until all staff members have responded. `
+                        "text": `Submit your response. Your reply will be held in our server's memory until all staff members have responded. `
                     }
                 }
-            ]
+            ],
+            components: [button],
         });
 
-        // Wait for the reply
-        (sentMessage.channel as TextChannel).awaitMessages({ filter: ((m: Message) => m.type == 19 && m.reference?.messageId == sentMessage.id), max: 1 })
-            .then(collected => {
-                // Save the response.
-                var receivedResponse = collected.first()!;
-                thisPoll.responses.push(receivedResponse);
+        var response: StaffPollResponse = { pollMessage: sentMessage, member: staffMember };
+        thisPoll.responses.push(response);
 
-                receivedResponse.reply("Thank you, your response has been collected.")
+        sentMessage.client.on(Events.InteractionCreate, async (interaction: Interaction) => {
+            if (interaction.isButton()) {
+                if (interaction.customId === `staffpoll-button-${message.id}`) {
+                    const modal = new ModalBuilder()
+                        .setCustomId(`staffpoll-modal-${message.id}`)
+                        .setTitle('Staff poll')
+                        .addComponents([
+                            new ActionRowBuilder<TextInputBuilder>().addComponents(
+                                new TextInputBuilder()
+                                    .setCustomId(`staffpoll-input-${message.id}`)
+                                    .setLabel('Submit')
+                                    .setStyle(TextInputStyle.Paragraph)
+                                    .setMinLength(4)
+                                    .setRequired(true),
+                            ),
+                        ]);
 
-                // If this is the last response, complete the poll and report the results. 
-                if (thisPoll.responses.length == staffMembers?.length) {
-                    EndStaffPoll(staffMembers, thisPoll, sentFromChannel, name, description);
+                    await interaction.showModal(modal);
                 }
-            });
-    }
+            }
 
-    sentFromChannel.send(`A poll has been sent to each staff member's DM. The results will be posted here in <#${sentFromChannel.id}> when all results have been received.`);
-}
+            if (interaction.type === InteractionType.ModalSubmit) {
+                if (interaction.customId === `staffpoll-modal-${message.id}`) {
+                    response.value = interaction.fields.getTextInputValue(`staffpoll-input-${message.id}`);
 
-function EndStaffPoll(staffMembers: GuildMember[], thisPoll: StaffPoll, sentFromChannel: TextChannel, name: string | undefined, description: string | undefined) {
-    var embeds: APIEmbed[] = [{
-        "title": `Staff Poll Results: ${name}`,
-        "description": description
-    }];
+                    interaction.reply(`Thank you, your response has been collected.`);
 
-    for (const staffMember of staffMembers) {
-        var memberResponse = thisPoll.responses.find(x => x.author.id == staffMember.id);
-        if (!memberResponse) {
-            sentFromChannel.send(`Internal error: could not locate the member response for <@${staffMember.id}>`);
-            return;
-        }
-
-        embeds.push({
-            description: memberResponse.cleanContent ?? "Empty or missing response",
-            author: {
-                name: memberResponse.author.username,
-                icon_url: memberResponse.author.displayAvatarURL()
+                    // If this is the last response, complete the poll and report the results. 
+                    if (thisPoll.responses.length == staffMembers?.length) {
+                        EndStaffPoll(staffMembers, thisPoll, sentFromChannel, name, description);
+                    }
+                }
             }
         });
     }
 
-    sentFromChannel.send({
-        content: "A staff poll has ended",
-        embeds: embeds,
-    });
+    sentFromChannel.send(`A poll has been sent to each staff member's DM. The results will be posted here in <#${sentFromChannel.id}> when all results have been received.`);
+
+    function EndStaffPoll(staffMembers: GuildMember[], thisPoll: StaffPoll, sentFromChannel: TextChannel, name: string | undefined, description: string | undefined) {
+        var embeds: APIEmbed[] = [{
+            "title": `Staff Poll Results: ${name}`,
+            "description": description
+        }];
+
+        for (const staffMember of staffMembers) {
+            var memberResponse = thisPoll.responses.find(x => x.member?.id == staffMember.id);
+            if (!memberResponse?.pollMessage) {
+                sentFromChannel.send(`Internal error: could not locate the member response for <@${staffMember.id}>`);
+                return;
+            }
+
+            embeds.push({
+                description: memberResponse.value ?? "Empty or missing response",
+                author: {
+                    name: isAnonymous ? "Anonymous" : memberResponse.member.displayName,
+                    icon_url: isAnonymous ? undefined : memberResponse.member.displayAvatarURL()
+                }
+            });
+        }
+
+        sentFromChannel.send({
+            content: "A staff poll has ended",
+            embeds: embeds,
+        });
+    }
 }
