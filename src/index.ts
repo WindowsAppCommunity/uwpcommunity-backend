@@ -151,7 +151,7 @@ async function SetupBotCommands() {
             const commandPrefix = helpers.match(filePath, /\/bot\/commands\/(.+).js/);
             if (!commandPrefix) return;
 
-            bot.on('message', message => {
+            bot.on('messageCreate', message => {
                 // Message must be prefixed
                 if (message.content.startsWith(`!${commandPrefix}`)) {
 
@@ -166,26 +166,28 @@ async function SetupBotCommands() {
 
                     const argsRegexMatch = message.content.matchAll(/ (?:\/|-|--)([a-zA-Z1-9]+) (?:([\w\/\,\.:#!~\@\$\%\^&\*\(\)-_+=`\[\]\\\|\;\'\<\>]+)|\"([\w\s\/\,\.:#!~\@\$\%\^&\*\(\)-_+=`\[\]\\\|\;\'\<\>)]+)\")/gm);
                     const argsMatch = Array.from(argsRegexMatch);
-                    let args: IBotCommandArgument[] = argsMatch.map(i => { return { name: (i as string)[1], value: (i as string)[2] || (i as string)[3] } });
+                    let args: IBotCommandArgument[] = argsMatch.map(i => { return { name: i[1], value: i[2] || i[3] } });
 
                     let noArgsCommand = message.content;
 
                     // In order to easily get the command parts, we first remove the arguments
                     for (const argMatch of argsMatch)
-                        noArgsCommand = noArgsCommand.replace((argMatch as string)[0], "");
+                        noArgsCommand = noArgsCommand.replace(argMatch[0], "");
 
                     const commandPartsRegexMatch = noArgsCommand.matchAll(/ \"(.+?)\"| (\S+)/g);
                     const commandPartsMatch = Array.from(commandPartsRegexMatch);
-                    let commandParts: string[] = commandPartsMatch.map(i => (i as string)[1] || (i as string)[2]);
+                    let commandParts: string[] = commandPartsMatch.map(i => i[1] || i[2]);
 
                     // If a user was mentioned, add the discordId as an argument.
                     // Only first user supported.
-                    var mentions = message.mentions.members?.array();
-                    if (mentions && mentions.length > 0) {
-                        args.push({
-                            name: "discordId",
-                            value: mentions[0].id
-                        });
+                    if (message.mentions?.members) {
+                        var mentions = [...message.mentions.members.values()];
+                        if (mentions && mentions.length > 0) {
+                            args.push({
+                                name: "discordId",
+                                value: mentions[0].id
+                            });
+                        }
                     }
 
                     module.default(message, commandParts, args);
