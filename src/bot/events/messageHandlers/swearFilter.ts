@@ -20,7 +20,7 @@ export async function handleSwearFilter(discordMessage: PartialMessage | Message
             const channelPermsForAll = sentFromChannel.permissionsFor(discordMessage.guild.roles.everyone);
 
             // If the channel is private, don't filter
-            if (channelPermsForAll && !channelPermsForAll.has("VIEW_CHANNEL")) {
+            if (channelPermsForAll && !channelPermsForAll.has(["ViewChannel"])) {
                 return;
             }
 
@@ -34,17 +34,17 @@ export async function handleSwearFilter(discordMessage: PartialMessage | Message
                 } catch {
                     var tick = 5;
                     var baseMsg = `<@${discordMessage.author.id}> Swear word was removed, see rule 4.\nThis message will self destruct in `;
-                    var sentMsg = await discordMessage.channel.send(baseMsg + tick);
+                    var sentMsg = await (discordMessage.channel as TextChannel).send(baseMsg + tick);
 
                     var interval = setInterval(() => {
                         tick--;
-                        
+
                         if (tick == 0) {
                             sentMsg.delete();
                             clearInterval(interval);
                             return;
                         }
-                        
+
                         sentMsg.edit(baseMsg + tick);
                     }, 1000);
                 }

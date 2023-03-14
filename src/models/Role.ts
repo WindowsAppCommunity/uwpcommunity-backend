@@ -4,22 +4,21 @@ import UserProject from './UserProject';
 
 @Table
 export default class Role extends Model<Role> {
-
     @PrimaryKey
     @AutoIncrement
     @Column(DataType.INTEGER)
-    id!: number;
+    declare id: number;
 
     @Column
     name!: "Developer" | "Translator" | "Beta Tester" | "Support" | "Lead" | "Patreon" | "Advocate" | "Other";
 
     @CreatedAt
     @Column
-    createdAt!: Date;
+    declare createdAt: Date;
 
     @UpdatedAt
     @Column
-    updatedAt!: Date;
+    declare updatedAt: Date;
 }
 
 export async function GetRoleByName(roleName: string): Promise<Role | null> {

@@ -73,7 +73,7 @@ function updateProject(projectUpdateRequest: IProject, query: IPutProjectRequest
         }
 
         const guildMember = await GetGuildUser(discordId);
-        const isMod = guildMember && guildMember.roles.cache.array().filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").length > 0;
+        const isMod = guildMember && [...guildMember.roles.cache.values()].filter(role => role.name.toLowerCase() === "mod" || role.name.toLowerCase() === "admin").length > 0;
 
         const user: User | null = await getUserByDiscordId(discordId);
         if (!user) {
@@ -253,7 +253,7 @@ export function StdToDbModal_IPutProjectsRequestBody(projectData: IProject, disc
 
         const guildMember = await GetGuildUser(discordId);
 
-        const isMod = guildMember && guildMember.roles.cache.array().filter(role => role.name.toLowerCase() === "mod").length > 0;
+        const isMod = guildMember && [...guildMember.roles.cache.values()].filter(role => role.name.toLowerCase() === "mod").length > 0;
         if (shouldUpdateManualReview) {
             if (!isMod) {
                 ResponsePromiseReject("User has insufficient permissions", HttpStatus.Unauthorized, reject);

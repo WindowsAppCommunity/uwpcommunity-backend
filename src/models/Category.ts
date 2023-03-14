@@ -4,29 +4,26 @@ import Project from './Project';
 
 /** @summary Due to time contraints, this is no longer in use. Might be re-enabled again in the future if needed */
 @Table
-default class Category extends Model<Category> {
+export default class Category extends Model<Category> {
 
     @PrimaryKey
     @AutoIncrement
     @Column(DataType.INTEGER)
-    id!: number;
-
+    declare id: number;
 
     @Column
     name!: string;
 
-
     @HasMany(() => Project, 'categoryId')
     projects?: Project[];
 
-
     @CreatedAt
     @Column
-    createdAt!: Date;
+    declare createdAt: Date;
 
     @UpdatedAt
     @Column
-    updatedAt!: Date;
+    declare updatedAt: Date;
 }
 
 async function GetCategoryIdFromName(name: string): Promise<number | undefined> {

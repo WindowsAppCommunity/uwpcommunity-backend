@@ -5,6 +5,7 @@ import * as helpers from './common/helpers/generic';
 import cors from "cors";
 import { IBotCommandArgument } from "./models/types";
 import { RefreshProjectCache } from "./models/Project";
+import { TextChannel } from "discord.js";
 
 /**
  * This file sets up API endpoints based on the current folder tree in Heroku.
@@ -150,7 +151,7 @@ async function SetupBotCommands() {
             const commandPrefix = helpers.match(filePath, /\/bot\/commands\/(.+).js/);
             if (!commandPrefix) return;
 
-            bot.on('message', message => {
+            bot.on('messageCreate', message => {
                 // Message must be prefixed
                 if (message.content.startsWith(`!${commandPrefix}`)) {
 
@@ -179,12 +180,14 @@ async function SetupBotCommands() {
 
                     // If a user was mentioned, add the discordId as an argument.
                     // Only first user supported.
-                    var mentions = message.mentions.members?.array();
-                    if (mentions && mentions.length > 0) {
-                        args.push({
-                            name: "discordId",
-                            value: mentions[0].id
-                        });
+                    if (message.mentions?.members) {
+                        var mentions = [...message.mentions.members.values()];
+                        if (mentions && mentions.length > 0) {
+                            args.push({
+                                name: "discordId",
+                                value: mentions[0].id
+                            });
+                        }
                     }
 
                     module.default(message, commandParts, args);
@@ -194,7 +197,7 @@ async function SetupBotCommands() {
                         var timeout = isNaN(peekArg.value as any) ? 5 : parseInt(peekArg.value as any);
 
                         setTimeout(() => {
-                            message.channel.messages.cache.find(x => x.author.id == bot.user?.id)?.delete();
+                            (message.channel as TextChannel).messages.cache.find(x => x.author.id == bot.user?.id)?.delete();
                             message.delete();
                         }, timeout * 1000);
                     }

@@ -4,11 +4,10 @@ import Tag from './Tag';
 
 @Table
 export default class ProjectTag extends Model<ProjectTag> {
-
     @PrimaryKey
     @AutoIncrement
     @Column(DataType.INTEGER)
-    id!: number;
+    declare id: number;
     
     @Column(DataType.INTEGER)
     @ForeignKey(() => Project)
@@ -20,11 +19,11 @@ export default class ProjectTag extends Model<ProjectTag> {
 
     @CreatedAt
     @Column
-    createdAt!: Date;
+    declare createdAt: Date;
 
     @UpdatedAt
     @Column
-    updatedAt!: Date;
+    declare updatedAt: Date;
 }
 
 

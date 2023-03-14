@@ -32,7 +32,7 @@ module.exports = async (req: Request, res: Response) => {
     }
 
     // Check that the user has the role
-    let roles: Role[] = guildMember.roles.cache.filter(role => role.name == req.body.role).array();
+    let roles: Role[] = [...guildMember.roles.cache.filter(role => role.name == req.body.role).values()];
     if (roles.length == 0) InvalidRole(res);
 
     switch (req.body.name) {

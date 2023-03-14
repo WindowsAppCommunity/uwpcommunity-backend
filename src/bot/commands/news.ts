@@ -27,7 +27,7 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
     for (let post of RecentPostsStore) {
         const UnixTimeNow = new Date().getTime();
         if (post.user.id == discordMessage.author.id && UnixTimeNow - post.lastPost < 3 * 60 * 1000) {
-            discordMessage.channel.send(`<@${discordMessage.author.id}> You are doing that too much, please wait ${((3 * 60 * 1000 - (UnixTimeNow - post.lastPost)) / 60000).toFixed(2)} more minutes`);
+            (discordMessage.channel as TextChannel).send(`<@${discordMessage.author.id}> You are doing that too much, please wait ${((3 * 60 * 1000 - (UnixTimeNow - post.lastPost)) / 60000).toFixed(2)} more minutes`);
             return;
         }
     }

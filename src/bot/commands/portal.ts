@@ -1,5 +1,5 @@
 import { IBotCommandArgument } from "../../models/types";
-import { Message, MessageEmbed, TextChannel } from "discord.js";
+import { Message, TextChannel, Embed, EmbedBuilder } from "discord.js";
 
 interface portalImage {
     in: string;
@@ -15,14 +15,14 @@ var portalImages: portalImage[] = [
 
 
 export default async (message: Message, commandParts: string[], args: IBotCommandArgument[]) => {
-    var channelMentions = message.mentions.channels.array();
+    var channelMentions = [...message.mentions.channels.values()];
     if (channelMentions.length > 1) {
-        message.channel.send("I can only create a portal to one channel at a time");
+        (message.channel as TextChannel).send("I can only create a portal to one channel at a time");
         return;
     }
 
     if (channelMentions.length == 0) {
-        message.channel.send("Where to? Try again with a channel mention!");
+        (message.channel as TextChannel).send("Where to? Try again with a channel mention!");
         return;
     }
 
@@ -31,38 +31,38 @@ export default async (message: Message, commandParts: string[], args: IBotComman
         return;
 
     if (channel.id == message.channel.id) {
-        message.channel.send("You're already in that channel!");
+        (message.channel as TextChannel).send("You're already in that channel!");
         return;
     }
 
-    if (!channel.permissionsFor(message.author.id)?.has("SEND_MESSAGES") ||
-        !channel.permissionsFor(message.author.id)?.has("VIEW_CHANNEL")) {
-        message.channel.send(`You aren't allowed to open a portal there`);
+    if (!(channel as TextChannel).permissionsFor(message.author.id)?.has(["SendMessages"]) ||
+        !(channel as TextChannel).permissionsFor(message.author.id)?.has(["ViewChannel"])) {
+        (message.channel as TextChannel).send(`You aren't allowed to open a portal there`);
         return;
     }
 
     var portalImage = portalImages[Math.floor(Math.random() * portalImages.length)];
 
-    var inMessage = await message.channel.send(createInitialInEmbed(channel, portalImage.in));
-    var outMessage = await channel.send(createOutputEmbed(message.author.id, message.channel as TextChannel, portalImage.out, inMessage.url));
+    var inMessage = await (message.channel as TextChannel).send({ embeds: [createInitialInEmbed(channel as TextChannel, portalImage.in).data] });
+    var outMessage = await (channel as TextChannel).send({ embeds: [createOutputEmbed(message.author.id, message.channel as TextChannel, portalImage.out, inMessage.url).data] });
 
-    await inMessage.edit(createFinalInEmbed(channel, portalImage.in, outMessage.url));
+    await inMessage.edit({embeds: [createFinalInEmbed(channel as TextChannel, portalImage.in, outMessage.url).data]});
 }
 
-function createInitialInEmbed(channel: TextChannel, img: string): MessageEmbed {
-    return new MessageEmbed()
+function createInitialInEmbed(channel: TextChannel, img: string): EmbedBuilder {
+    return new EmbedBuilder()
         .setThumbnail(img)
         .setDescription(`Spawning a portal to <#${channel.id}>...`);
 }
 
-function createOutputEmbed(userId: string, channel: TextChannel, img: string, msgLink: string): MessageEmbed {
-    return new MessageEmbed()
+function createOutputEmbed(userId: string, channel: TextChannel, img: string, msgLink: string): EmbedBuilder {
+    return new EmbedBuilder()
         .setThumbnail(img)
         .setDescription(`<@${userId}> opened a portal from <#${channel.id}>!\n[Go back through the portal](${msgLink})`);
 }
 
-function createFinalInEmbed(channel: TextChannel, img: string, msgLink: string): MessageEmbed {
-    return new MessageEmbed()
+function createFinalInEmbed(channel: TextChannel, img: string, msgLink: string): EmbedBuilder {
+    return new EmbedBuilder()
         .setThumbnail(img)
         .setDescription(`A portal to <#${channel.id}> was opened!\n[Enter the portal](${msgLink})`);
 }

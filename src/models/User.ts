@@ -10,7 +10,7 @@ export default class User extends Model<User> {
     @PrimaryKey
     @AutoIncrement
     @Column(DataType.INTEGER)
-    id!: number;
+    declare id: number;
 
     @Column
     name!: string;
@@ -26,11 +26,11 @@ export default class User extends Model<User> {
 
     @CreatedAt
     @Column
-    createdAt!: Date;
+    declare createdAt: Date;
 
     @UpdatedAt
     @Column
-    updatedAt!: Date;
+    declare updatedAt: Date;
 }
 
 export function DbToStdModal_User(user: User): IUser {
@@ -54,8 +54,8 @@ export async function StdToDbModal_User(user: IUser): Promise<User> {
     return (dbUser as User);
 }
 
-export function getUserByDiscordId(discordId: string): Promise<User | null> {
-    return User.findOne({
+export async function getUserByDiscordId(discordId: string): Promise<User | null> {
+    return await User.findOne({
         where: { discordId: discordId }
     });
 }

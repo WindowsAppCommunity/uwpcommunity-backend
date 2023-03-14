@@ -13,21 +13,21 @@ export default async (message: Message, commandParts: string[], args: IBotComman
     const user = await User.findOne({
         where: { discordId: discordUser.id }
     })
-        .catch((err) => handleGenericError(err, message.channel));
+        .catch((err) => handleGenericError(err, (message.channel as TextChannel)));
 
     if (user) {
-        message.channel.send(`User is already registered.`);
+        (message.channel as TextChannel).send(`User is already registered.`);
         return;
     }
 
     if (!name) {
-        message.channel.send(`Please supply a name as an argument. E.g. \`!autoregister /name "Average Joe"\`. This name will be displayed to other users.`);
+        (message.channel as TextChannel).send(`Please supply a name as an argument. E.g. \`!autoregister /name "Average Joe"\`. This name will be displayed to other users.`);
         return;
     }
 
     await submitUser(name, discordUser.id, email);
 
-    message.channel.send(`Thank you for registering! You can now access community services, the dashboard on https://uwpcommunity.com/, and (when given access) private app channels.`);
+    (message.channel as TextChannel).send(`Thank you for registering! You can now access community services, the dashboard on https://uwpcommunity.com/, and (when given access) private app channels.`);
 }
 
 function submitUser(name: string, discordId: string, email: string | undefined): Promise<User> {

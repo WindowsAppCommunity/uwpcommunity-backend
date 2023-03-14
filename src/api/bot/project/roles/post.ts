@@ -54,11 +54,9 @@ module.exports = async (req: Request, res: Response) => {
     }
 
     server.roles.create({
-        data: {
-            name: roleName,
-            mentionable: true,
-            color: req.body.color
-        }
+        name: roleName,
+        mentionable: true,
+        color: req.body.color
     });
 
     BuildResponse(res, HttpStatus.Success, "Success");

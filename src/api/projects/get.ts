@@ -23,7 +23,7 @@ async function checkIsMod(req: Request, res: Response): Promise<boolean> {
 
         const user = await GetGuildUser(discordId);
         if (!user) return false;
-        return user.roles.cache.array().filter(role => role.name == "Mod" || role.name == "Admin").length > 0;
+        return [...user.roles.cache.values()].filter(role => role.name == "Mod" || role.name == "Admin").length > 0;
     }
     return false;
 }

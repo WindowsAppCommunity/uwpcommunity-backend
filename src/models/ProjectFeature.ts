@@ -5,7 +5,7 @@ export default class ProjectFeature extends Model<ProjectFeature> {
     @PrimaryKey
     @AutoIncrement
     @Column(DataType.INTEGER)
-    id!: number;
+    declare id: number;
 
     @Column
     projectId!: number;

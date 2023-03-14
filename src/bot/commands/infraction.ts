@@ -1,4 +1,4 @@
-import { Message, TextChannel, Role, Guild, GuildMember, VoiceChannel, GuildEmojiRoleManager } from "discord.js";
+import { Message, TextChannel, Role, Guild, GuildMember, VoiceChannel, GuildEmojiRoleManager, ChannelType } from "discord.js";
 import { IBotCommandArgument } from "../../models/types";
 import { GetGuild, GetChannelByName } from "../../common/helpers/discord";
 import { setInterval } from "timers";
@@ -48,7 +48,7 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
 
     var mutedRole = server.roles.cache.find(i => i.name.toLowerCase() == "muted");
     if (!mutedRole) {
-        discordMessage.channel.send(`Couldn't find muted role.`)
+        (discordMessage.channel as TextChannel).send(`Couldn't find muted role.`)
         return;
     }
 
@@ -59,13 +59,13 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
         offenderDiscordId = discordIdArg ? discordIdArg.value : null;
 
     if (!messageLink && !offenderDiscordId) {
-        discordMessage.channel.send("A valid \`messageLink\` or \`discordId\` was not provided");
+        (discordMessage.channel as TextChannel).send("A valid \`messageLink\` or \`discordId\` was not provided");
         return;
     }
 
     const reasonArg = args.find(i => i.name == "reason");
     if (!reasonArg) {
-        discordMessage.channel.send("No \`reason\` was specified");
+        (discordMessage.channel as TextChannel).send("No \`reason\` was specified");
         return;
     }
 
@@ -81,7 +81,7 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
         const messageParts = messageLink.split("/");
 
         if (!messageParts) {
-            discordMessage.channel.send(`Invalid link format`);
+            (discordMessage.channel as TextChannel).send(`Invalid link format`);
             return;
         }
 
@@ -90,24 +90,24 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
         const messageId = messageParts[6];
 
         if (!serverId || !channelId || !messageId) {
-            discordMessage.channel.send(`Missing data from link`);
+            (discordMessage.channel as TextChannel).send(`Missing data from link`);
             return;
         }
 
         if (serverId != server.id) {
-            discordMessage.channel.send("Link is from a different server");
+            (discordMessage.channel as TextChannel).send("Link is from a different server");
             return;
         }
 
         const relevantChannel = server.channels.cache.find(i => i.id == channelId) as TextChannel;
         if (!relevantChannel) {
-            discordMessage.channel.send("Channel not found");
+            (discordMessage.channel as TextChannel).send("Channel not found");
             return;
         }
 
         const relevantMessage = await relevantChannel.messages.fetch(messageId);
         if (!relevantMessage) {
-            discordMessage.channel.send("Message not found");
+            (discordMessage.channel as TextChannel).send("Message not found");
             return;
         }
 
@@ -337,19 +337,17 @@ async function initExistingInfractionData(server: Guild) {
 
 function setupMutedChannelSettings(server: Guild, mutedRole: Role) {
     server.channels.cache.forEach(channel => {
-        if (channel.type === "text") {
-            const mutedTextPermissions = channel.permissionOverwrites.get(mutedRole.id);
-            if (!mutedTextPermissions // Check if permissions for muted role are missing or wrong
-                || !mutedTextPermissions.deny.has("SEND_MESSAGES")
-                || !mutedTextPermissions.deny.has("ADD_REACTIONS")) {
-                channel.createOverwrite(mutedRole, { "SEND_MESSAGES": false, "ADD_REACTIONS": false });
+        if (channel.type === ChannelType.GuildText) {
+            const mutedTextPermissions = channel.permissionOverwrites.resolve(mutedRole.id);
+
+            // Check if permissions for muted role are missing or wrong
+            if (!mutedTextPermissions || !mutedTextPermissions.deny.has(["SendMessages", "AddReactions"])) {
+                channel.permissionOverwrites.create(mutedRole, { SendMessages: false, AddReactions: false });
             }
-        } else if (channel.type == "voice") {
-            const mutedVoicePermissions = channel.permissionOverwrites.get(mutedRole.id);
-            if (!mutedVoicePermissions
-                || !mutedVoicePermissions.deny.has("SPEAK")
-                || !mutedVoicePermissions.deny.has("STREAM")) {
-                channel.createOverwrite(mutedRole, { "SPEAK": false, "STREAM": false });
+        } else if (channel.type == ChannelType.GuildVoice) {
+            const mutedVoicePermissions = channel.permissionOverwrites.resolve(mutedRole.id);
+            if (!mutedVoicePermissions || !mutedVoicePermissions.deny.has(["Speak", "Stream"])) {
+                channel.permissionOverwrites.create(mutedRole, { Speak: false, Stream: false });
             }
         }
     });

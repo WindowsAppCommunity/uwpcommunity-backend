@@ -7,6 +7,10 @@ import { GetRoleByName } from "../../models/Role";
 
 import DbUser, { getUserByDiscordId } from "../../models/User";
 
+import * as Bluebird from 'bluebird';
+declare global { export interface Promise<T> extends Bluebird<T> {} }
+
+
 // This architecture here works a bit different than other places. 
 // Instead of validating all arguments at the start of the command in the default function, then having to do the rest in thise scope
 // We validate the required parameters first, then move to handleProjectCommand and pass the project, original message, and command arguments in
@@ -16,16 +20,16 @@ export default async (message: Message, commandParts: string[], args: IBotComman
 
     const projectName = commandParts[0]?.toLowerCase();
     if (!projectName) {
-        message.channel.send(`No project name provided`);
+        (message.channel as TextChannel).send(`No project name provided`);
         return;
     }
 
-    const project = await findProject(projectName, message.channel as TextChannel);
+    const project = await findProject(projectName, (message.channel as TextChannel) as TextChannel);
     if (!project)
         return;
 
     if (!commandParts[1]) {
-        message.channel.send(`Please supply app command. Valid commands are\`details\` or \`user\``);
+        (message.channel as TextChannel).send(`Please supply app command. Valid commands are\`details\` or \`user\``);
         return;
     }
 
@@ -37,7 +41,7 @@ export default async (message: Message, commandParts: string[], args: IBotComman
             await handleUserCommand(project, message, commandParts, args);
             break;
         default:
-            message.channel.send(`Unknown command "${commandParts[1]}"`);
+            (message.channel as TextChannel).send(`Unknown command "${commandParts[1]}"`);
     }
     // TODO:
     // List projects for a user (!getuser apps)
@@ -73,46 +77,46 @@ async function handleUserCommand(project: IProject, message: Message, commandPar
     const userCanModifyLead = isOwner || isMod;
 
     if (!userCanModify) {
-        message.channel.send(`Only the project owner, project lead, support staff, or a dev can manage users`);
+        (message.channel as TextChannel).send(`Only the project owner, project lead, support staff, or a dev can manage users`);
         return;
     }
 
     if (commandParts[2] != "add" && commandParts[2] != "remove") {
-        message.channel.send(`Please specify a user command. Valid values are \`add\` and \`remove\``);
+        (message.channel as TextChannel).send(`Please specify a user command. Valid values are \`add\` and \`remove\``);
         return;
     }
 
     const typeArg = args.find(arg => arg.name == "type");
     if (!typeArg) {
-        message.channel.send(`Please specify a user type argument. Valid values are \`tester\`, \`translator\`, \`dev\`, \`advocate\`, \`patreon\`, \`lead\`, and \`support\`\nExample: \`/type translator\``);
+        (message.channel as TextChannel).send(`Please specify a user type argument. Valid values are \`tester\`, \`translator\`, \`dev\`, \`advocate\`, \`patreon\`, \`lead\`, and \`support\`\nExample: \`/type translator\``);
         return;
     }
 
     if (!userCanModifyDevs && typeArg.value == "dev") {
-        message.channel.send(`Only the project owner, project lead, or support staff can manage devs on this project.`);
+        (message.channel as TextChannel).send(`Only the project owner, project lead, or support staff can manage devs on this project.`);
         return;
     }
 
     if (!userCanModifyLead && typeArg.value == "lead") {
-        message.channel.send(`Only the project owner can manage project lead role.`);
+        (message.channel as TextChannel).send(`Only the project owner can manage project lead role.`);
         return;
     }
 
     const userArg = args.find(arg => arg.name == "username" || arg.name == "discordId");
     if (!userArg) {
-        message.channel.send(`Please specify a username or discordId\nExample: \`/discordId 714896135382368340\` or \`/username Panos#0309\``);
+        (message.channel as TextChannel).send(`Please specify a username or discordId\nExample: \`/discordId 714896135382368340\` or \`/username Panos#0309\``);
         return;
     }
 
     switch (commandParts[2]) {
         case "add":
-            await handleAddUserCommand(project, message, commandParts, args).catch(message.channel.send);
+            await handleAddUserCommand(project, message, commandParts, args).catch((message.channel as TextChannel).send);
             break;
         case "remove":
-            await handleRemoveUserCommand(project, message, commandParts, args).catch(message.channel.send);
+            await handleRemoveUserCommand(project, message, commandParts, args).catch((message.channel as TextChannel).send);
             break;
         default:
-            message.channel.send(`Unknown command. Valid commands for managing users are "add" and "remove"`);
+            (message.channel as TextChannel).send(`Unknown command. Valid commands for managing users are "add" and "remove"`);
     }
 }
 
@@ -133,7 +137,7 @@ async function handleAddUserCommand(project: IProject, message: Message, command
             discordUser = guildMembers?.find(m => m.user.id === userArg.value);
             break;
         default:
-            message.channel.send(`Unknown user identifier. (You shouldn't be seeing this)`);
+            (message.channel as TextChannel).send(`Unknown user identifier. (You shouldn't be seeing this)`);
             return;
     }
 
@@ -144,7 +148,7 @@ async function handleAddUserCommand(project: IProject, message: Message, command
 
     const user = await getUserByDiscordId(discordUser.id);
     if (!user) {
-        message.channel.send(`User isn't registered on the community website\nRegister at https://uwpcommunity.com/`);
+        (message.channel as TextChannel).send(`User isn't registered on the community website\nRegister at https://uwpcommunity.com/`);
         return;
     }
 
@@ -156,22 +160,23 @@ async function handleAddUserCommand(project: IProject, message: Message, command
     // Check for existing identical UserProject
     const existing = await UserProject.findOne({ where: { roleId: contributorRole.id, userId: user.id, projectId: project.id } });
     if (existing) {
-        message.channel.send(`User is already a ${roleType} on this project`);
+        (message.channel as TextChannel).send(`User is already a ${roleType} on this project`);
         return;
     }
 
     safeAddRole(desiredRole, discordUser);
 
-
     // Create UserProject
-    await ReactWithPromiseStatus(UserProject.create(
-        {
-            userId: user.id,
-            projectId: project.id,
-            isOwner: false, // Only the project owner can create the project
-            roleId: contributorRole.id
-        }), message)
-        .catch(err => message.channel.send(err));
+    var promise = Promise.resolve(UserProject.create(
+    {
+        userId: user.id,
+        projectId: project.id,
+        isOwner: false, // Only the project owner can create the project
+        roleId: contributorRole.id
+    }));
+
+    await ReactWithPromiseStatus(promise, message)
+        .catch(err => (message.channel as TextChannel).send(err));
 
     RefreshProjectCache();
 }
@@ -195,7 +200,7 @@ async function handleRemoveUserCommand(project: IProject, message: Message, comm
             discordUser = guildMembers?.find(m => m.user.id === userArg.value)
             break;
         default:
-            message.channel.send(`Unknown user identifier. (You shouldn't be seeing this)`);
+            (message.channel as TextChannel).send(`Unknown user identifier. (You shouldn't be seeing this)`);
             return;
     }
 
@@ -203,19 +208,19 @@ async function handleRemoveUserCommand(project: IProject, message: Message, comm
 
     const RelevantUser = await getUserByDiscordId(discordUser.id);
     if (!RelevantUser) {
-        message.channel.send(`User not found. Please register at https://uwpcommunity.com/`);
+        (message.channel as TextChannel).send(`User not found. Please register at https://uwpcommunity.com/`);
         return;
     }
 
     const projects = await GetProjectsByUserId(RelevantUser.id);
     if (!project || projects.length === 0) {
-        message.channel.send(`User isn't registered as a ${args.find(arg => arg.name == "type")?.value} on this project`);
+        (message.channel as TextChannel).send(`User isn't registered as a ${args.find(arg => arg.name == "type")?.value} on this project`);
         return;
     }
 
     const relevantProjects = projects.filter(i => project.id == i.id);
     if (relevantProjects.length === 0) {
-        message.channel.send(`No relevant projects found for user`);
+        (message.channel as TextChannel).send(`No relevant projects found for user`);
         return;
     }
 
@@ -227,20 +232,20 @@ async function handleRemoveUserCommand(project: IProject, message: Message, comm
 
     const user = await getUserByDiscordId(discordUser.id);
     if (!user) {
-        message.channel.send(`User isn't registered on the community website\nRegister at https://uwpcommunity.com/`);
+        (message.channel as TextChannel).send(`User isn't registered on the community website\nRegister at https://uwpcommunity.com/`);
         return;
     }
 
     const RelevantUserProjects = await UserProject.findAll({ where: { projectId: relevantProjects[0].id, userId: user.id, roleId: contributorRole.id } }).catch(Promise.reject);
 
     if (RelevantUserProjects.length == 0) {
-        message.channel.send(`User isn't registered for this role on this project`);
+        (message.channel as TextChannel).send(`User isn't registered for this role on this project`);
         return;
     }
 
     const typeArg = args.find(arg => arg.name == "type");
     if (!typeArg) {
-        message.channel.send(`Please specify a role type argument. Valid values are \`tester\`, \`translator\`, \`dev\`, \`advocate\`, \`patreon\`, \`lead\`, and \`support\`\nExample: \`/type translator\``);
+        (message.channel as TextChannel).send(`Please specify a role type argument. Valid values are \`tester\`, \`translator\`, \`dev\`, \`advocate\`, \`patreon\`, \`lead\`, and \`support\`\nExample: \`/type translator\``);
         return;
     }
 
@@ -252,7 +257,7 @@ async function handleRemoveUserCommand(project: IProject, message: Message, comm
     ]);
 
     await ReactWithPromiseStatus(dataActionsPromise, message)
-        .catch(message.channel.send);
+        .catch((message.channel as TextChannel).send);
 
     RefreshProjectCache();
 }
@@ -297,7 +302,7 @@ async function getRoleForProject(project: IProject, message: Message, commandPar
 
     const typeArg = args.find(arg => arg.name == "type");
     if (!typeArg) {
-        message.channel.send(`Please specify a role type argument. Valid values are \`tester\`, \`translator\`, \`dev\`, \`advocate\`, \`patreon\`, \`lead\`, and \`support\`\nExample: \`/type translator\``);
+        (message.channel as TextChannel).send(`Please specify a role type argument. Valid values are \`tester\`, \`translator\`, \`dev\`, \`advocate\`, \`patreon\`, \`lead\`, and \`support\`\nExample: \`/type translator\``);
         return null;
     }
 
@@ -327,7 +332,7 @@ async function getRoleForProject(project: IProject, message: Message, commandPar
             appNameInRoleRegex = /(.+) Patreon/;
             break;
         default:
-            message.channel.send(`${typeArg.value} is not a valid role type. Valid values are \`tester\`, \`translator\`, \`dev\`, \`advocate\`, \`patreon\`, \`lead\`, and \`support\`\nExample: \`/type translator\``);
+            (message.channel as TextChannel).send(`${typeArg.value} is not a valid role type. Valid values are \`tester\`, \`translator\`, \`dev\`, \`advocate\`, \`patreon\`, \`lead\`, and \`support\`\nExample: \`/type translator\``);
             return null;
     }
 
@@ -354,16 +359,16 @@ async function getRoleForProject(project: IProject, message: Message, commandPar
 async function getProjectDetails(project: IProject, message: Message) {
     // Make sure the details are being sent to the project channel if private
     if (project.isPrivate) {
-        const channelName: string = (message.channel as TextChannel).name.replace("-", " ");
+        const channelName: string = ((message.channel as TextChannel) as TextChannel).name.replace("-", " ");
 
         if (!channelName.includes(project.appName.toLowerCase())) {
-            message.channel.send(`Project is private or not found`);
+            (message.channel as TextChannel).send(`Project is private or not found`);
             return;
         }
     }
 
     if (project.needsManualReview) {
-        message.channel.send(`Project is awaiting ownership verification and review.`);
+        (message.channel as TextChannel).send(`Project is awaiting ownership verification and review.`);
         return;
     }
 
@@ -403,7 +408,7 @@ async function getProjectDetails(project: IProject, message: Message) {
         messageEmbed.thumbnail = { url: project.appIcon };
 
     // TODO: include the app channel if present
-    message.channel.send({ embed: messageEmbed });
+    (message.channel as TextChannel).send(messageEmbed);
 }
 
 async function findProject(projectName: string, srcChannel: TextChannel): Promise<IProject | undefined> {
@@ -483,6 +488,6 @@ async function ReactWithPromiseStatus<T>(promise: Promise<T>, message: Message) 
             const reactionId = guild.emojis.cache.find(i => i.name == "bug")?.id;
             if (reactionId) message.react(reactionId);
 
-            message.channel.send(err);
+            (message.channel as TextChannel).send(err);
         });
 }

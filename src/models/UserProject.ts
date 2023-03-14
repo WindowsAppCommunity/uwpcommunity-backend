@@ -1,4 +1,4 @@
-import { Column, Model, Table, ForeignKey, PrimaryKey, AutoIncrement, DataType, BelongsTo } from 'sequelize-typescript';
+import { Column, Model, Table, ForeignKey, PrimaryKey, AutoIncrement, DataType, BelongsTo, CreatedAt } from 'sequelize-typescript';
 import User from './User';
 import Project from './Project';
 import Role from './Role';
@@ -9,7 +9,7 @@ export default class UserProject extends Model<UserProject> {
     @PrimaryKey
     @AutoIncrement
     @Column(DataType.INTEGER)
-    id!: number;
+    declare id: number;
 
     @Column
     isOwner!: boolean;

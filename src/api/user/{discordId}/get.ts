@@ -16,7 +16,7 @@ module.exports = async (req: Request, res: Response) => {
     BuildResponse(res, HttpStatus.Success, user);
 };
 
-function GetUser(discordId: string): Promise<IUser | undefined> {
+function GetUser(discordId: string): Promise<IUser | void> {
     return new Promise(async (resolve, reject) => {
         const DbUser = await getUserByDiscordId(discordId).catch(reject);
         if (!DbUser) {
