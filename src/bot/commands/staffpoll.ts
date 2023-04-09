@@ -18,6 +18,7 @@ export interface StaffPoll {
 
 export default async (message: Message, commandParts: string[], args: IBotCommandArgument[]) => {
     const sentFromChannel = message.channel as TextChannel;
+    const pollId = Guid.newGuid();
 
     if (!message.member?.roles.cache.find(i => i.name.toLowerCase() == "admin")) {
         message.reply("Only Admins can create staff polls.")
@@ -61,14 +62,60 @@ export default async (message: Message, commandParts: string[], args: IBotComman
         sentFromChannel.send(`Error: couldn't find staff role.`);
         return;
     }
+
     var staffMembers = guildMembers.filter(x => x.roles.cache.has(staffRole!.id));
+
+    message.client.on(Events.InteractionCreate, async (interaction: Interaction) => {
+        var staffMember = staffMembers.find(x => x.id == interaction.user.id);
+        if (!staffMember)
+            return;
+
+        if (interaction.isButton()) {
+            if (interaction.customId === `staffpoll-button-${staffMember.id}-${name}-${pollId}`) {
+                const modal = new ModalBuilder()
+                    .setCustomId(`staffpoll-modal-${staffMember.id}-${name}-${pollId}`)
+                    .setTitle('Staff poll')
+                    .addComponents([
+                        new ActionRowBuilder<TextInputBuilder>().addComponents(
+                            new TextInputBuilder()
+                                .setCustomId(`staffpoll-input-${staffMember.id}-${name}-${pollId}`)
+                                .setLabel('Submit')
+                                .setStyle(TextInputStyle.Paragraph)
+                                .setMinLength(2)
+                                .setRequired(true)
+                        ),
+                    ]);
+
+                await interaction.showModal(modal);
+            }
+        }
+
+        if (interaction.type === InteractionType.ModalSubmit) {
+            if (interaction.customId === `staffpoll-modal-${staffMember.id}-${name}-${pollId}`) {
+                var response = thisPoll.responses.find(x => x.member?.id == staffMember!.id);
+                if (!response) {
+                    sentFromChannel.send(`Internal error: could not locate the member response for <@${staffMember.id}>`);
+                    return;
+                }
+
+                response.value = interaction.fields.getTextInputValue(`staffpoll-input-${staffMember.id}-${name}-${pollId}`);
+
+                interaction.reply(`Thank you, your response has been collected.`);
+
+                // If this is the last response, complete the poll and report the results. 
+                if (thisPoll.responses.filter(x => x.value != undefined).length == staffMembers?.length) {
+                    EndStaffPoll(staffMembers, thisPoll, sentFromChannel, name, description);
+                }
+            }
+        }
+    });
 
     for (var staffMember of staffMembers) {
         let button = new ActionRowBuilder<ButtonBuilder>();
 
         button.addComponents(
             new ButtonBuilder()
-                .setCustomId(`staffpoll-button-${message.id}`)
+                .setCustomId(`staffpoll-button-${staffMember.id}-${name}-${pollId}`)
                 .setStyle(ButtonStyle.Primary)
                 .setLabel('Submit your vote'),
         );
@@ -89,41 +136,6 @@ export default async (message: Message, commandParts: string[], args: IBotComman
 
         var response: StaffPollResponse = { pollMessage: sentMessage, member: staffMember };
         thisPoll.responses.push(response);
-
-        sentMessage.client.on(Events.InteractionCreate, async (interaction: Interaction) => {
-            if (interaction.isButton()) {
-                if (interaction.customId === `staffpoll-button-${message.id}`) {
-                    const modal = new ModalBuilder()
-                        .setCustomId(`staffpoll-modal-${message.id}`)
-                        .setTitle('Staff poll')
-                        .addComponents([
-                            new ActionRowBuilder<TextInputBuilder>().addComponents(
-                                new TextInputBuilder()
-                                    .setCustomId(`staffpoll-input-${message.id}`)
-                                    .setLabel('Submit')
-                                    .setStyle(TextInputStyle.Paragraph)
-                                    .setMinLength(4)
-                                    .setRequired(true),
-                            ),
-                        ]);
-
-                    await interaction.showModal(modal);
-                }
-            }
-
-            if (interaction.type === InteractionType.ModalSubmit) {
-                if (interaction.customId === `staffpoll-modal-${message.id}`) {
-                    response.value = interaction.fields.getTextInputValue(`staffpoll-input-${message.id}`);
-
-                    interaction.reply(`Thank you, your response has been collected.`);
-
-                    // If this is the last response, complete the poll and report the results. 
-                    if (thisPoll.responses.length == staffMembers?.length) {
-                        EndStaffPoll(staffMembers, thisPoll, sentFromChannel, name, description);
-                    }
-                }
-            }
-        });
     }
 
     sentFromChannel.send(`A poll has been sent to each staff member's DM. The results will be posted here in <#${sentFromChannel.id}> when all results have been received.`);
@@ -153,6 +165,16 @@ export default async (message: Message, commandParts: string[], args: IBotComman
         sentFromChannel.send({
             content: "A staff poll has ended",
             embeds: embeds,
+        });
+    }
+}
+
+class Guid {
+    static newGuid() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            var r = Math.random() * 16 | 0,
+                v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
         });
     }
 }
