@@ -1,6 +1,6 @@
 import { Message, TextChannel } from "discord.js";
 import fetch from "node-fetch";
-import { bot, GetChannelByName } from "../../../common/helpers/discord";
+import { bot, GetChannelByName } from "../../../common/discord.js";
 
 const disallowedDomainsForApiLookup = ["docs.microsoft.com", "devblogs.microsoft.com", "social.msdn.microsoft.com", "stackoverflow.com"];
 const allowedWords = ["winappsdk"];

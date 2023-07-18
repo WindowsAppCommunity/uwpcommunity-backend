@@ -1,7 +1,7 @@
 import { Message, TextChannel, Guild, GuildMember } from "discord.js";
-import { GetGuild, GetGuildMembers } from "../../common/helpers/discord";
-import { IBotCommandArgument } from "../../models/types";
-import { getUserByDiscordId } from "../../models/User";
+import { GetGuild, GetGuildMembers } from "../../common/discord.js";
+import { IBotCommandArgument } from "../../models/types.js";
+import { GetUserByDiscordId } from "../../api/sdk/users.js";
 
 const validFindByMethod = ["discordId", "username"];
 
@@ -83,11 +83,10 @@ Current username: \`${member.user.username}#${member.user.discriminator}\`
 Nickname: \`${member.nickname}\`
 Joined: \`${member.joinedAt?.toUTCString()}\``;
 
-    const userData = await getUserByDiscordId(member.id);
+    const userData = await GetUserByDiscordId(member.id);
     if (userData) {
         formattedUserInfo += `
-Registered name: \`${userData.name}\`
-Registered Email: \`${userData.email}\``;
+Registered name: \`${userData.user.name}\``;
     }
 
     channel.send(formattedUserInfo);

@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
-import { getUserByDiscordId, DbToStdModal_User } from "../../../models/User";
-import { IUser, ResponseErrorReasons } from "../../../models/types";
-import { genericServerError } from "../../../common/helpers/generic";
-import { HttpStatus, BuildResponse } from "../../../common/helpers/responseHelper";
+import { ResponseErrorReasons } from "../../../models/types.js";
+import { HttpStatus, BuildResponse } from "../../../common/responseHelper.js";
+import { IDiscordConnection, IUserConnection } from "../../sdk/interface/IUserConnection.js";
+import users, { IUserMap, GetUserByDiscordId } from "../../sdk/users.js";
 
-module.exports = async (req: Request, res: Response) => {
+export default async (req: Request, res: Response) => {
     let discordId = req.params['discordId'];
 
-    const user: IUser | void = await GetUser(discordId).catch(err => genericServerError(err, res));
+    var user = await GetUserByDiscordId(discordId);
     if (!user) {
         BuildResponse(res, HttpStatus.NotFound, ResponseErrorReasons.UserNotExists);
         return;
@@ -15,20 +15,3 @@ module.exports = async (req: Request, res: Response) => {
 
     BuildResponse(res, HttpStatus.Success, user);
 };
-
-function GetUser(discordId: string): Promise<IUser | void> {
-    return new Promise(async (resolve, reject) => {
-        const DbUser = await getUserByDiscordId(discordId).catch(reject);
-        if (!DbUser) {
-            resolve();
-            return;
-        }
-
-        const StdUser = DbToStdModal_User(DbUser)
-        if (StdUser == undefined || StdUser == null) {
-            reject("Unable to convert database entry");
-            return;
-        };
-        resolve(StdUser);
-    });
-}

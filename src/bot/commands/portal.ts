@@ -1,4 +1,4 @@
-import { IBotCommandArgument } from "../../models/types";
+import { IBotCommandArgument } from "../../models/types.js";
 import { Message, TextChannel, Embed, EmbedBuilder } from "discord.js";
 
 interface portalImage {

@@ -1,8 +1,7 @@
 import { Request, Response } from "express";
-import { DEVENV } from "../../../common/helpers/generic"
-import { BuildResponse, HttpStatus } from "../../../common/helpers/responseHelper";
-
-const request = require("request");
+import { DEVENV } from "../../../common/generic.js"
+import { BuildResponse, HttpStatus } from "../../../common/responseHelper.js";
+import request from "request";
 
 function log(...args: any[]) {
     console.log(`GET /signin/redirect: \x1b[33m${Array.from(arguments)}\x1b[0m`);
@@ -16,7 +15,7 @@ if (process.env.discord_client === undefined || process.env.discord_secret === u
  * @summary Exchange the code for an access token
  * @see https://discordapp.com/developers/docs/topics/oauth2#authorization-code-grant-redirect-url-example
  */
-module.exports = (req: Request, res: Response) => {
+export default (req: Request, res: Response) => {
     let code = req.query.code;
 
     if (!code) {        

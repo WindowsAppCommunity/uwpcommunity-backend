@@ -47,3 +47,5 @@ _key*
 build/
 
 *[cC]ache*.json
+
+libp2p-keys/

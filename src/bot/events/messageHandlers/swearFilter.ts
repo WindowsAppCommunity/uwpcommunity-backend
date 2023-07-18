@@ -1,5 +1,5 @@
 import { Message, TextChannel, DMChannel, PartialMessage } from "discord.js";
-import { GetGuild } from "../../../common/helpers/discord";
+import { GetGuild } from "../../../common/discord.js";
 
 export const swearRegex: RegExp = new RegExp(/fuck|\sass\s|dick|shit|pussy|cunt|whore|bastard|bitch|faggot|penis|slut|retarded/);
 

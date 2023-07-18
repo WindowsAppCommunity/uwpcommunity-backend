@@ -1,10 +1,10 @@
 import { Request, Response } from "express-serve-static-core";
-import { GetGuildUser, GetGuild, GetDiscordUser, GetRoles } from "../../../../common/helpers/discord";
-import { genericServerError, validateAuthenticationHeader, capitalizeFirstLetter } from "../../../../common/helpers/generic";
-import { getProjectsByDiscordId } from "../../../../models/Project";
-import { HttpStatus, BuildResponse } from "../../../../common/helpers/responseHelper";
+import { GetGuildUser, GetGuild, GetDiscordUser, GetRoles } from "../../../../common/discord.js";
+import { genericServerError, validateAuthenticationHeader, capitalizeFirstLetter } from "../../../../common/generic.js";
+import { HttpStatus, BuildResponse } from "../../../../common/responseHelper.js";
+import { GetProjectsByDiscordId } from "../../../sdk/projects.js";
 
-module.exports = async (req: Request, res: Response) => {
+export default async (req: Request, res: Response) => {
     const authAccess = validateAuthenticationHeader(req, res);
     if (!authAccess) return;
 
@@ -27,8 +27,8 @@ module.exports = async (req: Request, res: Response) => {
     }
 
     // If trying to create a role for a project, make sure the project exists
-    let Projects = await getProjectsByDiscordId(user.id);
-    if (Projects.filter(project => req.body.appName == project.appName).length == 0) {
+    let projects = await GetProjectsByDiscordId(user.id);
+    if (projects.filter(project => req.body.appName == project.name).length == 0) {
         BuildResponse(res, HttpStatus.MalformedRequest, "The project doesn't exist");
         return;
     }
@@ -65,7 +65,7 @@ module.exports = async (req: Request, res: Response) => {
 const allowedProjectSubRoles = ["translator", "dev", "beta tester"];
 
 interface IPostProjectRoles {
-    appName: "Cortana",
+    appName: string;
     subRole: "dev" | "beta tester" | "translator",
     color: string;
 }

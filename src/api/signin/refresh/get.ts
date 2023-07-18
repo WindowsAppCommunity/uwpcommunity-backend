@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
-import { HttpStatus, BuildResponse } from "../../../common/helpers/responseHelper";
+import { HttpStatus, BuildResponse } from "../../../common/responseHelper.js";
 const request = require("request");
 
 function log(...args: any[]) {
     console.log(`GET /signin/: \x1b[33m${Array.from(arguments)}\x1b[0m`);
 }
 
-module.exports = (req: Request, res: Response) => {
+export default (req: Request, res: Response) => {
     if (!req.query.refreshToken) {
         BuildResponse(res, HttpStatus.MalformedRequest, "Missing refreshToken");
         return;

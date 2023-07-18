@@ -1,11 +1,13 @@
 import { Request, Response } from "express";
-import User, { getUserByDiscordId } from "../../models/User"
-import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
-import { GetDiscordIdFromToken } from "../../common/helpers/discord";
-import { HttpStatus, BuildResponse } from "../../common/helpers/responseHelper";
+import { validateAuthenticationHeader } from "../../common/generic.js";
+import { GetDiscordIdFromToken } from "../../common/discord.js";
+import { HttpStatus, BuildResponse } from "../../common/responseHelper.js";
+import { GetUserByDiscordId, SaveUserAsync } from "../sdk/users.js";
+import { IDiscordConnection } from "../sdk/interface/IUserConnection.js";
+import { IUser } from "../sdk/interface/IUser.js";
 
-module.exports = async (req: Request, res: Response) => {
-    const body = req.body;
+export default async (req: Request, res: Response) => {
+    const body = req.body as IPutUserRequestBody;
 
     const authAccess = validateAuthenticationHeader(req, res);
     if (!authAccess) return;
@@ -19,11 +21,19 @@ module.exports = async (req: Request, res: Response) => {
         return;
     }
 
-    updateUser(body, discordId)
-        .then(() => {
-            BuildResponse(res, HttpStatus.Success, "Success");
-        })
-        .catch((err) => genericServerError(err, res));
+    let userMap = await GetUserByDiscordId(discordId);
+    if (!userMap)
+        throw new Error("User not found");
+
+    // Combining the new data with old will overwrite arrays, so we populate them manually.
+    body.connections = [...userMap.user.connections, ...body.connections, { discordId } as IDiscordConnection]
+    body.links = [...userMap.user.links, ...body.links]
+    body.projects = [...userMap.user.projects, ...body.projects]
+    body.publishers = [...userMap.user.publishers, ...body.publishers]
+
+    // Combine the new user data with the old user data, overwriting anything that exists.
+    await SaveUserAsync(userMap.ipnsCid, { ...userMap.user, ...body });
+    BuildResponse(res, HttpStatus.Success, "Success");
 };
 
 function checkBody(body: IPutUserRequestBody): true | string {
@@ -31,29 +41,4 @@ function checkBody(body: IPutUserRequestBody): true | string {
     return true;
 }
 
-
-function whitelistBody(body: IPutUserRequestBody) {
-    
-}
-
-function updateUser(userData: IPutUserRequestBody, discordId: string): Promise<User> {
-    return new Promise<User>(async (resolve, reject) => {
-        let user = await getUserByDiscordId(discordId);
-
-        if (!user) {
-            reject("User not found");
-            return;
-        }
-
-        user.discordId = discordId;
-
-        user.update(userData)
-            .then(resolve)
-            .catch(reject);
-    });
-}
-
-interface IPutUserRequestBody {
-    name: string;
-    email?: string;
-}
+interface IPutUserRequestBody extends IUser { }

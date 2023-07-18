@@ -1,8 +1,8 @@
 import { Message, TextChannel } from "discord.js";
-import { GetGuild, GetRoles } from "../../common/helpers/discord";
-import { capitalizeFirstLetter } from "../../common/helpers/generic";
-import { IBotCommandArgument } from "../../models/types";
-import { getUserByDiscordId } from "../../models/User";
+import { GetGuild, GetRoles } from "../../common/discord.js";
+import { capitalizeFirstLetter } from "../../common/generic.js";
+import { IBotCommandArgument } from "../../models/types.js";
+import { GetUserByDiscordId } from "../../api/sdk/users.js";
 
 export default async (discordMessage: Message, commandParts: string[], args: IBotCommandArgument[]) => {
     const command = commandParts[0].toLowerCase();
@@ -53,14 +53,10 @@ Mentionable: ${mentionable}`
         messageToSend += `\n${member.user.username}#${member.user.discriminator}`
 
         if (commandParts.filter(x => x == "detailed").length > 0) {
-            var user = await getUserByDiscordId(member.id);
+            var userMap = await GetUserByDiscordId(member.id);
 
-            if(user) {
-                messageToSend += `  |  ${user.name}`;
-            }
-
-            if (user && user.email) {
-                messageToSend += `  |  ${user.email}`
+            if(userMap) {
+                messageToSend += `  |  ${userMap.user.name}`;
             }
         }
     }

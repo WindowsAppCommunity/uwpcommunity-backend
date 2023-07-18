@@ -1,51 +1,14 @@
 import { Request, Response } from "express";
-import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
-import { getUserByDiscordId } from "../../models/User";
-import { getProjectsByDiscordId, RefreshProjectCache } from "../../models/Project";
-import { GetDiscordIdFromToken } from "../../common/helpers/discord";
-import { BuildResponse,  HttpStatus } from "../../common/helpers/responseHelper";
+import { genericServerError, validateAuthenticationHeader } from "../../common/generic.js";
+import { GetDiscordIdFromToken } from "../../common/discord.js";
+import { DeleteUserByDiscordId } from "../sdk/users.js";
 
-module.exports = async (req: Request, res: Response) => {
+export default async (req: Request, res: Response) => {
     const authAccess = validateAuthenticationHeader(req, res);
     if (!authAccess) return;
 
     let discordId = await GetDiscordIdFromToken(authAccess, res);
     if (!discordId) return;
 
-    deleteUser(discordId)
-        .then(success => {
-            if (success) {
-                BuildResponse(res, HttpStatus.Success, "Success");
-                RefreshProjectCache();
-            } else {
-                BuildResponse(res, HttpStatus.NotFound, "User does not exist in database");
-            }
-        })
-        .catch((err) => genericServerError(err, res));
+    await DeleteUserByDiscordId(discordId).catch((err) => genericServerError(err, res));
 };
-
-/**
- * @returns True if successful, false if user not found
- * @param user User to delete
- */
-function deleteUser(discordId: string): Promise<boolean> {
-    return new Promise(async (resolve, reject) => {
-        // Find the projects
-        const projects = await getProjectsByDiscordId(discordId).catch(reject);
-
-        if (!projects) return;
-
-        // Delete all associated projects with this user
-        for (let project of projects) {
-            await project.destroy().catch(reject);
-        }
-
-        // Find the user
-        const userOnDb = await getUserByDiscordId(discordId).catch(reject);
-        if (!userOnDb) { resolve(false); return; }
-
-        // Delete the user
-        await userOnDb.destroy().catch(reject);
-        resolve(true);
-    });
-}

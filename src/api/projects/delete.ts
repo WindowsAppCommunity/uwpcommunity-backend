@@ -1,13 +1,11 @@
 import { Request, Response } from "express";
-import Project, { getAllDbProjects, getAllProjects, nukeProject, RefreshProjectCache } from "../../models/Project";
-import { validateAuthenticationHeader } from "../../common/helpers/generic";
-import { GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
-import { HttpStatus, BuildResponse, ResponsePromiseReject, IRequestPromiseReject } from "../../common/helpers/responseHelper";
-import UserProject, { GetProjectCollaborators } from "../../models/UserProject";
-import ProjectImage from "../../models/ProjectImage";
-import ProjectTag from "../../models/ProjectTag";
+import { validateAuthenticationHeader } from "../../common/generic.js";
+import { GetDiscordIdFromToken } from "../../common/discord.js";
+import { HttpStatus, BuildResponse } from "../../common/responseHelper.js";
+import { DeleteProject, GetIpnsCidByProjectName, GetProjectsByDiscordId } from "../sdk/projects.js";
+import type { CID } from "multiformats/cid";
 
-module.exports = async (req: Request, res: Response) => {
+export default async (req: Request, res: Response) => {
     const bodyCheck = checkBody(req.body);
     if (bodyCheck !== true) {
         BuildResponse(res, HttpStatus.MalformedRequest, `Query string "${bodyCheck}" not provided or malformed`);
@@ -20,20 +18,23 @@ module.exports = async (req: Request, res: Response) => {
     let discordId = await GetDiscordIdFromToken(authAccess, res);
     if (!discordId) return;
 
-    nukeProject((req.body as IDeleteProjectsRequestBody).appName, discordId)
-        .then(() => {
-            BuildResponse(res, HttpStatus.Success, "Success");
-            RefreshProjectCache();
-        })
-        .catch((err: IRequestPromiseReject) => BuildResponse(res, err.status, err.reason));
-};
+    var modifiableProjects = await GetProjectsByDiscordId(authAccess, discordId);
+
+    for (var project of modifiableProjects) {
+        var ipnsCid = GetIpnsCidByProjectName(project.name);
+        
+        if (ipnsCid == req.body.id) {
+            await DeleteProject(req.body.id);
+        }
+    }
+}
 
 function checkBody(body: IDeleteProjectsRequestBody): true | string {
-    if (!body.appName) return "appName";
+    if (!body.id) return "id";
     return true;
 }
 
 
 interface IDeleteProjectsRequestBody {
-    appName: string;
+    id: CID;
 }

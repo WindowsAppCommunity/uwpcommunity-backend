@@ -1,15 +1,16 @@
 import { Request, Response } from "express";
-import Project, { DbToStdModal_Project, getAllProjects } from "../../models/Project";
-import { IProject } from "../../models/types";
-import { validateAuthenticationHeader } from "../../common/helpers/generic";
-import { GetDiscordIdFromToken, GetGuildUser } from "../../common/helpers/discord";
-import { HttpStatus, BuildResponse, ResponsePromiseReject, IRequestPromiseReject } from "../../common/helpers/responseHelper";
+import { validateAuthenticationHeader } from "../../common/generic.js";
+import { GetDiscordIdFromToken, GetGuildUser } from "../../common/discord.js";
+import { HttpStatus, BuildResponse, ResponsePromiseReject, IRequestPromiseReject } from "../../common/responseHelper.js";
+import projects from "../sdk/projects.js";
+import { IProject } from "../sdk/interface/IProject.js";
 
-module.exports = async (req: Request, res: Response) => {
+export default async (req: Request, res: Response) => {
     const reqQuery = req.query as IGetProjectsRequestQuery;
 
     var isMod = await checkIsMod(req, res);
-    const projects = await getAllProjectsApi(reqQuery.all && isMod).catch((err: IRequestPromiseReject) => BuildResponse(res, err.status, err.reason));
+    const projects = await getAllProjectsApi(reqQuery.all && isMod);
+
     if (projects) {
         BuildResponse(res, HttpStatus.Success, projects);
     }
@@ -29,8 +30,7 @@ async function checkIsMod(req: Request, res: Response): Promise<boolean> {
 }
 
 export async function getAllProjectsApi(all?: boolean): Promise<IProject[]> {
-
-    let allProjects = await getAllProjects(undefined, true).catch(err => ResponsePromiseReject("Internal server error: " + err, HttpStatus.InternalServerError, Promise.reject));
+    let allProjects = projects.map(x => x.project);
 
     if (all !== true)
         allProjects = (allProjects as IProject[]).filter(x => x.needsManualReview == false && x.isPrivate == false);

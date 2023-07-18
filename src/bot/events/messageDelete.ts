@@ -1,5 +1,5 @@
 import { Message, TextChannel } from "discord.js";
-import { GetChannelByName } from "../../common/helpers/discord";
+import { GetChannelByName } from "../../common/discord.js";
 
 export default async (discordMessage: Message) => {
     if (discordMessage.author?.bot)

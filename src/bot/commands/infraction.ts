@@ -1,6 +1,6 @@
 import { Message, TextChannel, Role, Guild, GuildMember, VoiceChannel, GuildEmojiRoleManager, ChannelType } from "discord.js";
-import { IBotCommandArgument } from "../../models/types";
-import { GetGuild, GetChannelByName } from "../../common/helpers/discord";
+import { IBotCommandArgument } from "../../models/types.js";
+import { GetGuild, GetChannelByName } from "../../common/discord.js";
 import { setInterval } from "timers";
 
 let infractions: IInfraction[];

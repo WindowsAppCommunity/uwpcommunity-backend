@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
-import { GetUser } from "../../../../common/helpers/discord";
-import { BuildResponse, HttpStatus } from "../../../../common/helpers/responseHelper";
-import { validateAuthenticationHeader, genericServerError } from "../../../../common/helpers/generic";
+import { GetUser } from "../../../../common/discord.js";
+import { BuildResponse, HttpStatus } from "../../../../common/responseHelper.js";
+import { validateAuthenticationHeader, genericServerError } from "../../../../common/generic.js";
 import { User } from "discord.js";
 
-module.exports = async (req: Request, res: Response) => {
+export default async (req: Request, res: Response) => {
     const authAccess = validateAuthenticationHeader(req, res);
     if (!authAccess) return;
 

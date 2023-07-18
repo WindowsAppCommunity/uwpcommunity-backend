@@ -1,20 +1,25 @@
 {
     "compilerOptions": {
-        "target": "ES6",
+        "strict": true,
+        "target": "ES2021",
+        "module": "ESNext",
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "lib": [
-            "esnext"
+            "esnext",
+            "ES2021",
+            "ES2021.Promise",
+            "ES2021.String",
+            "ES2020.BigInt",
+            "WebWorker"
         ],
         "allowJs": true,
         "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
         "skipLibCheck": true,
-        "strict": true,
         "forceConsistentCasingInFileNames": false,
         "strictPropertyInitialization": false,
-        "module": "commonjs",
-        "moduleResolution": "node",
-        "resolveJsonModule": true,
+        "moduleResolution": "node16",
         "outDir": "./build",
         "rootDir": "./src",
         "sourceMap": true,

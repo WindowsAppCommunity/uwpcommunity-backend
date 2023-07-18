@@ -1,8 +1,6 @@
-import { ActionRowBuilder, APIActionRowComponent, APIEmbed, APIEmbedField, ButtonBuilder, ButtonStyle, EmbedType, Events, GuildMember, Interaction, InteractionType, Message, MessageActionRowComponentData, MessageCollector, ModalBuilder, TextChannel, TextInputBuilder, TextInputStyle } from "discord.js";
-import { col } from "sequelize/types";
-import { GetGuildMembers, GetRoles } from "../../common/helpers/discord";
-import { GetRoleByName } from "../../models/Role";
-import { IBotCommandArgument } from "../../models/types";
+import { ActionRowBuilder, APIEmbed, ButtonBuilder, ButtonStyle, Events, GuildMember, Interaction, InteractionType, Message, ModalBuilder, TextChannel, TextInputBuilder, TextInputStyle } from "discord.js";
+import { GetGuildMembers, GetRoles } from "../../common/discord.js";
+import { IBotCommandArgument } from "../../models/types.js";
 
 export interface StaffPollResponse {
     member: GuildMember;

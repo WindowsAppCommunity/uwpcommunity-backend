@@ -1,5 +1,5 @@
 import { PartialMessage } from "discord.js";
-import { handleSwearFilter } from "./messageHandlers/swearFilter";
+import { handleSwearFilter } from "./messageHandlers/swearFilter.js";
 
 export default (oldDiscordMessage: PartialMessage, newDiscordMessage: PartialMessage) => {
     if (oldDiscordMessage.author?.bot)

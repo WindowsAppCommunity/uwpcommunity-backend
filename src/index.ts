@@ -1,11 +1,28 @@
+import 'source-map-support/register.js'
 import { Request, Response, NextFunction } from "express";
-import { InitBot, bot } from "./common/helpers/discord";
-import { InitDb, CreateMocks } from './common/sequalize';
-import * as helpers from './common/helpers/generic';
+import { InitBot, bot } from "./common/discord.js";
+import * as helpers from './common/generic.js';
 import cors from "cors";
-import { IBotCommandArgument } from "./models/types";
-import { RefreshProjectCache } from "./models/Project";
+import { IBotCommandArgument } from "./models/types.js";
 import { TextChannel } from "discord.js";
+import { CreateLibp2pKey, Dag, InitAsync as InitHeliaAsync, Ipns } from "./api/sdk/helia.js";
+import express, { Express } from 'express';
+import bodyParser from 'body-parser';
+import glob from 'glob';
+
+import * as Projects from './api/sdk/projects.js'
+
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import { CID } from "multiformats/cid";
+import { SaveUserAsync } from './api/sdk/users.js';
+import { SavePublisherAsync } from './api/sdk/publishers.js';
+import { SaveProjectAsync } from './api/sdk/projects.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+let HttpMethodsRegex = /((?:post|get|put|patch|delete|ws)+)(?:.js)/;
 
 /**
  * This file sets up API endpoints based on the current folder tree in Heroku.
@@ -18,15 +35,8 @@ import { TextChannel } from "discord.js";
  * The file `./src/myapp/bugreport/post.js` is set up at `POST https://example.com/myapp/bugreport/`
  */
 
-const express = require('express'), app = express();
-const expressWs = require('express-ws')(app);
-
-const bodyParser = require('body-parser');
-const glob = require('glob');
-const swaggerUi = require('swagger-ui-express');
-
+const app = express();
 const PORT = process.env.PORT || 5000;
-const MOCK = process.argv.filter(val => val == 'mock').length > 0;
 
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -45,105 +55,152 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     next();
 });
 
-InitDb().then(() => {
-    RefreshProjectCache();
-    if (MOCK) CreateMocks()
-});
+//await InitDb();
+await InitHeliaAsync();
 
-InitBot();
+await InitBot();
+console.log("Server Companion is online");
 
-SetupAPI();
+await SetupBotCommands();
+console.log("Server companion ready to receive commands");
 
-SetupBotScripts();
+await SetupBotEvents();
+console.log("Server companion ready to handle events");
 
-app.listen(PORT, (err: string) => {
-    if (err) {
-        console.error(`Error while setting up port ${PORT}:`, err);
-        return;
-    }
-    console.log(`Ready, listening on port ${PORT}`);
-});
+await SetupAPI();
+await app.listen(PORT);
+console.log(`HTTP API listening on port ${PORT}`);
 
+await Projects.LoadAllAsync();
+console.log("Projects loaded, testing creation");
+
+await CreateTestProject();
+
+async function CreateTestProject() {
+    if (Ipns == undefined || Dag == undefined)
+        throw new Error("Helia not initialized");
+
+    var userPeerId = await CreateLibp2pKey();
+    var projectPeerId = await CreateLibp2pKey();
+    var publisherPeerId = await CreateLibp2pKey();
+
+    var savedUserCid = await SaveUserAsync(userPeerId.toCID(), {
+        name: "Alice",
+        projects: [projectPeerId.toCID()],
+        markdownAboutMe: "",
+        links: [],
+        publishers: [publisherPeerId.toCID()],
+        connections: []
+    });
+
+    var savedPublisherCid = await SavePublisherAsync(publisherPeerId.toCID(), {
+        name: "Contoso",
+        description: "Contoso is a test publisher.",
+        projects: [projectPeerId.toCID()],
+        icon: CID.parse("QmYqnT3PLBHbY3XVcEwbYiatNLCNyVfKffvzkuqxJ1hBqa"),
+        accentColor: "#FF0000",
+        links: [],
+        contactEmail: "",
+        isPrivate: false,
+    });
+
+    var savedProjectCid = await SaveProjectAsync(projectPeerId.toCID(), {
+        name: "Hello World",
+        description: "The first test project.",
+        publisher: publisherPeerId.toCID(),
+        collaborators: [{
+            user: userPeerId.toCID(),
+            role: {
+                name: "Owner",
+                description: "The owner of the project.",
+            },
+        }],
+        icon: CID.parse("QmYqnT3PLBHbY3XVcEwbYiatNLCNyVfKffvzkuqxJ1hBqa"),
+        links: [],
+        isPrivate: false,
+        forgetMe: false,
+        images: [],
+        heroImage: CID.parse("QmYqnT3PLBHbY3XVcEwbYiatNLCNyVfKffvzkuqxJ1hBqa"),
+        accentColor: "#FF0000",
+        category: "Test",
+        createdAtUnixTime: new Date().getTime(),
+        dependencies: [],
+        features: [],
+        needsManualReview: false,
+    });
+
+    console.log(`Test project created:\n- json-dag cid ${savedProjectCid.toString()}\n- saved under ipns cid: ${publisherPeerId.toCID()}`);
+}
 
 //#region Setup 
-
-let HttpMethodsRegex = /((?:post|get|put|patch|delete|ws)+)(?:.js)/;
 
 function initModuleOnBotReady(module: any) {
     if (module.Initialize)
         bot.once('ready', module.Initialize);
 }
 
-function SetupAPI() {
-    glob(__dirname + '/api/**/*.js', function (err: Error, result: string[]) {
-        for (let filePath of result) {
+async function SetupAPI() {
+    return new Promise<void>(async (resolve, reject) => {
 
-            if (!filePath.includes("node_modules") && helpers.match(filePath, HttpMethodsRegex)) {
-                let serverPath = filePath.replace(HttpMethodsRegex, "").replace("/app", "").replace("/api", "").replace("/build", "");
+        glob(__dirname + '/api/**/*.js', async function (err: Error | null, result: string[]) {
+            if (err) reject(err);
 
-                if (helpers.match(serverPath, /{(.+)}\/?$/)) {
-                    // Check paths with route params for sibling folders  
-                    const folderPath = filePath.replace(/{.+}(.+)$/, "\/\*\/");
-                    glob(folderPath, (err: Error, siblingDir: string[]) => {
-                        if (siblingDir.length > 1) throw new Error("Folder representing a route parameter cannot have sibling folders: " + folderPath);
-                    });
-                }
+            for (let filePath of result) {
 
-                // Reformat route params from folder-friendly to express spec
-                serverPath = serverPath.replace(/{([^\/]+)}/g, ":$1");
+                if (!filePath.includes("node_modules") && helpers.match(filePath, HttpMethodsRegex)) {
+                    let serverPath = filePath.replace(HttpMethodsRegex, "").replace("/app", "").replace("/api", "").replace("/build", "");
 
-                if (helpers.DEVENV) serverPath = serverPath.replace(__dirname.replace(/\\/g, `/`).replace("/build", ""), "");
+                    if (helpers.match(serverPath, /{(.+)}\/?$/)) {
+                        // Check paths with route params for sibling folders  
+                        const folderPath = filePath.replace(/{.+}(.+)$/, "\/\*\/");
+                        glob(folderPath, (err: Error | null, siblingDir: string[]) => {
+                            if (siblingDir.length > 1) throw new Error("Folder representing a route parameter cannot have sibling folders: " + folderPath);
+                        });
+                    }
 
-                const method = helpers.match(filePath, HttpMethodsRegex);
-                if (!method) continue;
+                    // Reformat route params from folder-friendly to express spec
+                    serverPath = serverPath.replace(/{([^\/]+)}/g, ":$1");
 
-                console.log(`Setting up ${filePath} as ${method.toUpperCase()} ${serverPath}`);
+                    if (helpers.DEVENV) serverPath = serverPath.replace(__dirname.replace(/\\/g, `/`).replace("/build", ""), "");
 
-                switch (method) {
-                    case "post":
-                        app.post(serverPath, require(filePath));
-                        break;
-                    case "get":
-                        app.get(serverPath, require(filePath));
-                        break;
-                    case "put":
-                        app.put(serverPath, require(filePath));
-                        break;
-                    case "patch":
-                        app.patch(serverPath, require(filePath));
-                        break;
-                    case "delete":
-                        app.delete(serverPath, require(filePath));
-                        break;
-                    case "ws":
-                        app.ws(serverPath, require(filePath)(expressWs, serverPath));
-                        break;
+                    const method = helpers.match(filePath, HttpMethodsRegex);
+                    if (!method) continue;
+
+                    console.log(`Ready HTTP ${method.toUpperCase()} ${serverPath}`);
+
+                    filePath = `file://${filePath}`
+
+                    switch (method) {
+                        case "post":
+                            app.post(serverPath, () => import(filePath));
+                            break;
+                        case "get":
+                            app.get(serverPath, () => import(filePath));
+                            break;
+                        case "put":
+                            app.put(serverPath, () => import(filePath));
+                            break;
+                        case "patch":
+                            app.patch(serverPath, () => import(filePath));
+                            break;
+                        case "delete":
+                            app.delete(serverPath, () => import(filePath));
+                            break;
+                    }
                 }
             }
-        }
+
+            resolve();
+        });
     });
-
-    const yaml = require('js-yaml');
-    const fs = require('fs');
-
-    // Get document, or throw exception on error
-    try {
-        const doc = yaml.safeLoad(fs.readFileSync('./src/api.yaml', 'utf8'));
-        app.use('/__docs', swaggerUi.serve, swaggerUi.setup(doc));
-        app.get('/swagger.json', (req: Request, res: Response) => res.json(doc));
-    } catch (e) {
-        console.log(e);
-    }
 }
 
-async function SetupBotScripts() {
-    await SetupBotCommands();
-    await SetupBotEvents();
-}
 
 async function SetupBotCommands() {
-    glob(`${__dirname}/bot/commands/*.js`, async (err: Error, result: string[]) => {
+    glob(`${__dirname}/bot/commands/*.js`, async (err: Error | null, result: string[]) => {
         for (let filePath of result) {
+            filePath = `file://${filePath}`
+
             const module = await import(filePath);
             if (!module.default) throw "No default export was defined in " + filePath;
             initModuleOnBotReady(module);
@@ -208,8 +265,10 @@ async function SetupBotCommands() {
 }
 
 async function SetupBotEvents() {
-    glob(`${__dirname}/bot/events/*.js`, async (err: Error, result: string[]) => {
+    glob(`${__dirname}/bot/events/*.js`, async (err: Error | null, result: string[]) => {
         for (let filePath of result) {
+            filePath = `file://${filePath}`
+
             const module = await import(filePath);
             if (!module.default) throw "No default export was defined in " + filePath;
             initModuleOnBotReady(module);

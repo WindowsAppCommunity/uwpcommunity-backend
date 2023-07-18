@@ -1,18 +1,32 @@
 import { Request, Response } from "express";
-import User, { getUserByDiscordId } from "../../models/User"
-import { ResponseErrorReasons } from "../../models/types";
-import { genericServerError, validateAuthenticationHeader } from "../../common/helpers/generic";
-import { GetDiscordIdFromToken } from "../../common/helpers/discord";
-import { BuildResponse, HttpStatus } from "../../common/helpers/responseHelper";
+import { ResponseErrorReasons } from "../../models/types.js";
+import { validateAuthenticationHeader } from "../../common/generic.js";
+import { GetDiscordIdFromToken } from "../../common/discord.js";
+import { BuildResponse, HttpStatus } from "../../common/responseHelper.js";
+import { GetUserByDiscordId, SaveUserAsync } from "../sdk/users.js";
+import { CreateLibp2pKey } from "../sdk/helia.js";
+import { IUser } from "../sdk/interface/IUser.js";
+import { IDiscordConnection } from "../sdk/interface/IUserConnection.js";
 
-module.exports = async (req: Request, res: Response) => {
+export default async (req: Request, res: Response) => {
     const body = req.body;
 
     const authAccess = validateAuthenticationHeader(req, res);
     if (!authAccess) return;
 
     let discordId = await GetDiscordIdFromToken(authAccess, res);
-    if (!discordId) return;
+    if (discordId == undefined)
+        return;
+
+    // Check if the user already exists
+    const user = await GetUserByDiscordId(discordId);
+    if (user) {
+        BuildResponse(res, HttpStatus.BadRequest, ResponseErrorReasons.UserExists);
+        return;
+    }
+
+    // Add the discord connection to the new user
+    body.connections = [...body.connections, { discordId } as IDiscordConnection]
 
     const bodyCheck = checkBody(body);
     if (bodyCheck !== true) {
@@ -20,19 +34,11 @@ module.exports = async (req: Request, res: Response) => {
         return;
     }
 
-    // Check if the user already exists
-    const user = await getUserByDiscordId(discordId).catch((err) => genericServerError(err, res));
+    // Create the user
+    var peerId = await CreateLibp2pKey();
+    await SaveUserAsync(peerId.toCID(), body);
 
-    if (user) {
-        BuildResponse(res, HttpStatus.BadRequest, ResponseErrorReasons.UserExists);
-        return;
-    }
-
-    submitUser({ ...body, discordId: discordId })
-        .then(() => {
-            BuildResponse(res, HttpStatus.Success, "Success");
-        })
-        .catch((err) => genericServerError(err, res));
+    BuildResponse(res, HttpStatus.Success, "Success");
 };
 
 function checkBody(body: IPostUserRequestBody): true | string {
@@ -40,15 +46,6 @@ function checkBody(body: IPostUserRequestBody): true | string {
     return true;
 }
 
-function submitUser(userData: IPostUserRequestBody): Promise<User> {
-    return new Promise<User>((resolve, reject) => {
-        User.create({ ...userData })
-            .then(resolve)
-            .catch(reject);
-    });
-}
 
-interface IPostUserRequestBody {
-    name: string;
-    email?: string;
+interface IPostUserRequestBody extends IUser {
 }
