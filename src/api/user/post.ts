@@ -3,10 +3,10 @@ import { ResponseErrorReasons } from "../../models/types.js";
 import { validateAuthenticationHeader } from "../../common/generic.js";
 import { GetDiscordIdFromToken } from "../../common/discord.js";
 import { BuildResponse, HttpStatus } from "../../common/responseHelper.js";
-import { GetUserByDiscordId, SaveUserAsync } from "../sdk/users.js";
-import { CreateLibp2pKey } from "../sdk/helia.js";
-import { IUser } from "../sdk/interface/IUser.js";
-import { IDiscordConnection } from "../sdk/interface/IUserConnection.js";
+import { GetUserByDiscordId, SaveUserAsync } from "../../sdk/users.js";
+import { CreateLibp2pKey } from "../../sdk/helia.js";
+import { IUser } from "../../sdk/interface/IUser.js";
+import { IDiscordConnection } from "../../sdk/interface/IUserConnection.js";
 
 export default async (req: Request, res: Response) => {
     const body = req.body;

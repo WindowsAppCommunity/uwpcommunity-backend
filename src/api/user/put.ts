@@ -2,9 +2,9 @@ import { Request, Response } from "express";
 import { validateAuthenticationHeader } from "../../common/generic.js";
 import { GetDiscordIdFromToken } from "../../common/discord.js";
 import { HttpStatus, BuildResponse } from "../../common/responseHelper.js";
-import { GetUserByDiscordId, SaveUserAsync } from "../sdk/users.js";
-import { IDiscordConnection } from "../sdk/interface/IUserConnection.js";
-import { IUser } from "../sdk/interface/IUser.js";
+import { GetUserByDiscordId, SaveUserAsync } from "../../sdk/users.js";
+import { IDiscordConnection } from "../../sdk/interface/IUserConnection.js";
+import { IUser } from "../../sdk/interface/IUser.js";
 
 export default async (req: Request, res: Response) => {
     const body = req.body as IPutUserRequestBody;

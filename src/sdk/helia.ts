@@ -37,8 +37,17 @@ export async function ImportLibp2pKey(keyName: string) {
     try {
         const key = await fs.promises.readFile(`../libp2p-keys/${keyName}`, 'utf-8');
         var peer = await peerIdFromString(key);
+        
+        let keyInfo;
 
-        if (Helia?.libp2p.keychain.findKeyByName(keyName) == undefined)
+        try {
+            keyInfo = await Helia?.libp2p.keychain.findKeyByName(keyName);
+        }
+        catch {
+            // ignored
+        }
+
+        if (!keyInfo)
             await Helia?.libp2p.keychain.importPeer(keyName, peer);
 
         await Ipns.publish(peer, await Dag.add(null));
@@ -85,7 +94,7 @@ export async function PublishToKey(keyName: string, cid: CID) {
 //    - [x] Projects
 //    - [x] Users
 //    - [x] Publishers
-//    - [ ] Community event data
+//    - [x] Community event data
 //    - [ ] Decryption keys for private projects
 // - [x] Implement the HTTP API using IPLD for storing data, removing any use of Postgres.
 // - [ ] Add support for private projects.

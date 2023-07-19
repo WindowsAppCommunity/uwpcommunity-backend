@@ -2,8 +2,8 @@ import { Request, Response } from "express";
 import { validateAuthenticationHeader } from "../../common/generic.js";
 import { GetDiscordIdFromToken, GetGuildUser } from "../../common/discord.js";
 import { HttpStatus, BuildResponse, ResponsePromiseReject, IRequestPromiseReject } from "../../common/responseHelper.js";
-import projects from "../sdk/projects.js";
-import { IProject } from "../sdk/interface/IProject.js";
+import projects from "../../sdk/projects.js";
+import { IProject } from "../../sdk/interface/IProject.js";
 
 export default async (req: Request, res: Response) => {
     const reqQuery = req.query as IGetProjectsRequestQuery;

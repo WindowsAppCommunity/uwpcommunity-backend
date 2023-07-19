@@ -5,19 +5,21 @@ import * as helpers from './common/generic.js';
 import cors from "cors";
 import { IBotCommandArgument } from "./models/types.js";
 import { TextChannel } from "discord.js";
-import { CreateLibp2pKey, Dag, InitAsync as InitHeliaAsync, Ipns } from "./api/sdk/helia.js";
+import { CreateLibp2pKey, Dag, InitAsync as InitHeliaAsync, Ipns } from "./sdk/helia.js";
 import express, { Express } from 'express';
 import bodyParser from 'body-parser';
 import glob from 'glob';
 
-import * as Projects from './api/sdk/projects.js'
+import * as Projects from './sdk/projects.js'
+import * as Users from './sdk/users.js'
+import * as Publishers from './sdk/publishers.js'
 
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { CID } from "multiformats/cid";
-import { SaveUserAsync } from './api/sdk/users.js';
-import { SavePublisherAsync } from './api/sdk/publishers.js';
-import { SaveProjectAsync } from './api/sdk/projects.js';
+import { SaveUserAsync } from './sdk/users.js';
+import { SavePublisherAsync } from './sdk/publishers.js';
+import { SaveProjectAsync } from './sdk/projects.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -71,66 +73,14 @@ await SetupAPI();
 await app.listen(PORT);
 console.log(`HTTP API listening on port ${PORT}`);
 
+await Users.LoadAllAsync();
+console.log("Users loaded");
+
 await Projects.LoadAllAsync();
-console.log("Projects loaded, testing creation");
+console.log("Projects loaded");
 
-await CreateTestProject();
-
-async function CreateTestProject() {
-    if (Ipns == undefined || Dag == undefined)
-        throw new Error("Helia not initialized");
-
-    var userPeerId = await CreateLibp2pKey();
-    var projectPeerId = await CreateLibp2pKey();
-    var publisherPeerId = await CreateLibp2pKey();
-
-    var savedUserCid = await SaveUserAsync(userPeerId.toCID(), {
-        name: "Alice",
-        projects: [projectPeerId.toCID()],
-        markdownAboutMe: "",
-        links: [],
-        publishers: [publisherPeerId.toCID()],
-        connections: []
-    });
-
-    var savedPublisherCid = await SavePublisherAsync(publisherPeerId.toCID(), {
-        name: "Contoso",
-        description: "Contoso is a test publisher.",
-        projects: [projectPeerId.toCID()],
-        icon: CID.parse("QmYqnT3PLBHbY3XVcEwbYiatNLCNyVfKffvzkuqxJ1hBqa"),
-        accentColor: "#FF0000",
-        links: [],
-        contactEmail: "",
-        isPrivate: false,
-    });
-
-    var savedProjectCid = await SaveProjectAsync(projectPeerId.toCID(), {
-        name: "Hello World",
-        description: "The first test project.",
-        publisher: publisherPeerId.toCID(),
-        collaborators: [{
-            user: userPeerId.toCID(),
-            role: {
-                name: "Owner",
-                description: "The owner of the project.",
-            },
-        }],
-        icon: CID.parse("QmYqnT3PLBHbY3XVcEwbYiatNLCNyVfKffvzkuqxJ1hBqa"),
-        links: [],
-        isPrivate: false,
-        forgetMe: false,
-        images: [],
-        heroImage: CID.parse("QmYqnT3PLBHbY3XVcEwbYiatNLCNyVfKffvzkuqxJ1hBqa"),
-        accentColor: "#FF0000",
-        category: "Test",
-        createdAtUnixTime: new Date().getTime(),
-        dependencies: [],
-        features: [],
-        needsManualReview: false,
-    });
-
-    console.log(`Test project created:\n- json-dag cid ${savedProjectCid.toString()}\n- saved under ipns cid: ${publisherPeerId.toCID()}`);
-}
+await Publishers.LoadAllAsync();
+console.log("Publishers loaded");
 
 //#region Setup 
 

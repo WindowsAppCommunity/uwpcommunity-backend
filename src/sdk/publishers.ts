@@ -11,7 +11,7 @@ interface IPublisherMap {
 }
 
 // While each user could theoretically publish their own IPNS record for each publisher,
-// we still need a way to keep track all registered publishers. This is that.
+// we still need a way to keep track all registered publishers that aren't doing that. This is how we do that.
 let publishers: IPublisherMap[] = [];
 let publishersIpnsKey: PeerId | undefined;
 
@@ -57,7 +57,7 @@ export async function SaveAllAsync() {
             await SavePublisherAsync(publisherMapItem.ipnsCid, publisherMapItem.publisher);
         }
         catch {
-            // Any publishers without a corresponding cannot be edited.
+            // Any publishers without a corresponding key cannot be edited.
             // ignored
         }
     }

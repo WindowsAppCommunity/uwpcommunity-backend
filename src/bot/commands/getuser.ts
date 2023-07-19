@@ -1,7 +1,7 @@
 import { Message, TextChannel, Guild, GuildMember } from "discord.js";
 import { GetGuild, GetGuildMembers } from "../../common/discord.js";
 import { IBotCommandArgument } from "../../models/types.js";
-import { GetUserByDiscordId } from "../../api/sdk/users.js";
+import { GetUserByDiscordId } from "../../sdk/users.js";
 
 const validFindByMethod = ["discordId", "username"];
 

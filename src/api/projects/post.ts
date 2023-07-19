@@ -2,9 +2,9 @@ import { Request, Response } from "express";
 import { genericServerError, validateAuthenticationHeader, match } from "../../common/generic.js";
 import { GetDiscordIdFromToken } from "../../common/discord.js";
 import { BuildResponse, HttpStatus, } from "../../common/responseHelper.js";
-import projects, { GetProjectsByDiscordId, SaveProjectAsync } from "../sdk/projects.js";
-import { IProject } from "../sdk/interface/IProject.js";
-import { CreateLibp2pKey, Dag, Helia, Ipns } from "../sdk/helia.js";
+import projects, { GetProjectsByDiscordId, SaveProjectAsync } from "../../sdk/projects.js";
+import { IProject } from "../../sdk/interface/IProject.js";
+import { CreateLibp2pKey, Dag, Helia, Ipns } from "../../sdk/helia.js";
 
 export default async (req: Request, res: Response) => {
     const body = req.body as IProject;

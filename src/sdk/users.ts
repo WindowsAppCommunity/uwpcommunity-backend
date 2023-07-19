@@ -12,7 +12,7 @@ export interface IUserMap {
 }
 
 // While each user could theoretically publish their own IPNS record,
-// we still need a way to keep track all registered Users. This is that.
+// we still need a way to keep track all registered users that aren't doing that. This is how we do that.
 let users: IUserMap[] = [];
 let usersIpnsKey: PeerId | undefined;
 
@@ -63,7 +63,7 @@ export async function SaveAllAsync() {
             await SaveUserAsync(userMapItem.ipnsCid, userMapItem.user);
         }
         catch {
-            // Any Users without a corresponding cannot be edited.
+            // Any Users without a corresponding key cannot be edited.
             // ignored
         }
     }

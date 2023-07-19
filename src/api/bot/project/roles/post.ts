@@ -2,7 +2,7 @@ import { Request, Response } from "express-serve-static-core";
 import { GetGuildUser, GetGuild, GetDiscordUser, GetRoles } from "../../../../common/discord.js";
 import { genericServerError, validateAuthenticationHeader, capitalizeFirstLetter } from "../../../../common/generic.js";
 import { HttpStatus, BuildResponse } from "../../../../common/responseHelper.js";
-import { GetProjectsByDiscordId } from "../../../sdk/projects.js";
+import { GetProjectsByDiscordId } from "../../../../sdk/projects.js";
 
 export default async (req: Request, res: Response) => {
     const authAccess = validateAuthenticationHeader(req, res);

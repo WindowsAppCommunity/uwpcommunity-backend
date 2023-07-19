@@ -2,9 +2,9 @@ import { Request, Response } from "express";
 import { validateAuthenticationHeader } from '../../common/generic.js';
 import { GetDiscordIdFromToken, GetGuildUser } from "../../common/discord.js";
 import { BuildResponse, HttpStatus } from "../../common/responseHelper.js";
-import { IProject } from "../sdk/interface/IProject.js";
-import { GetUserByDiscordId } from "../sdk/users.js";
-import { GetIpnsCidByProjectName, GetProjectByName, SaveProjectAsync } from "../sdk/projects.js";
+import { IProject } from "../../sdk/interface/IProject.js";
+import { GetUserByDiscordId } from "../../sdk/users.js";
+import { GetIpnsCidByProjectName, GetProjectByName, SaveProjectAsync } from "../../sdk/projects.js";
 
 export default async (req: Request, res: Response) => {
     const body = req.body as IProject;

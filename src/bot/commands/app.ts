@@ -2,14 +2,14 @@ import { IBotCommandArgument } from "../../models/types.js";
 import { Message, TextChannel, Role, GuildMember } from "discord.js";
 import { GetUser, GetRoles, GetGuild, GetGuildMembers } from "../../common/discord.js";
 import * as Bluebird from "bluebird";
-import { GetFirstUserBy, GetUserByDiscordId, GetUsersBy, IUserMap, LoadUserAsync, SaveUserAsync } from "../../api/sdk/users.js";
-import { IProject } from "../../api/sdk/interface/IProject.js";
-import { IDiscordConnection } from "../../api/sdk/interface/IUserConnection.js";
-import projects, { GetProjectsBy, IProjectMap, SaveProjectAsync } from "../../api/sdk/projects.js";
-import { Dag, Ipns } from "../../api/sdk/helia.js";
+import { GetFirstUserBy, GetUserByDiscordId, GetUsersBy, IUserMap, LoadUserAsync, SaveUserAsync } from "../../sdk/users.js";
+import { IProject } from "../../sdk/interface/IProject.js";
+import { IDiscordConnection } from "../../sdk/interface/IUserConnection.js";
+import projects, { GetProjectsBy, IProjectMap, SaveProjectAsync } from "../../sdk/projects.js";
+import { Dag, Ipns } from "../../sdk/helia.js";
 declare global { export interface Promise<T> extends Bluebird<T> { } }
 import { peerIdFromString, peerIdFromCID } from "@libp2p/peer-id";
-import { IUser } from "../../api/sdk/interface/IUser.js";
+import { IUser } from "../../sdk/interface/IUser.js";
 
 
 

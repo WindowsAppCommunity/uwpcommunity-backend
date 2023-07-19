@@ -1,6 +1,6 @@
 import { GuildMember, TextChannel } from "discord.js";
 import { GetChannelByName } from "../../common/discord.js";
-import { DeleteUserByDiscordId, GetUserByDiscordId } from "../../api/sdk/users.js";
+import { DeleteUserByDiscordId, GetUserByDiscordId } from "../../sdk/users.js";
 
 export default async (guildMember: GuildMember) => {
     let user = await GetUserByDiscordId(guildMember.id);

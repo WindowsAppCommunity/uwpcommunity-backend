@@ -2,7 +2,7 @@ import { Message, TextChannel } from "discord.js";
 import { GetGuild, GetRoles } from "../../common/discord.js";
 import { capitalizeFirstLetter } from "../../common/generic.js";
 import { IBotCommandArgument } from "../../models/types.js";
-import { GetUserByDiscordId } from "../../api/sdk/users.js";
+import { GetUserByDiscordId } from "../../sdk/users.js";
 
 export default async (discordMessage: Message, commandParts: string[], args: IBotCommandArgument[]) => {
     const command = commandParts[0].toLowerCase();

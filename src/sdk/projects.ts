@@ -13,7 +13,7 @@ export interface IProjectMap {
 }
 
 // While each user could theoretically publish their own IPNS record for each project,
-// we still need a way to keep track all registered projects. This is that.
+// we still need a way to keep track all registered projects that aren't doing that. This is how we do that.
 let projects: IProjectMap[] = [];
 let projectsIpnsKey: PeerId | undefined;
 

@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { validateAuthenticationHeader } from "../../../../common/generic.js";
 import { GetDiscordIdFromToken } from "../../../../common/discord.js";
 import { HttpStatus, BuildResponse } from "../../../../common/responseHelper.js";
-import { GetProjectsByDiscordId } from "../../../sdk/projects.js";
+import { GetProjectsByDiscordId } from "../../../../sdk/projects.js";
 
 export default async (req: Request, res: Response) => {
     let discordId = req.params['discordId'];

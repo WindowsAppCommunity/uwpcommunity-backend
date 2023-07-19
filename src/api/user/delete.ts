@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { genericServerError, validateAuthenticationHeader } from "../../common/generic.js";
 import { GetDiscordIdFromToken } from "../../common/discord.js";
-import { DeleteUserByDiscordId } from "../sdk/users.js";
+import { DeleteUserByDiscordId } from "../../sdk/users.js";
 
 export default async (req: Request, res: Response) => {
     const authAccess = validateAuthenticationHeader(req, res);
