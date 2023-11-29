@@ -3,7 +3,6 @@ import { validateAuthenticationHeader } from "../../common/generic.js";
 import { GetDiscordIdFromToken } from "../../common/discord.js";
 import { HttpStatus, BuildResponse } from "../../common/responseHelper.js";
 import { DeleteProject, GetIpnsCidByProjectName, GetProjectsByDiscordId } from "../../sdk/projects.js";
-import type { CID } from "multiformats/cid";
 
 export default async (req: Request, res: Response) => {
     const bodyCheck = checkBody(req.body);
@@ -30,11 +29,10 @@ export default async (req: Request, res: Response) => {
 }
 
 function checkBody(body: IDeleteProjectsRequestBody): true | string {
-    if (!body.id) return "id";
+    if (!body.name) return "name";
     return true;
 }
 
-
 interface IDeleteProjectsRequestBody {
-    id: CID;
+    name: string;
 }

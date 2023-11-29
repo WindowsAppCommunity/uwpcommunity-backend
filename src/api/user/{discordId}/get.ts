@@ -13,5 +13,5 @@ export default async (req: Request, res: Response) => {
         return;
     }
 
-    BuildResponse(res, HttpStatus.Success, user);
+    BuildResponse(res, HttpStatus.Success, user.user);
 };

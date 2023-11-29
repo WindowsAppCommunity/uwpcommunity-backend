@@ -26,10 +26,10 @@ export default async (req: Request, res: Response) => {
         throw new Error("User not found");
 
     // Combining the new data with old will overwrite arrays, so we populate them manually.
-    body.connections = [...userMap.user.connections, ...body.connections, { discordId } as IDiscordConnection]
-    body.links = [...userMap.user.links, ...body.links]
-    body.projects = [...userMap.user.projects, ...body.projects]
-    body.publishers = [...userMap.user.publishers, ...body.publishers]
+    body.connections = [...new Set([...userMap.user.connections, ...body.connections, { discordId } as IDiscordConnection])]
+    body.links = [...new Set([...userMap.user.links, ...body.links])]
+    body.projects = [...new Set([...userMap.user.projects, ...body.projects])]
+    body.publishers = [...new Set([...userMap.user.publishers, ...body.publishers])]
 
     // Combine the new user data with the old user data, overwriting anything that exists.
     await SaveUserAsync(userMap.ipnsCid, { ...userMap.user, ...body });
