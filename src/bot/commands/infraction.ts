@@ -1,4 +1,4 @@
-import { Message, TextChannel, Role, Guild, GuildMember, VoiceChannel, GuildEmojiRoleManager, ChannelType } from "discord.js";
+import { Message, TextChannel, Role, Guild, GuildMember, ChannelType, MessageFlags } from "discord.js";
 import { IBotCommandArgument } from "../../models/types";
 import { GetGuild, GetChannelByName } from "../../common/helpers/discord";
 import { setInterval } from "timers";
@@ -114,7 +114,7 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
         relevantMessage.attachments.forEach(att => relevantMessage.content += "\n" + att.url);
 
         if (relevantMessage) {
-            originalMessage = `Original message:\n> ${relevantMessage.content}`;
+            originalMessage = `Original message:\n>>> ${relevantMessage.content}`;
         }
 
         // Get previous recent infractions
@@ -135,44 +135,61 @@ export default async (discordMessage: Message, commandParts: string[], args: IBo
     if (memberInfraction.worstOffense != undefined)
         await member.roles.add(mutedRole);
 
-    let infractionMsg;
+    let infractionChannelTxt;
+    let metaChannelTxt;
 
     // User has no infractions
     if (memberInfraction.worstOffense == undefined) {
-        metaChannel.send(`<@${member.id}>, you have been issued a warning.\n> Reason: ${reasonArg.value}\n${originalMessage}. \n Please remember to follow the rules in the future.\nThis is just a warning and will wear off in 3 days, but further rule violations will result in action`);
-        infractionMsg = await infractionChannel.send(`${discordMessage.member.displayName} has issued a warning for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`);
+        metaChannelTxt = `<@${member.id}>, you have been issued a warning for the following reason:\n> ${reasonArg.value}\nPlease remember to follow the rules in the future.\nThis is just a warning and will wear off in 3 days, but further rule violations will result in action.\n${originalMessage}`;
+        infractionChannelTxt = `<@${discordMessage.member.id}> has issued a warning for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`;
     }
 
     // If user has a warning and no strikes
     else if (memberInfraction.worstOffense.label == "Warned") {
-        metaChannel.send(`<@${member.id}>, you have been issued a strike and a 1 week mute for the following reason:\n> ${reasonArg.value}\n${originalMessage}.\n Please remember to follow the rules in the future. \nThis strike will last for 3 weeks, and another infraction will result in a 3 week mute.`);
-        infractionMsg = await infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 1 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`);
+        metaChannelTxt = `<@${member.id}>, you have been issued a strike and a 1 week mute for the following reason:\n> ${reasonArg.value}\nPlease remember to follow the rules in the future. \nThis strike will last for 3 weeks, and another infraction will result in a 3 week mute.\n${originalMessage}`;
+        infractionChannelTxt = `<@${discordMessage.member.id}> has issued Strike 1 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`;
     }
 
     // If user has 1 strike, and needs a 2nd
     else if (memberInfraction.worstOffense.label == "Strike 1") {
-        metaChannel.send(`<@${member.id}>, you have been issued Strike 2 and a 3 week mute for the following reason:\n> ${reasonArg.value}\n${originalMessage}.\n Please remember to follow the rules in the future. \nThis strike will last for ~2 months (63 days), and another infraction will result in a 63 day mute.`);
-        infractionMsg = await infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 2 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`);
+        metaChannelTxt = `<@${member.id}>, you have been issued Strike 2 and a 3 week mute for the following reason:\n> ${reasonArg.value}\nPlease remember to follow the rules in the future. \nThis strike will last for ~2 months (63 days), and another infraction will result in a 63 day mute.\n${originalMessage}`;
+        infractionChannelTxt = `<@${discordMessage.member.id}> has issued Strike 2 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`;
     }
 
     // If user has 2 strikes, and needs a 3rd
     else if (memberInfraction.worstOffense.label == "Strike 2") {
-        metaChannel.send(`<@${member.id}>, you have been issued Strike 3 and a ~2 month (63 day) mute for the following reason:\n> ${reasonArg.value}\n${originalMessage}.\n Please remember to follow the rules in the future. \nThis strike will last for ~6 months (189 days), and another infraction will result in a 189 day mute.`);
-        infractionMsg = await infractionChannel.send(`${discordMessage.member.id} has issued Strike 3 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`);
+        metaChannelTxt = `<@${member.id}>, you have been issued Strike 3 and a ~2 month (63 day) mute for the following reason:\n> ${reasonArg.value}\nPlease remember to follow the rules in the future. \nThis strike will last for ~6 months (189 days), and another infraction will result in a 189 day mute.\n${originalMessage}`;
+        infractionChannelTxt = `<@${discordMessage.member.id}> has issued Strike 3 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`;
     }
 
     // If user has 3 strikes, needs a 4th
     else if (memberInfraction.worstOffense.label == "Strike 3") {
-        metaChannel.send(`<@${member.id}>, you have been issued Strike 4 and a ~6 month (189 day) mute for the following reason:\n> ${reasonArg.value}\n${originalMessage}.\n Please remember to follow the rules in the future. \nThis strike will last for ~19 months (567 days). There is no greater punishment. Shame on you.`);
-        infractionMsg = await infractionChannel.send(`${discordMessage.member.displayName} has issued Strike 4 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`);
+        metaChannelTxt = `<@${member.id}>, you have been issued Strike 4 and a ~6 month (189 day) mute for the following reason:\n> ${reasonArg.value}\nPlease remember to follow the rules in the future. \nThis strike will last for ~19 months (567 days). There is no greater punishment. Shame on you.\n${originalMessage}`;
+        infractionChannelTxt = `<@${discordMessage.member.id}> has issued Strike 4 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`;
     }
 
     else if (memberInfraction.worstOffense.label == "Strike 4") {
-        metaChannel.send(`<@${member.id}>, you have been re-issued Strike 4 and a ~6 month (189 day) mute for the following reason:\n> ${reasonArg.value}\n${originalMessage}.\n Please remember to follow the rules in the future. \nThis strike will last for ~19 months (567 days). There is no greater punishment. Shame on you.`);
-        infractionMsg = await infractionChannel.send(`${discordMessage.member.displayName} has re-issued Strike 4 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`);
+        metaChannelTxt = `<@${member.id}>, you have been re-issued Strike 4 and a ~6 month (189 day) mute for the following reason:\n> ${reasonArg.value}\nPlease remember to follow the rules in the future. \nThis strike will last for ~19 months (567 days). There is no greater punishment. Shame on you.\n${originalMessage}`;
+        infractionChannelTxt = `<@${discordMessage.member.id}> has re-issued Strike 4 for <@${member.id}> for the following reason:\n> ${reasonArg.value}\n${originalMessage}`;
     }
 
-    infractionMsg?.pin();
+    metaChannel.send({
+        content: metaChannelTxt,
+        allowedMentions: {
+            users: [member.id]
+        },
+        flags: MessageFlags.SuppressEmbeds
+    })
+
+    const infractionMsg = await infractionChannel.send({
+        content: infractionChannelTxt,
+        allowedMentions: {
+            parse: []
+        },
+        flags: MessageFlags.SuppressEmbeds
+    });
+
+    infractionMsg.pin();
 
     member.roles.add(memberInfraction.nextInfraction.role);
 

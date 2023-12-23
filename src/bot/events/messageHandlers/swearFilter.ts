@@ -1,4 +1,4 @@
-import { Message, TextChannel, DMChannel, PartialMessage } from "discord.js";
+import { Message, TextChannel, DMChannel, PartialMessage, MessageFlags } from "discord.js";
 import { GetGuild } from "../../../common/helpers/discord";
 
 export const swearRegex: RegExp = new RegExp(/fuck|\sass\s|dick|shit|pussy|cunt|whore|bastard|bitch|faggot|penis|slut|retarded/);
@@ -29,8 +29,7 @@ export async function handleSwearFilter(discordMessage: PartialMessage | Message
                 try {
                     // If the user has turned off DMs from all server members, this will throw
                     const dm: DMChannel = await discordMessage.author.createDM();
-                    await dm.send(`Your message was removed because it contained a swear word${isEmbed ? " in an embed" : ""}.
-                    > ${discordMessage.content}`);
+                    await dm.send(`Your message was removed because it contained a swear word${isEmbed ? " in an embed" : ""}.\n>>> ${discordMessage.content}`);
                 } catch {
                     var tick = 5;
                     var baseMsg = `<@${discordMessage.author.id}> Swear word was removed, see rule 4.\nThis message will self destruct in `;
@@ -53,8 +52,13 @@ export async function handleSwearFilter(discordMessage: PartialMessage | Message
                 const author = discordMessage.author;
                 if (guild) {
                     const botChannel = guild.channels.cache.find(i => i.name == "bot-stuff") as TextChannel;
-                    botChannel.send(`A swear word from \`${author.username}#${author.discriminator}\` (ID ${author.id}) sent in <#${sentFromChannel.id}> was removed:
-> ${discordMessage.content}${isEmbed ? "\n\nOffending part of embed:\n> " + check : ""}`);
+                    botChannel.send({
+                        content: `A swear word from <@${author.id}> sent in <#${sentFromChannel.id}> was removed:\n>>> ${discordMessage.content}${isEmbed ? "\n\nOffending part of embed:\n>>> " + check : ""}`,
+                        allowedMentions: {
+                            parse: []
+                        },
+                        flags: MessageFlags.SuppressEmbeds
+                    });
                 }
             }
 
