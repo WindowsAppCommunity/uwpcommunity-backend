@@ -53,7 +53,7 @@ export async function handleSwearFilter(discordMessage: PartialMessage | Message
                 if (guild) {
                     const botChannel = guild.channels.cache.find(i => i.name == "bot-stuff") as TextChannel;
                     botChannel.send({
-                        content: `A swear word from <@${author.id}> sent in <#${sentFromChannel.id}> was removed:\n>>> ${discordMessage.content}${isEmbed ? "\n\nOffending part of embed:\n>>> " + check : ""}`,
+                        content: `A swear word ${isEmbed ? "in an embed " : ""}from <@${author.id}> sent in <#${sentFromChannel.id}> was removed:\n>>> ${check}`,
                         allowedMentions: {
                             parse: []
                         },
