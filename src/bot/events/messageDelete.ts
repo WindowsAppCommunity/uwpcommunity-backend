@@ -1,4 +1,4 @@
-import { Message, TextChannel } from "discord.js";
+import { Message, MessageFlags, TextChannel } from "discord.js";
 import { GetChannelByName } from "../../common/helpers/discord";
 
 export default async (discordMessage: Message) => {
@@ -12,5 +12,11 @@ export default async (discordMessage: Message) => {
         return;
     }
 
-    botstuffChannel.send(`Message from <@${discordMessage.author.id}> was deleted from ${(discordMessage.channel as TextChannel).name}:\n> ${discordMessage.content}`)
+    botstuffChannel.send({
+        content: `Message from <@${discordMessage.author.id}> was deleted from <#${discordMessage.channel.id}>:\n>>> ${discordMessage.content}`,
+        allowedMentions: {
+            parse: []
+        },
+        flags: MessageFlags.SuppressEmbeds
+    })
 }
