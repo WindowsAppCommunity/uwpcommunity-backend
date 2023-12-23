@@ -1,14 +1,17 @@
 import { Message, TextChannel, DMChannel, PartialMessage, MessageFlags } from "discord.js";
 import { GetGuild } from "../../../common/helpers/discord";
 
-export const swearRegex: RegExp = new RegExp(/fuck|\sass\s|dick|shit|pussy|cunt|whore|bastard|bitch|faggot|penis|slut|retarded/);
+export const swearRegex: RegExp = new RegExp(/fuck|\sass\s|dick|shit|pussy|cunt|whore|bastard|bitch|faggot|penis|slut|retarded/i);
 
-export const whitelist: RegExp = new RegExp(/ishittest/);
+export const whitelist: RegExp = new RegExp(/ishittest/i);
 
 export async function handleSwearFilter(discordMessage: PartialMessage | Message) {
-    const message = discordMessage.content?.toLowerCase() ?? ""; // A partial update might be just adding an embed, so no need to check content again
+    const message = discordMessage.content ?? ""; // A partial update might be just adding an embed, so no need to check content again
     const checks = [message];
-    discordMessage.embeds.forEach(e => checks.push(e.title?.toLowerCase() ?? "", e.description?.toLowerCase() ?? "", e.author?.name?.toLowerCase() ?? ""));
+    discordMessage.embeds.forEach(e => {
+        checks.push(e.title ?? "", e.description ?? "", e.footer?.text ?? "", e.provider?.name ?? "", e.author?.name ?? "");
+        e.fields?.forEach(f => checks.push(f.name, f.value));
+    });
     let isEmbed = false; // We will show a different message if the swear is in the embed part
 
     for (const check of checks) {
