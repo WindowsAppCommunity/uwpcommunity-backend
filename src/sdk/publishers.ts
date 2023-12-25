@@ -2,7 +2,7 @@ import { Helia, Ipns, Dag, ImportLibp2pKey } from './helia.js';
 import { peerIdFromString } from "@libp2p/peer-id";
 import type { CID } from "multiformats/cid";
 import { IPublisher } from "./interface/IPublisher.js";
-import { exit } from "process";;
+import { exit } from "process";
 import { type PeerId } from "@libp2p/interface-peer-id";
 
 interface IPublisherMap {

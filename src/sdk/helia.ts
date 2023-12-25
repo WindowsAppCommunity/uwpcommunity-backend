@@ -8,7 +8,7 @@ import { peerIdFromString } from "@libp2p/peer-id";
 
 import * as Projects from './projects.js'
 
-import fs from 'fs';
+import fs from 'fs'
 import extra from 'fs-extra'
 
 let Helia: HeliaInterface | undefined;
@@ -105,3 +105,4 @@ export async function PublishToKey(keyName: string, cid: CID) {
 // Frontend:
 // - [ ] Update the website to use updated models and endpoints.
 // - [ ] Add support for image uploads.
+// - [ ] Delete it all. Nuke it.
